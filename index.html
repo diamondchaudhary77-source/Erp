@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#714B67">
+<title>Handmade Decor ERP V10.3 Live</title>
+<style>
+*{box-sizing:border-box}
+:root{--p:#714B67;--p2:#8f6385;--bg:#f5f3f5;--card:#fff;--text:#29252b;--muted:#777;--green:#198754;--red:#c0392b;--orange:#e67e22;--blue:#2878c8;--line:#e7e2e7}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:8px;padding:9px 13px}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px;background:linear-gradient(135deg,#714B67,#a7839d)}
+.loginbox{width:min(430px,100%);background:#fff;border-radius:18px;padding:28px;box-shadow:0 18px 50px #0003}
+.loginbox h1{color:var(--p);margin:0 0 8px}
+.layout{display:flex;min-height:100vh}.side{position:fixed;z-index:10;left:0;top:0;bottom:0;width:238px;background:#302730;color:#fff;padding:14px;overflow:auto}.brand{font-size:19px;font-weight:bold;padding:10px 7px 17px}.brand small{color:#bbb}
+.nav button{display:block;width:100%;text-align:left;color:#eee;background:transparent;margin:3px 0}.nav button:hover,.nav button.active{background:var(--p)}
+.main{margin-left:238px;width:calc(100% - 238px);padding:17px}.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}.top h2{margin:0}.mobile{display:none;background:var(--p);color:#fff}
+.page{display:none}.page.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.card{background:var(--card);border-radius:12px;padding:15px;margin-bottom:13px;box-shadow:0 2px 8px #0000000b}.kpi{font-size:23px;font-weight:bold;margin-top:7px}.muted{font-size:12px;color:var(--muted)}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{margin-bottom:9px}.field label{display:block;font-size:12px;color:#555;margin-bottom:4px}.field input,.field select,.field textarea{width:100%;padding:9px;border:1px solid #d9d4d9;border-radius:8px;background:#fff}.field textarea{min-height:70px}
+.primary{background:var(--p);color:#fff}.secondary{background:#eee;color:#333}.success{background:var(--green);color:#fff}.danger{background:var(--red);color:#fff}.info{background:var(--blue);color:#fff}.orange{background:var(--orange);color:#fff}
+.actions{display:flex;gap:4px;flex-wrap:wrap}.actions button{padding:6px 8px;font-size:11px}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;background:#fff}th,td{padding:8px;border-bottom:1px solid var(--line);font-size:12px;text-align:left;white-space:nowrap}th{background:#faf8fa;color:#555}
+.badge{display:inline-block;padding:4px 7px;border-radius:20px;background:#eee;font-size:10px}.bg{background:#def4e7;color:#176b3d}.br{background:#fde2df;color:#9e281e}.bo{background:#fff0dc;color:#a65a00}.bb{background:#e0edfc;color:#1b5d9d}
+.notice{padding:10px;background:#fff5d7;border-radius:8px;font-size:12px;margin-bottom:10px}.empty{text-align:center;color:#888;padding:25px}.bar{height:10px;background:#eee;border-radius:10px;overflow:hidden}.bar span{display:block;height:100%;background:var(--p)}.photo{width:43px;height:43px;object-fit:cover;border-radius:6px}.right{text-align:right}
+.statline{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee}.green{color:var(--green)}.red{color:var(--red)}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+.searchbox{width:100%;padding:9px;border:1px solid #d9d4d9;border-radius:8px;margin-bottom:10px;background:#fff}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.tabs button{background:#eee;color:#333}.tabs button.active{background:var(--p);color:#fff}
+.bs-head{font-weight:bold;background:#faf8fa;border-top:2px solid var(--line);border-bottom:1px solid var(--line)}
+.bs-total{font-weight:bold;border-top:2px solid var(--line);border-bottom:3px double var(--line)}
+.bs-group{font-weight:bold;color:var(--p);margin-top:8px}
+.sync-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#999;margin-right:5px;vertical-align:middle}
+.sync-dot.live{background:var(--green)}
+.sync-dot.offline{background:var(--red)}
+@media(max-width:850px){.side{transform:translateX(-100%);transition:.2s}.side.open{transform:translateX(0)}.main{margin-left:0;width:100%;padding:11px}.mobile{display:block}.grid,.grid3{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.row{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.row{grid-template-columns:1fr}.top h2{font-size:18px}}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div id="loginScreen" class="login">
+ <div class="loginbox">
+  <h1>🧶 Handmade Decor ERP</h1>
+  <b>V10.3 — Live Multi-Branch</b>
+  <p class="muted"><span id="syncDot" class="sync-dot"></span><span id="syncLabel">Connecting…</span></p>
+  <div class="field"><label>Username</label><input id="loginUser" value="admin" onkeydown="if(event.key==='Enter')$('loginPass').focus()"></div>
+  <div class="field"><label>Password</label><input id="loginPass" type="password" value="admin" onkeydown="if(event.key==='Enter')login()"></div>
+  <button id="loginBtn" class="primary" style="width:100%" onclick="login()" disabled>Connecting…</button>
+  <p class="muted">Admin: admin / admin<br>Default branches: branch1–branch5 / 1234</p>
+ </div>
+</div>
+
+<div id="app" style="display:none">
+ <div class="layout">
+  <aside class="side" id="side">
+   <div class="brand">🧶 Handmade Decor<br><small>ERP V10.3 Live</small></div>
+   <div class="nav" id="nav"></div>
+  </aside>
+  <main class="main">
+   <div class="top">
+    <div style="display:flex;gap:8px;align-items:center"><button class="mobile" onclick="toggleSide()">☰</button><h2 id="title">Dashboard</h2></div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+      <span class="badge" id="syncStatus" title="Sync status"><span id="syncDotApp" class="sync-dot"></span><span id="syncLabelApp">Connecting</span></span>
+      <button id="backupReminder" class="orange" style="display:none;font-size:11px;padding:6px 9px" onclick="backup()">⚠ Backup needed</button>
+      <span class="badge" id="who"></span>
+      <button class="secondary" onclick="logout()">Logout</button>
+    </div>
+   </div>
+
+   <section id="dashboard" class="page active">
+    <div class="grid">
+     <div class="card"><div class="muted">Customer Orders</div><div class="kpi" id="kOrders">0</div></div>
+     <div class="card"><div class="muted">In Production</div><div class="kpi" id="kProd">0</div></div>
+     <div class="card"><div class="muted">Finished Goods</div><div class="kpi" id="kFG">0</div></div>
+     <div class="card"><div class="muted">Net Profit</div><div class="kpi green" id="kProfit">0.00</div></div>
+    </div>
+    <div class="grid2">
+     <div class="card"><h3>Order Workflow</h3><div id="flow"></div></div>
+     <div class="card"><h3>Branch Production (pieces)</h3><div id="branchChart"></div></div>
+    </div>
+    <div class="card" id="bsCard"><h3>Balance Sheet Snapshot</h3><div id="bsSnap"></div></div>
+    <div class="card" id="branchDashCard"><h3>My Branch Summary</h3><div id="branchDash"></div></div>
+   </section>
+
+   <section id="orders" class="page">
+    <div class="card"><h3>Customer Orders</h3>
+     <form onsubmit="saveOrder(event)">
+      <div class="row">
+       <div class="field"><label>Customer</label><input id="oCustomer" required></div>
+       <div class="field"><label>Product</label><input id="oProduct" required></div>
+       <div class="field"><label>Quantity</label><input id="oQty" type="number" min="1" required></div>
+       <div class="field"><label>Sales Price / Unit</label><input id="oPrice" type="number" step="0.01"></div>
+      </div>
+      <div class="row">
+       <div class="field"><label>Branch</label><select id="oBranch"></select></div>
+       <div class="field"><label>Order Date</label><input id="oDate" type="date"></div>
+       <div class="field"><label>Product Photo</label><input id="oPhoto" type="file" accept="image/*"></div>
+       <div class="field"><label>Notes</label><input id="oNotes"></div>
+      </div>
+      <button class="primary">Save Customer Order</button>
+     </form>
+    </div>
+    <div class="card">
+     <input id="orderSearch" class="searchbox" placeholder="🔎 Search by customer, product, or branch…" oninput="renderOrders()">
+     <div class="tablewrap"><table><thead><tr><th>Photo</th><th>Customer</th><th>Product</th><th>Qty</th><th>Branch</th><th>Status</th><th>Done (pcs)</th><th>Actions</th></tr></thead><tbody id="ordersTable"></tbody></table></div>
+    </div>
+   </section>
+
+   <section id="production" class="page">
+    <div class="card"><h3>Production / Branch Work</h3>
+     <div class="notice">Workflow: Order Received → Sent to Branch → In Production → Assembly Complete → FG Received → Completed. Completion is entered as a <b>piece count</b>, not a percentage. Material cost is capitalised into FG at completion; labour and absorbed overhead are added.</div>
+     <div class="tablewrap"><table><thead><tr><th>Order</th><th>Product</th><th>Branch</th><th>Qty</th><th>Completed (pcs)</th><th>Status</th><th>Material</th><th>Actions</th></tr></thead><tbody id="prodTable"></tbody></table></div>
+    </div>
+   </section>
+
+   <section id="inventory" class="page">
+    <div class="grid2">
+     <div class="card"><h3>Raw Material / Opening Stock</h3>
+      <form onsubmit="saveMaterial(event)"><div class="row">
+       <div class="field"><label>Material</label><input id="mName" required></div>
+       <div class="field"><label>Unit</label><select id="mUnit"><option>kg</option><option>gram</option><option>pcs</option><option>meter</option><option>liter</option></select></div>
+       <div class="field"><label>Quantity</label><input id="mQty" type="number" step="0.001" required></div>
+       <div class="field"><label>Price / Unit</label><input id="mPrice" type="number" step="0.01" value="0"></div>
+      </div><button class="primary">Save / Add Stock</button></form>
+     </div>
+     <div class="card"><h3>Finished Goods Stock (at cost)</h3><div id="fgStock"></div></div>
+    </div>
+    <div class="card"><h3>Raw Materials</h3><div class="tablewrap"><table><thead><tr><th>Material</th><th>Unit</th><th>Qty</th><th>Avg Price</th><th>Value</th><th>Actions</th></tr></thead><tbody id="matTable"></tbody></table></div></div>
+   </section>
+
+   <section id="issue" class="page">
+    <div class="card"><h3>Material Issue to Branch</h3>
+     <div class="notice">Material is issued according to BOM. Blocks over-issue and insufficient stock. <b>Only Head Office/Admin can issue material.</b> Posts Dr WIP / Cr Raw Materials.</div>
+     <form onsubmit="issueMaterial(event)"><div class="row">
+      <div class="field"><label>Order</label><select id="iOrder" required></select></div>
+      <div class="field"><label>Material</label><select id="iMaterial" required></select></div>
+      <div class="field"><label>Quantity</label><input id="iQty" type="number" step="0.001" min="0.001" required></div>
+      <div class="field"><label>Branch</label><select id="iBranch" disabled></select></div>
+     </div><button class="primary">Issue Material</button></form>
+    </div>
+    <div class="card"><h3>Material Issue History</h3><div class="tablewrap"><table><thead><tr><th>Date</th><th>Order</th><th>Material</th><th>Qty</th><th>Branch</th><th>User</th><th>Actions</th></tr></thead><tbody id="issueTable"></tbody></table></div></div>
+   </section>
+
+   <section id="branchstock" class="page">
+    <div class="card"><h3>Branch Stock</h3><div id="branchStock"></div></div>
+   </section>
+
+   <section id="bom" class="page">
+    <div class="card"><h3>BOM & Labour Cost</h3>
+     <div class="notice">Labour per unit is charged to FG at order completion, credited to <b>Labour Payable (2210)</b>. Overhead absorption is added on top per Settings.</div>
+     <form onsubmit="saveBOM(event)"><div class="row">
+      <div class="field"><label>Finished Product</label><input id="bProduct" required></div>
+      <div class="field"><label>Material</label><select id="bMaterial" required></select></div>
+      <div class="field"><label>Qty per Unit</label><input id="bQty" type="number" step="0.001" required></div>
+      <div class="field"><label>Labour Cost / Unit</label><input id="bLabour" type="number" step="0.01" value="0"></div>
+     </div><button class="primary">Save BOM</button></form>
+    </div>
+    <div class="card"><div class="tablewrap"><table><thead><tr><th>Product</th><th>Material</th><th>Qty/Unit</th><th>Material Cost/Unit</th><th>Labour/Unit</th><th>Total Unit Cost</th><th>Actions</th></tr></thead><tbody id="bomTable"></tbody></table></div></div>
+   </section>
+
+   <section id="purchases" class="page">
+    <div class="card"><h3>Purchase Orders / Purchases</h3>
+     <div class="notice">Posts Dr Inventory + Dr Input VAT / Cr AP, Cash or Bank. Settle unpaid purchases from <b>Receivables & Payables</b>. Partial payments supported.</div>
+     <form onsubmit="savePurchase(event)"><div class="row">
+      <div class="field"><label>Supplier</label><input id="pSupplier" required></div>
+      <div class="field"><label>Material</label><select id="pMaterial" required></select></div>
+      <div class="field"><label>Quantity</label><input id="pQty" type="number" step="0.001" required></div>
+      <div class="field"><label>Price / Unit</label><input id="pPrice" type="number" step="0.01" required></div>
+     </div><div class="row">
+      <div class="field"><label>Input VAT %</label><input id="pVat" type="number" step="0.01" value="0"></div>
+      <div class="field"><label>Payment Method</label><select id="pPay"><option value="Credit">Credit (AP)</option><option value="Cash">Cash</option><option value="Bank">Bank</option></select></div>
+      <div class="field"><label>Date</label><input id="pDate" type="date"></div>
+     </div><button class="primary">Save Purchase</button></form>
+    </div>
+    <div class="card"><div class="tablewrap"><table><thead><tr><th>Date</th><th>Supplier</th><th>Material</th><th>Qty</th><th>Price</th><th>VAT</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead><tbody id="purchaseTable"></tbody></table></div></div>
+   </section>
+
+   <section id="sales" class="page">
+    <div class="card"><h3>Sales + VAT</h3>
+     <div class="notice">Strictly stock-backed. Posts Dr AR/Cash + Cr Sales + Cr Output VAT, and Dr COGS / Cr FG at absorbed cost.</div>
+     <form onsubmit="saveSale(event)"><div class="row">
+      <div class="field"><label>Customer</label><input id="sCustomer" required></div>
+      <div class="field"><label>Product (Finished Goods)</label>
+       <select id="sProduct" required onchange="syncSaleStock()"></select>
+       <div class="muted" id="sStockHint"></div>
+      </div>
+      <div class="field"><label>Quantity</label><input id="sQty" type="number" min="1" step="1" required></div>
+      <div class="field"><label>Price / Unit</label><input id="sPrice" type="number" step="0.01" required></div>
+     </div><div class="row">
+      <div class="field"><label>Output VAT %</label><input id="sVat" type="number" step="0.01" value="0"></div>
+      <div class="field"><label>Payment Method</label><select id="sPay"><option value="Credit">Credit (AR)</option><option value="Cash">Cash</option><option value="Bank">Bank</option></select></div>
+      <div class="field"><label>Branch</label><select id="sBranch"></select></div>
+      <div class="field"><label>Date</label><input id="sDate" type="date"></div>
+     </div><button class="primary">Save Sale</button></form>
+    </div>
+    <div class="card"><div class="tablewrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Product</th><th>Qty</th><th>Sub</th><th>VAT</th><th>Total</th><th>COGS</th><th>Branch</th><th>Status</th><th>Actions</th></tr></thead><tbody id="salesTable"></tbody></table></div></div>
+   </section>
+
+   <section id="expenses" class="page">
+    <div class="card"><h3>Indirect Expenses</h3>
+     <div class="notice">Each expense posts to its expense account. Partial settlement supported from AR/AP page.</div>
+     <form onsubmit="saveExpense(event)"><div class="row">
+      <div class="field"><label>Expense Type</label><select id="eType"><option>Rent</option><option>Electricity</option><option>Transport</option><option>Fixed Staff Salary</option><option>Water</option><option>Repair & Maintenance</option><option>Other</option></select></div>
+      <div class="field"><label>Amount</label><input id="eAmount" type="number" min="0" step="0.01" required></div>
+      <div class="field"><label>Payment Method</label><select id="ePay"><option value="Credit">Credit (AP)</option><option value="Cash">Cash</option><option value="Bank">Bank</option></select></div>
+      <div class="field"><label>Date</label><input id="eDate" type="date"></div>
+     </div><div class="row">
+      <div class="field"><label>Branch</label><select id="eBranch"></select></div>
+      <div class="field"><label>Note</label><input id="eNote"></div>
+     </div><button class="primary">Save Indirect Expense</button></form>
+    </div>
+    <div class="card"><div class="tablewrap"><table><thead><tr><th>Date</th><th>Type</th><th>Branch</th><th>Amount</th><th>Method</th><th>Status</th><th>Entered By</th><th>Note</th><th>Actions</th></tr></thead><tbody id="expenseTable"></tbody></table></div></div>
+   </section>
+
+   <section id="fixedassets" class="page">
+    <div class="card"><h3>Add Fixed Asset</h3>
+     <div class="notice">Straight-line depreciation only. Assets recognised at cost; depreciation posts monthly to 6100 / 1505.</div>
+     <form onsubmit="saveFixedAsset(event)"><div class="row">
+      <div class="field"><label>Asset Name</label><input id="faName" required></div>
+      <div class="field"><label>Category</label><select id="faCategory"><option>Machinery</option><option>Furniture</option><option>Vehicles</option><option>Computer Equipment</option><option>Buildings</option><option>Other</option></select></div>
+      <div class="field"><label>Cost</label><input id="faCost" type="number" step="0.01" min="0.01" required></div>
+      <div class="field"><label>Purchase Date</label><input id="faDate" type="date"></div>
+     </div><div class="row">
+      <div class="field"><label>Useful Life (months)</label><input id="faLife" type="number" min="1" step="1" required></div>
+      <div class="field"><label>Salvage Value</label><input id="faSalvage" type="number" step="0.01" value="0"></div>
+      <div class="field"><label>Branch</label><select id="faBranch"></select></div>
+      <div class="field"><label>Paid By</label><select id="faPay"><option value="Credit">Credit (AP)</option><option value="Cash">Cash</option><option value="Bank">Bank</option></select></div>
+     </div><button class="primary">Add Asset</button></form>
+    </div>
+    <div class="card"><h3>Run Monthly Depreciation</h3>
+     <div class="row">
+      <div class="field"><label>Period (YYYY-MM)</label><input id="depPeriod" type="month"></div>
+      <div class="field" style="display:flex;align-items:end"><button class="primary" onclick="runDepreciation()">Post Depreciation</button></div>
+     </div>
+     <p class="muted">Already-depreciated months are skipped. Assets purchased after period end are skipped. Fully-depreciated assets are skipped.</p>
+    </div>
+    <div class="card"><h3>Fixed Asset Register</h3>
+     <div class="tablewrap"><table><thead><tr><th>Name</th><th>Category</th><th>Branch</th><th>Cost</th><th>Monthly</th><th>Accum.</th><th>NBV</th><th>Status</th><th>Actions</th></tr></thead><tbody id="faTable"></tbody></table></div>
+    </div>
+   </section>
+
+   <section id="accounting" class="page">
+    <div class="tabs">
+     <button id="tabTb" onclick="showAcct('tb')">Trial Balance</button>
+     <button id="tabBs" onclick="showAcct('bs')">Balance Sheet</button>
+     <button id="tabPl" onclick="showAcct('pl')">Profit & Loss</button>
+     <button id="tabJ" onclick="showAcct('j')">Journal</button>
+    </div>
+    <div class="card">
+     <div class="row">
+      <div class="field"><label>From</label><input id="acctFrom" type="date"></div>
+      <div class="field"><label>To</label><input id="acctTo" type="date"></div>
+      <div class="field"><label>Branch</label><select id="acctBranch"><option value="">All branches</option></select></div>
+      <div class="field" style="display:flex;align-items:end"><button class="primary" onclick="renderAccounting()">Refresh</button></div>
+     </div>
+    </div>
+    <div id="acctOut"></div>
+   </section>
+
+   <section id="arap" class="page">
+    <div class="grid">
+     <div class="card"><div class="muted">Receivable (unpaid)</div><div class="kpi" id="kAR">0</div></div>
+     <div class="card"><div class="muted">Payable (unpaid)</div><div class="kpi" id="kAP">0</div></div>
+     <div class="card"><div class="muted">Net VAT position</div><div class="kpi" id="kVat">0</div></div>
+     <div class="card"><div class="muted">Cash + Bank</div><div class="kpi" id="kCB">0</div></div>
+    </div>
+    <div class="card"><h3>Receivables — Unpaid Sales</h3><div id="arList"></div></div>
+    <div class="card"><h3>Payables — Unpaid Purchases & Expenses</h3><div id="apList"></div></div>
+    <div class="card"><h3>VAT Summary</h3><div id="vatSummary"></div></div>
+   </section>
+
+   <section id="finance" class="page">
+    <div class="grid">
+     <div class="card"><div class="muted">Net Sales (ex VAT)</div><div class="kpi" id="fSales">0</div></div>
+     <div class="card"><div class="muted">Cost of Goods Sold</div><div class="kpi" id="fCogs">0</div></div>
+     <div class="card"><div class="muted">Operating Expenses</div><div class="kpi" id="fExp">0</div></div>
+     <div class="card"><div class="muted">Net Profit</div><div class="kpi green" id="fProfit">0</div></div>
+    </div>
+    <div class="card"><h3>Profit & Loss (from ledger)</h3><div id="pl"></div></div>
+    <div class="card"><h3>Branch Profit</h3><div id="branchPL"></div></div>
+   </section>
+
+   <section id="settings" class="page">
+    <div class="card"><h3>Accounting Settings</h3>
+     <div class="notice">Overhead rate applied at FG completion as % of (material + labour). Period lock blocks any journal dated on or before the lock date from being posted or voided.</div>
+     <form onsubmit="saveSettings(event)"><div class="row">
+      <div class="field"><label>Overhead Absorption Rate (%)</label><input id="setOverheadRate" type="number" min="0" max="200" step="0.01" value="0"></div>
+      <div class="field"><label>Period Locked Through</label><input id="setLockDate" type="date"></div>
+      <div class="field" style="display:flex;align-items:end"><button class="primary">Save Settings</button></div>
+     </div></form>
+     <p class="muted">Leave lock date blank to disable locking. Set a date to lock everything up to and including that date.</p>
+    </div>
+   </section>
+
+   <section id="opening" class="page">
+    <div class="card"><h3>Opening Balance</h3>
+     <div class="notice">Posts a single opening journal. Captures inventory and security deposits at current values. Owner's Capital is the balancing figure if left blank.</div>
+     <form onsubmit="saveOpening(event)"><div class="row">
+      <div class="field"><label>Cash Opening</label><input id="obCash" type="number" step="0.01"></div>
+      <div class="field"><label>Bank Opening</label><input id="obBank" type="number" step="0.01"></div>
+      <div class="field"><label>Receivable Opening</label><input id="obRec" type="number" step="0.01"></div>
+      <div class="field"><label>Payable Opening</label><input id="obPay" type="number" step="0.01"></div>
+     </div><div class="row">
+      <div class="field"><label>Owner's Capital</label><input id="obCap" type="number" step="0.01"></div>
+      <div class="field"><label>Opening Date</label><input id="obDate" type="date"></div>
+     </div><button class="primary">Post Opening Journal</button></form>
+     <p id="obStatus" class="green"></p>
+    </div>
+   </section>
+
+   <section id="employees" class="page">
+    <div class="card"><h3>Employee / Labour</h3>
+     <div class="notice">Security deposits are recognised as a liability (2200).</div>
+     <form onsubmit="saveEmployee(event)"><div class="row">
+      <div class="field"><label>Employee Name</label><input id="empName" required></div>
+      <div class="field"><label>Branch</label><select id="empBranch"></select></div>
+      <div class="field"><label>Joining Date</label><input id="empJoin" type="date"></div>
+      <div class="field"><label>Refundable Security Deposit</label><input id="empSec" type="number" step="0.01" value="0"></div>
+     </div><button class="primary">Save Employee</button></form>
+    </div>
+    <div class="card"><div class="tablewrap"><table><thead><tr><th>Name</th><th>Branch</th><th>Joining Date</th><th>Security Deposit</th><th>Actions</th></tr></thead><tbody id="empTable"></tbody></table></div></div>
+   </section>
+
+   <section id="branches" class="page">
+    <div class="card"><h3>Branch Settings</h3>
+     <form onsubmit="saveBranch(event)"><div class="row">
+      <div class="field"><label>Select Branch</label><select id="brId"></select></div>
+      <div class="field"><label>Branch Name</label><input id="brName" required></div>
+      <div class="field"><label>Login Username</label><input id="brUser" required></div>
+      <div class="field"><label>New Password <span class="muted">(leave blank to keep)</span></label><input id="brPass" type="text"></div>
+     </div><button class="primary">Save Branch Settings</button></form>
+    </div>
+    <div class="card"><div class="tablewrap"><table><thead><tr><th>ID</th><th>Branch</th><th>Username</th><th>Password</th><th>Actions</th></tr></thead><tbody id="branchTable"></tbody></table></div></div>
+   </section>
+
+   <section id="reports" class="page">
+    <div class="card"><h3>Reports</h3>
+     <div class="row">
+      <div class="field"><label>Report</label><select id="reportType">
+       <option value="sales">Sales Report</option>
+       <option value="orders">Order Report</option>
+       <option value="production">Production Report (pieces)</option>
+       <option value="expenses">Expense Report</option>
+       <option value="stock">Stock Report</option>
+       <option value="profit">Profit Report</option>
+       <option value="trialbalance">Trial Balance</option>
+       <option value="balancesheet">Balance Sheet</option>
+       <option value="fixedassets">Fixed Asset Register</option>
+      </select></div>
+      <div class="field"><label>From</label><input id="rFrom" type="date"></div>
+      <div class="field"><label>To</label><input id="rTo" type="date"></div>
+      <div class="field" style="display:flex;align-items:end"><button class="primary" onclick="runReport()">Run Report</button></div>
+     </div>
+     <div id="reportOut"></div>
+    </div>
+   </section>
+
+   <section id="backup" class="page">
+    <div class="card"><h3>Backup & Restore</h3><p class="muted">Download the complete ERP database including the general ledger as JSON.</p>
+     <button class="primary" onclick="backup()">Download Backup</button>
+     <button class="secondary" onclick="document.getElementById('restoreFile').click()">Restore Backup</button>
+     <input id="restoreFile" type="file" accept=".json" style="display:none" onchange="restore(event)">
+    </div>
+    <div class="card"><h3>Recent Activity (Audit Log)</h3><div id="auditLog"></div>
+     <button class="secondary" style="margin-top:10px" onclick="clearAudit()">Clear Audit Log</button>
+    </div>
+    <div class="card"><h3>System Information</h3><div id="sysInfo"></div></div>
+    <div class="card"><h3>Danger Zone</h3><button class="danger" onclick="resetData()">Reset All ERP Data</button></div>
+   </section>
+  </main>
+ </div>
+</div>
+
+<script>
+const KEY='HANDMADE_DECOR_ERP_V10';
+const BACKUP_KEY='HANDMADE_DECOR_ERP_LASTBACKUP';
+const today=()=>new Date().toISOString().slice(0,10);
+const $=id=>document.getElementById(id);
+const r2=n=>Math.round((Number(n)||0)*100)/100;
+function uid(){return Date.now()*1000+Math.floor(Math.random()*1000);}
+let db=loadDB();
+let session=null;
+
+/* ============ FIREBASE SYNC (compat SDK) ============ */
+const firebaseConfig={
+ apiKey:"AIzaSyC5HxlN4M2Y1ZyYhyk-fZs5i4wXFPA5Pao",
+ authDomain:"handmade-decor-erp.firebaseapp.com",
+ databaseURL:"https://handmade-decor-erp-default-rtdb.firebaseio.com",
+ projectId:"handmade-decor-erp",
+ storageBucket:"handmade-decor-erp.firebasestorage.app",
+ messagingSenderId:"358722495480",
+ appId:"1:358722495480:web:a9052a2329200331342c0d"
+};
+let fbRef=null, fbConnected=false, firstSnapshotSeen=false;
+try{
+ firebase.initializeApp(firebaseConfig);
+ fbRef=firebase.database().ref("erp/main");
+}catch(e){ console.warn("Firebase init failed:",e); }
+
+function setSyncStatus(state){
+ fbConnected=(state==='live');
+ const dot=fbConnected?'live':(state==='offline'?'offline':'');
+ const label=state==='live'?'Live':(state==='offline'?'Offline':'Connecting');
+ ['syncDot','syncDotApp'].forEach(id=>{
+   const el=$(id);if(el)el.className='sync-dot '+dot;
+ });
+ ['syncLabel','syncLabelApp'].forEach(id=>{
+   const el=$(id);if(el)el.textContent=label;
+ });
+}
+
+function enableLogin(){
+ const btn=$('loginBtn');
+ if(btn){btn.disabled=false;btn.textContent='Login';}
+}
+
+function attachSync(){
+ if(!fbRef){ setSyncStatus('offline'); enableLogin(); return; }
+
+ fbRef.on('value',snap=>{
+  const remote=snap.val();
+  setSyncStatus('live');
+
+  if(!remote){
+   // first run — seed cloud with local data
+   if(!firstSnapshotSeen){ firstSnapshotSeen=true; save(true); }
+   enableLogin();
+   return;
+  }
+
+  firstSnapshotSeen=true;
+
+  // our own echo
+  if(remote.lastModified && db.lastModified===remote.lastModified){
+   enableLogin(); return;
+  }
+
+  // local newer (offline edits queued)
+  if(db.lastModified && remote.lastModified && db.lastModified>remote.lastModified){
+   save(true); enableLogin(); return;
+  }
+
+  // remote newer → adopt
+  db=migrateDB(remote);
+  try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e){}
+  if(session)refresh();
+  enableLogin();
+ },err=>{
+  console.error("Firebase read failed:",err);
+  setSyncStatus('offline');
+  enableLogin();
+ });
+
+ firebase.database().ref(".info/connected").on('value',s=>{
+  setSyncStatus(s.val()?'live':'offline');
+ });
+}
+
+/* ================= DATA ================= */
+function defaultCOA(){
+ return [
+  {code:'1000',name:'Cash on Hand',type:'Asset'},
+  {code:'1010',name:'Bank',type:'Asset'},
+  {code:'1100',name:'Accounts Receivable',type:'Asset'},
+  {code:'1200',name:'Raw Materials Inventory',type:'Asset'},
+  {code:'1210',name:'Work in Progress',type:'Asset'},
+  {code:'1220',name:'Finished Goods Inventory',type:'Asset'},
+  {code:'1300',name:'Input VAT (Recoverable)',type:'Asset'},
+  {code:'1500',name:'Fixed Assets at Cost',type:'Asset'},
+  {code:'1505',name:'Accumulated Depreciation',type:'Asset'},
+  {code:'2000',name:'Accounts Payable',type:'Liability'},
+  {code:'2100',name:'Output VAT (Payable)',type:'Liability'},
+  {code:'2200',name:'Employee Security Deposits',type:'Liability'},
+  {code:'2210',name:'Labour Payable',type:'Liability'},
+  {code:'3000',name:"Owner's Capital",type:'Equity'},
+  {code:'4000',name:'Sales Revenue',type:'Income'},
+  {code:'5000',name:'Cost of Goods Sold',type:'Expense'},
+  {code:'6000',name:'Rent',type:'Expense'},
+  {code:'6010',name:'Electricity',type:'Expense'},
+  {code:'6020',name:'Transport',type:'Expense'},
+  {code:'6030',name:'Fixed Staff Salary',type:'Expense'},
+  {code:'6040',name:'Water',type:'Expense'},
+  {code:'6050',name:'Repairs & Maintenance',type:'Expense'},
+  {code:'6090',name:'Other Expenses',type:'Expense'},
+  {code:'6100',name:'Depreciation Expense',type:'Expense'},
+  {code:'6210',name:'Overhead Absorbed',type:'Expense'}
+ ];
+}
+function defaultDB(){
+ return {
+  version:'10.3',
+  admin:{user:'admin',pass:'admin'},
+  branches:[
+   {id:1,name:'Branch 1',user:'branch1',pass:'1234'},
+   {id:2,name:'Branch 2',user:'branch2',pass:'1234'},
+   {id:3,name:'Branch 3',user:'branch3',pass:'1234'},
+   {id:4,name:'Branch 4',user:'branch4',pass:'1234'},
+   {id:5,name:'Branch 5',user:'branch5',pass:'1234'}
+  ],
+  orders:[],materials:[],issues:[],branchStock:[],boms:[],purchases:[],sales:[],
+  expenses:[],employees:[],fg:[],audit:[],
+  coa:defaultCOA(),journals:[],fixedAssets:[],
+  settings:{overheadRate:0,lockedThrough:''},
+  ledgerStartDate:today(),
+  opening:{cash:0,bank:0,receivable:0,payable:0,capital:0,date:today(),jeId:null}
+ };
+}
+function loadDB(){
+ try{
+  const cached=localStorage.getItem(KEY+"_CACHE");
+  if(cached){const x=JSON.parse(cached);if(x&&x.branches)return migrateDB(x);}
+ }catch(e){}
+ try{
+  const old=localStorage.getItem(KEY);
+  if(old)return migrateDB(JSON.parse(old));
+ }catch(e){}
+ try{
+  const older=localStorage.getItem('HANDMADE_DECOR_ERP_V99_FULL');
+  if(older){
+   const o=JSON.parse(older);const d=defaultDB();
+   Object.keys(d).forEach(k=>{if(o[k]!==undefined)d[k]=o[k]});
+   d.coa=defaultCOA();d.journals=[];d.fixedAssets=[];
+   d.settings={overheadRate:0,lockedThrough:''};
+   d.ledgerStartDate=today();
+   return migrateDB(d);
+  }
+ }catch(e){}
+ return defaultDB();
+}
+function migrateDB(x){
+ let d=defaultDB();
+ Object.keys(d).forEach(k=>{if(x[k]===undefined)x[k]=d[k]});
+ if(!x.admin)x.admin=d.admin;
+ if(!Array.isArray(x.audit))x.audit=[];
+ if(!Array.isArray(x.coa)||!x.coa.length)x.coa=defaultCOA();
+ if(!Array.isArray(x.journals))x.journals=[];
+ if(!Array.isArray(x.fixedAssets))x.fixedAssets=[];
+ if(!x.settings)x.settings={overheadRate:0,lockedThrough:''};
+ if(x.settings.overheadRate===undefined)x.settings.overheadRate=0;
+ if(x.settings.lockedThrough===undefined)x.settings.lockedThrough='';
+ (x.sales||[]).forEach(s=>{if(s.paidAmount===undefined)s.paidAmount=s.settled?r2(s.qty*s.price*(1+Number(s.vat||0)/100)):0;});
+ (x.purchases||[]).forEach(p=>{if(p.paidAmount===undefined)p.paidAmount=p.settled?r2(p.qty*p.price*(1+Number(p.vat||0)/100)):0;});
+ (x.expenses||[]).forEach(e=>{if(e.paidAmount===undefined)e.paidAmount=e.settled?Number(e.amount||0):0;});
+ (x.materials||[]).forEach(m=>{
+  if(!Array.isArray(m.openingLayers)){
+   let hasPurchases=(x.purchases||[]).some(p=>p.materialId===m.id);
+   m.openingLayers=hasPurchases?[]:[{qty:Number(m.qty)||0,price:Number(m.price)||0}];
+  }
+ });
+ (x.orders||[]).forEach(o=>{
+  if(o.completedQty===undefined)o.completedQty=Math.round(Number(o.qty||0)*(Number(o.progress||0)/100));
+  o.completedQty=Number(o.completedQty)||0;
+  if(o.completedQty>Number(o.qty||0))o.completedQty=Number(o.qty||0);
+  delete o.progress;
+ });
+ return x;
+}
+let saveTimer=null;
+function save(immediate){
+ try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e){}
+ const push=()=>{
+  if(!fbRef)return;
+  db.lastModified=new Date().toISOString();
+  db.lastModifiedBy=session?session.user:'system';
+  try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e){}
+  fbRef.set(db).catch(err=>console.error("Firebase save failed:",err));
+ };
+ if(immediate){push();return true;}
+ clearTimeout(saveTimer);
+ saveTimer=setTimeout(push,250);
+ return true;
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function money(n){return Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+function branch(id){return db.branches.find(b=>Number(b.id)===Number(id))}
+function branchName(id){let b=branch(id);return b?b.name:'—'}
+function admin(){return session&&session.role==='admin'}
+function filtered(arr,key='branch'){return admin()?arr:arr.filter(x=>Number(x[key])===Number(session.branchId))}
+function getAccount(code){return db.coa.find(a=>a.code===code)}
+function statusBadge(s){
+ let c=s==='Completed'?'bg':s==='In Production'||s==='Sent to Branch'?'bo':s==='Assembly Complete'||s==='Finished Goods Returned'?'bb':s==='Cancelled'?'br':'';
+ return '<span class="badge '+c+'">'+esc(s)+'</span>'
+}
+function paidBadge(rec,total,method){
+ if(rec.settled)return '<span class="badge bg">'+(method||'Settled')+'</span>';
+ const paid=Number(rec.paidAmount||0);
+ if(paid>0.01)return '<span class="badge bo">Partial '+money(paid)+'</span>';
+ return '<span class="badge bo">Unpaid</span>';
+}
+function audit(action,detail){
+ if(!Array.isArray(db.audit))db.audit=[];
+ db.audit.push({t:new Date().toISOString(),user:session?session.user:'system',action,detail:String(detail||'').slice(0,200)});
+ if(db.audit.length>1000)db.audit=db.audit.slice(-800);
+}
+function doneQty(o){return Number(o&&o.completedQty||0)}
+function orderPct(o){const q=Number(o&&o.qty||0);return q>0?Math.min(100,Math.max(0,Math.round(doneQty(o)/q*100))):0}
+function orderDone(o){return Number(o&&o.qty||0)>0&&doneQty(o)>=Number(o.qty)}
+
+/* ================= ACCOUNTING CORE ================= */
+function postJournal(entry){
+ if(db.settings&&db.settings.lockedThrough){
+  const d=entry.date||today();
+  if(d<=db.settings.lockedThrough)throw new Error('Period locked through '+db.settings.lockedThrough+'. Cannot post dated '+d+'.');
+ }
+ const dr=r2(entry.lines.reduce((s,l)=>s+Number(l.debit||0),0));
+ const cr=r2(entry.lines.reduce((s,l)=>s+Number(l.credit||0),0));
+ if(Math.abs(dr-cr)>0.02)throw new Error('Unbalanced journal (Dr '+dr+' / Cr '+cr+')');
+ if(!entry.lines.length)throw new Error('Empty journal');
+ entry.lines.forEach(l=>{
+  if(!l.account)throw new Error('Missing account code');
+  if(!getAccount(l.account))throw new Error('Unknown account '+l.account);
+  const d=Number(l.debit||0),c=Number(l.credit||0);
+  if(d<=0&&c<=0)throw new Error('Line must have a debit or credit');
+  if(d>0&&c>0)throw new Error('Line cannot have both debit and credit');
+ });
+ const id=uid();
+ db.journals.push({
+  id,date:entry.date||today(),memo:entry.memo||'',refType:entry.refType||'',refId:entry.refId||null,
+  lines:entry.lines.map(l=>({account:l.account,debit:r2(l.debit||0),credit:r2(l.credit||0),branch:l.branch!=null?Number(l.branch):null,memo:l.memo||''})),
+  user:entry.user||(session?session.user:'system'),createdAt:new Date().toISOString(),voided:false
+ });
+ return id;
+}
+function voidJournal(id,reason){
+ const j=db.journals.find(x=>x.id===id);
+ if(!j||j.voided)return null;
+ if(db.settings&&db.settings.lockedThrough&&j.date<=db.settings.lockedThrough)throw new Error('Cannot void a journal in a locked period (through '+db.settings.lockedThrough+').');
+ const rev=postJournal({date:today(),memo:'VOID: '+j.memo,refType:'VOID',refId:j.id,
+  lines:j.lines.map(l=>({account:l.account,debit:l.credit,credit:l.debit,branch:l.branch,memo:'Reversal'}))});
+ j.voided=true;j.voidedBy=(session?session.user:'system');j.voidReason=reason||'';
+ return rev;
+}
+function voidByRef(refType,refId,reason){
+ let blocked=0;
+ db.journals.filter(j=>!j.voided&&j.refType===refType&&j.refId===refId).forEach(j=>{
+  try{voidJournal(j.id,reason||'');}catch(e){blocked++;}
+ });
+ return blocked;
+}
+function journalLines(filter){
+ filter=filter||{};const arr=[];
+ db.journals.forEach(j=>{
+  if(j.voided)return;
+  if(filter.from&&j.date<filter.from)return;
+  if(filter.to&&j.date>filter.to)return;
+  if(filter.refType&&j.refType!==filter.refType)return;
+  j.lines.forEach(l=>{
+   if(filter.branch!=null&&Number(l.branch)!==Number(filter.branch))return;
+   if(filter.account&&l.account!==filter.account)return;
+   arr.push({...l,date:j.date,jeId:j.id,memo:j.memo,refType:j.refType,refId:j.refId,user:j.user});
+  });
+ });
+ return arr;
+}
+function accountBalance(code,filter){
+ const lines=journalLines({...(filter||{}),account:code});
+ const dr=lines.reduce((s,l)=>s+Number(l.debit||0),0);
+ const cr=lines.reduce((s,l)=>s+Number(l.credit||0),0);
+ return r2(dr-cr);
+}
+function trialBalance(asOf,branchArg){
+ const filter={to:asOf||today()};if(branchArg)filter.branch=branchArg;
+ const rows=db.coa.map(a=>({code:a.code,name:a.name,type:a.type,balance:accountBalance(a.code,filter)}));
+ const totalDr=r2(rows.filter(r=>r.balance>0).reduce((s,r)=>s+r.balance,0));
+ const totalCr=r2(rows.filter(r=>r.balance<0).reduce((s,r)=>s-r.balance,0));
+ return {rows,totalDr,totalCr,diff:r2(totalDr-totalCr)};
+}
+function plReport(from,to,branchArg){
+ const filter={from:from||db.ledgerStartDate||'',to:to||today()};if(branchArg)filter.branch=branchArg;
+ const income=db.coa.filter(a=>a.type==='Income').map(a=>({code:a.code,name:a.name,amount:r2(-accountBalance(a.code,filter))}));
+ const cogs=db.coa.filter(a=>a.code==='5000').map(a=>({code:a.code,name:a.name,amount:accountBalance(a.code,filter)}));
+ const opex=db.coa.filter(a=>a.type==='Expense'&&a.code!=='5000').map(a=>({code:a.code,name:a.name,amount:accountBalance(a.code,filter)}));
+ const totalIncome=r2(income.reduce((s,x)=>s+x.amount,0));
+ const totalCOGS=r2(cogs.reduce((s,x)=>s+x.amount,0));
+ const totalOpex=r2(opex.reduce((s,x)=>s+x.amount,0));
+ return {income,cogs,opex,totalIncome,totalCOGS,totalOpex,
+  grossProfit:r2(totalIncome-totalCOGS),netProfit:r2(totalIncome-totalCOGS-totalOpex)};
+}
+function balanceSheet(asOf,branchArg){
+ const filter={to:asOf||today()};if(branchArg)filter.branch=branchArg;
+ const asset=db.coa.filter(a=>a.type==='Asset').map(a=>({code:a.code,name:a.name,amount:accountBalance(a.code,filter)}));
+ const liab=db.coa.filter(a=>a.type==='Liability').map(a=>({code:a.code,name:a.name,amount:r2(-accountBalance(a.code,filter))}));
+ const equity=db.coa.filter(a=>a.type==='Equity').map(a=>({code:a.code,name:a.name,amount:r2(-accountBalance(a.code,filter))}));
+ const pl=plReport(db.ledgerStartDate||'',asOf,branchArg);
+ const retained=r2(pl.netProfit);
+ const totalAssets=r2(asset.reduce((s,x)=>s+x.amount,0));
+ const totalLiab=r2(liab.reduce((s,x)=>s+x.amount,0));
+ const totalEquity=r2(equity.reduce((s,x)=>s+x.amount,0)+retained);
+ return {asset,liab,equity,retained,totalAssets,totalLiab,totalEquity,diff:r2(totalAssets-totalLiab-totalEquity)};
+}
+
+/* ================= OPERATIONAL POSTINGS ================= */
+function expenseAccountFor(type){
+ const map={'Rent':'6000','Electricity':'6010','Transport':'6020','Fixed Staff Salary':'6030','Water':'6040','Repair & Maintenance':'6050','Other':'6090'};
+ return map[type]||'6090';
+}
+function postPurchaseJE(p){
+ const gross=r2(p.qty*p.price),vat=r2(gross*Number(p.vat||0)/100),total=r2(gross+vat);
+ const lines=[{account:'1200',debit:gross,memo:p.supplier}];
+ if(vat>0)lines.push({account:'1300',debit:vat,memo:'Input VAT'});
+ if(p.payMethod==='Cash')lines.push({account:'1000',credit:total});
+ else if(p.payMethod==='Bank')lines.push({account:'1010',credit:total});
+ else lines.push({account:'2000',credit:total,memo:p.supplier});
+ p.jeId=postJournal({date:p.date,memo:'Purchase: '+p.supplier,refType:'PURCHASE',refId:p.id,lines});
+ p.settled=(p.payMethod!=='Credit');
+}
+function postSaleJE(s,unitCost){
+ const sub=r2(s.qty*s.price),vat=r2(sub*Number(s.vat||0)/100),total=r2(sub+vat);
+ const lines=[{account:'4000',credit:sub,branch:s.branch,memo:s.product}];
+ if(vat>0)lines.push({account:'2100',credit:vat,branch:s.branch,memo:'Output VAT'});
+ if(s.payMethod==='Cash')lines.push({account:'1000',debit:total,branch:s.branch});
+ else if(s.payMethod==='Bank')lines.push({account:'1010',debit:total,branch:s.branch});
+ else lines.push({account:'1100',debit:total,branch:s.branch,memo:s.customer});
+ s.jeId=postJournal({date:s.date,memo:'Sale: '+s.customer,refType:'SALE',refId:s.id,lines});
+ const cogs=r2(s.qty*Number(unitCost||0));
+ if(cogs>0){
+  s.cogsJeId=postJournal({date:s.date,memo:'COGS: '+s.product,refType:'COGS',refId:s.id,lines:[
+   {account:'5000',debit:cogs,branch:s.branch,memo:s.product},
+   {account:'1220',credit:cogs,branch:s.branch,memo:s.product}
+  ]});
+ }
+ s.cogs=cogs;s.settled=(s.payMethod!=='Credit');
+}
+function postExpenseJE(e){
+ const acct=expenseAccountFor(e.type);
+ const lines=[{account:acct,debit:e.amount,branch:e.branch,memo:e.note}];
+ if(e.payMethod==='Cash')lines.push({account:'1000',credit:e.amount,branch:e.branch});
+ else if(e.payMethod==='Bank')lines.push({account:'1010',credit:e.amount,branch:e.branch});
+ else lines.push({account:'2000',credit:e.amount});
+ e.jeId=postJournal({date:e.date,memo:'Expense: '+e.type,refType:'EXPENSE',refId:e.id,lines});
+ e.settled=(e.payMethod!=='Credit');
+}
+function postIssueJE(i,material){
+ const cost=r2(i.qty*Number(i.cost!=null?i.cost:material.price));
+ postJournal({date:i.date,memo:'Material issue to '+branchName(i.branch)+': '+material.name,refType:'ISSUE',refId:i.id,lines:[
+  {account:'1210',debit:cost,branch:i.branch,memo:material.name},
+  {account:'1200',credit:cost,memo:material.name}
+ ]});
+}
+function postCompletionJE(o){
+ const issues=db.issues.filter(i=>i.orderId===o.id);
+ const materialCost=r2(issues.reduce((s,i)=>{
+  const m=db.materials.find(x=>x.id===i.materialId);
+  const unit=(i.cost!=null)?Number(i.cost):(m?m.price:0);
+  return s+r2(i.qty*unit);
+ },0));
+ const bom=db.boms.filter(b=>b.product.toLowerCase()===o.product.toLowerCase());
+ const labourPerUnit=r2(bom.reduce((s,b)=>s+Number(b.labour||0),0));
+ const labourCost=r2(labourPerUnit*o.qty);
+ const rate=Number((db.settings&&db.settings.overheadRate)||0);
+ const overheadCost=r2((materialCost+labourCost)*rate/100);
+ const totalCost=r2(materialCost+labourCost+overheadCost);
+ const unitCost=r2(totalCost/Math.max(1,o.qty));
+ const lines=[
+  {account:'1220',debit:totalCost,branch:o.branch,memo:o.product},
+  {account:'1210',credit:materialCost,branch:o.branch,memo:o.product},
+  {account:'2210',credit:labourCost,branch:o.branch,memo:'Labour: '+o.product},
+  {account:'6210',credit:overheadCost,branch:o.branch,memo:'Overhead @ '+rate+'%'}
+ ].filter(l=>Number(l.debit||0)>0||Number(l.credit||0)>0);
+ if(totalCost>0.005){
+  postJournal({date:today(),memo:'FG completed: '+o.product+' x'+o.qty,refType:'COMPLETE',refId:o.id,lines});
+ }
+ o.materialCost=materialCost;o.labourCost=labourCost;o.overheadCost=overheadCost;
+ o.totalCost=totalCost;o.unitCost=unitCost;
+}
+function settleSale(id,method){
+ const s=db.sales.find(x=>x.id===id);if(!s)return;
+ const sub=r2(s.qty*s.price),vat=r2(sub*Number(s.vat||0)/100),total=r2(sub+vat);
+ const paid=Number(s.paidAmount||0),remaining=r2(total-paid);
+ if(remaining<=0.01)return alert('Already fully settled.');
+ const input=prompt('Receipt amount (remaining '+money(remaining)+'):',String(remaining));
+ if(input===null)return;
+ const amt=r2(input);
+ if(!(amt>0))return alert('Amount must be positive.');
+ if(amt>remaining+0.01)return alert('Amount exceeds remaining '+money(remaining)+'.');
+ try{postJournal({date:today(),memo:'Receipt from '+s.customer,refType:'RECEIPT',refId:s.id,lines:[
+  {account:method==='Bank'?'1010':'1000',debit:amt,branch:s.branch},
+  {account:'1100',credit:amt,branch:s.branch,memo:s.customer}
+ ]});}catch(err){return alert('Accounting error: '+err.message);}
+ s.paidAmount=r2(paid+amt);s.settled=s.paidAmount>=total-0.01;
+ if(s.settled){s.settledDate=today();s.settleMethod=method;}
+ audit('SALE_SETTLE','#'+id+' '+money(amt)+' '+method);save();refresh();
+}
+function settlePurchase(id,method){
+ const p=db.purchases.find(x=>x.id===id);if(!p)return;
+ const gross=r2(p.qty*p.price),vat=r2(gross*Number(p.vat||0)/100),total=r2(gross+vat);
+ const paid=Number(p.paidAmount||0),remaining=r2(total-paid);
+ if(remaining<=0.01)return alert('Already fully settled.');
+ const input=prompt('Payment amount (remaining '+money(remaining)+'):',String(remaining));
+ if(input===null)return;
+ const amt=r2(input);
+ if(!(amt>0))return alert('Amount must be positive.');
+ if(amt>remaining+0.01)return alert('Amount exceeds remaining '+money(remaining)+'.');
+ try{postJournal({date:today(),memo:'Payment to '+p.supplier,refType:'PAYMENT',refId:p.id,lines:[
+  {account:'2000',debit:amt,memo:p.supplier},
+  {account:method==='Bank'?'1010':'1000',credit:amt}
+ ]});}catch(err){return alert('Accounting error: '+err.message);}
+ p.paidAmount=r2(paid+amt);p.settled=p.paidAmount>=total-0.01;
+ if(p.settled){p.settledDate=today();p.settleMethod=method;}
+ audit('PURCH_SETTLE','#'+id+' '+money(amt)+' '+method);save();refresh();
+}
+function settleExpense(id,method){
+ const e=db.expenses.find(x=>x.id===id);if(!e)return;
+ const total=Number(e.amount||0);
+ const paid=Number(e.paidAmount||0),remaining=r2(total-paid);
+ if(remaining<=0.01)return alert('Already fully settled.');
+ const input=prompt('Payment amount (remaining '+money(remaining)+'):',String(remaining));
+ if(input===null)return;
+ const amt=r2(input);
+ if(!(amt>0))return alert('Amount must be positive.');
+ if(amt>remaining+0.01)return alert('Amount exceeds remaining '+money(remaining)+'.');
+ try{postJournal({date:today(),memo:'Payment: '+e.type,refType:'EXPPAY',refId:e.id,lines:[
+  {account:'2000',debit:amt},
+  {account:method==='Bank'?'1010':'1000',credit:amt}
+ ]});}catch(err){return alert('Accounting error: '+err.message);}
+ e.paidAmount=r2(paid+amt);e.settled=e.paidAmount>=total-0.01;
+ if(e.settled){e.settledDate=today();e.settleMethod=method;}
+ audit('EXP_SETTLE','#'+id+' '+money(amt)+' '+method);save();refresh();
+}
+function saveFixedAsset(e){
+ e.preventDefault();
+ if(!admin())return alert('Only Head Office can manage fixed assets.');
+ const name=$('faName').value.trim(),category=$('faCategory').value;
+ const cost=r2($('faCost').value),purchaseDate=$('faDate').value||today();
+ const lifeMonths=Number($('faLife').value),salvage=r2($('faSalvage').value||0);
+ const branchId=Number($('faBranch').value),payMethod=$('faPay').value;
+ if(!name)return alert('Name is required.');
+ if(cost<=0)return alert('Cost must be positive.');
+ if(lifeMonths<=0)return alert('Useful life must be positive.');
+ if(salvage>cost)return alert('Salvage cannot exceed cost.');
+ const fa={id:uid(),name,category,cost,purchaseDate,lifeMonths,salvage,branch:branchId,accumulated:0,depMonths:[],disposed:false};
+ const lines=[{account:'1500',debit:cost,memo:name}];
+ if(payMethod==='Cash')lines.push({account:'1000',credit:cost});
+ else if(payMethod==='Bank')lines.push({account:'1010',credit:cost});
+ else lines.push({account:'2000',credit:cost,memo:'Supplier'});
+ try{fa.jeId=postJournal({date:purchaseDate,memo:'Fixed asset: '+name,refType:'FA_ADD',refId:fa.id,lines});}
+ catch(err){return alert('Accounting error: '+err.message);}
+ db.fixedAssets.push(fa);audit('FA_ADD',name+' '+money(cost));
+ save();e.target.reset();$('faDate').value=today();refresh();
+}
+function renderFixedAssets(){
+ if(!$('faTable'))return;
+ if($('faDate')&&!$('faDate').value)$('faDate').value=today();
+ const arr=admin()?db.fixedAssets:db.fixedAssets.filter(f=>Number(f.branch)===Number(session.branchId));
+ $('faTable').innerHTML=arr.length?arr.map(f=>{
+  const monthly=r2((f.cost-f.salvage)/f.lifeMonths),nbv=r2(f.cost-(f.accumulated||0));
+  const status=f.disposed?'<span class="badge br">Disposed</span>':'<span class="badge bg">Active</span>';
+  const actions=f.disposed?(admin()?'<button class="danger" onclick="deleteFixedAsset('+f.id+')">Delete</button>':'—'):
+   ((admin()?'<button class="info" onclick="disposeFixedAsset('+f.id+')">Dispose</button>':'')+(admin()?'<button class="danger" onclick="deleteFixedAsset('+f.id+')">Delete</button>':''));
+  return '<tr><td>'+esc(f.name)+'</td><td>'+esc(f.category)+'</td><td>'+esc(branchName(f.branch))+'</td><td>'+money(f.cost)+'</td><td>'+money(monthly)+'</td><td>'+money(f.accumulated||0)+'</td><td>'+money(nbv)+'</td><td>'+status+'</td><td class="actions">'+actions+'</td></tr>';
+ }).join(''):'<tr><td colspan="9" class="empty">No fixed assets</td></tr>';
+}
+function runDepreciation(){
+ if(!admin())return alert('Only Head Office.');
+ const period=$('depPeriod').value;
+ if(!/^\d{4}-\d{2}$/.test(period))return alert('Pick a month (YYYY-MM).');
+ const [yy,mm]=period.split('-').map(Number);
+ const lastDay=new Date(yy,mm,0).getDate();
+ const runDate=period+'-'+String(lastDay).padStart(2,'0');
+ let count=0,total=0,skipped=0;
+ db.fixedAssets.forEach(fa=>{
+  if(fa.disposed)return;
+  if(fa.purchaseDate>runDate)return;
+  if((fa.depMonths||[]).includes(period))return;
+  const monthly=r2((fa.cost-fa.salvage)/fa.lifeMonths);
+  if(monthly<=0)return;
+  const maxAccum=r2(fa.cost-fa.salvage),remaining=r2(maxAccum-(fa.accumulated||0));
+  if(remaining<=0.01)return;
+  const amt=Math.min(monthly,remaining);
+  try{postJournal({date:runDate,memo:'Depreciation '+period+': '+fa.name,refType:'DEP',refId:fa.id,lines:[
+   {account:'6100',debit:amt,branch:fa.branch,memo:fa.name},
+   {account:'1505',credit:amt,memo:fa.name}
+  ]});}catch(err){skipped++;return;}
+  fa.accumulated=r2((fa.accumulated||0)+amt);fa.depMonths=fa.depMonths||[];fa.depMonths.push(period);fa.lastDepDate=runDate;
+  count++;total=r2(total+amt);
+ });
+ if(count===0&&skipped===0)return alert('Nothing to depreciate for '+period+'.');
+ audit('DEP_RUN',period+' '+count+' assets '+money(total)+(skipped?' ('+skipped+' blocked)':''));
+ save();refresh();
+ alert('Depreciation posted for '+count+' asset(s), total '+money(total)+'.'+(skipped?'\n\n'+skipped+' asset(s) blocked (locked period).':''));
+}
+function disposeFixedAsset(id){
+ if(!admin())return alert('Only Head Office.');
+ const fa=db.fixedAssets.find(x=>x.id===id);
+ if(!fa||fa.disposed)return;
+ const input=prompt('Disposal proceeds (enter 0 if scrapped):','0');
+ if(input===null)return;
+ const amt=r2(input),cost=Number(fa.cost),accum=Number(fa.accumulated||0);
+ const nbv=r2(cost-accum),gain=r2(amt-nbv);
+ const lines=[{account:'1505',debit:accum,memo:'Clear accumulated depreciation'},{account:'1500',credit:cost,memo:fa.name}];
+ if(amt>0)lines.push({account:'1000',debit:amt,memo:'Proceeds'});
+ if(gain>0)lines.push({account:'4000',credit:gain,memo:'Gain on disposal'});
+ else if(gain<0)lines.push({account:'6090',debit:-gain,memo:'Loss on disposal'});
+ try{postJournal({date:today(),memo:'Disposal: '+fa.name,refType:'FA_DISPOSE',refId:fa.id,lines});}
+ catch(err){return alert('Accounting error: '+err.message);}
+ fa.disposed=true;fa.disposalDate=today();fa.disposalProceeds=amt;fa.disposalGain=gain;
+ audit('FA_DISPOSE',fa.name+' proceeds '+money(amt)+' gain '+money(gain));
+ save();refresh();
+}
+function deleteFixedAsset(id){
+ if(!admin())return alert('Only Head Office.');
+ const fa=db.fixedAssets.find(x=>x.id===id);if(!fa)return;
+ if((fa.accumulated||0)>0.01)return alert('Cannot delete: depreciation has been posted.');
+ if(!confirm('Delete this asset? The purchase journal will be voided.'))return;
+ if(voidByRef('FA_ADD',id,'Asset deleted')>0)return alert('Cannot delete: journal is in a locked period.');
+ db.fixedAssets=db.fixedAssets.filter(x=>x.id!==id);
+ audit('FA_DEL',fa.name);save();refresh();
+}
+function saveSettings(e){
+ e.preventDefault();
+ if(!admin())return alert('Only Head Office.');
+ const rate=Number($('setOverheadRate').value||0);
+ if(rate<0||rate>200)return alert('Overhead rate must be between 0 and 200.');
+ const lock=$('setLockDate').value||'';
+ if(lock&&db.settings.lockedThrough&&lock<db.settings.lockedThrough){
+  if(!confirm('Unlocking previously locked period ('+db.settings.lockedThrough+' → '+lock+'). Continue?'))return;
+ }
+ db.settings.overheadRate=rate;db.settings.lockedThrough=lock;
+ audit('SETTINGS','rate='+rate+'% lock='+(lock||'none'));
+ save();refresh();alert('Settings saved.');
+}
+function renderSettings(){
+ if(!$('setOverheadRate'))return;
+ if(document.activeElement!==$('setOverheadRate'))$('setOverheadRate').value=(db.settings&&db.settings.overheadRate)||0;
+ if(document.activeElement!==$('setLockDate'))$('setLockDate').value=(db.settings&&db.settings.lockedThrough)||'';
+}
+
+/* ================= PASSWORD ================= */
+async function hashPassword(p,saltTag){
+ const salted=(saltTag||'hd_v10')+'::'+p+'::x';
+ if(window.crypto&&crypto.subtle&&crypto.subtle.digest){
+  try{
+   const buf=new TextEncoder().encode(salted);
+   const h=await crypto.subtle.digest('SHA-256',buf);
+   return 'h1:'+Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){}
+ }
+ let h=2166136261;
+ for(let i=0;i<salted.length;i++){h^=salted.charCodeAt(i);h=Math.imul(h,16777619);}
+ for(let k=0;k<2000;k++){h^=k;h=Math.imul(h,16777619);}
+ return 'h0:'+(h>>>0).toString(16)+Math.abs(h).toString(16);
+}
+async function verifyPassword(p,storedHash){
+ if(!storedHash)return {ok:false,legacy:false};
+ if((await hashPassword(p,'hd_v10'))===storedHash)return {ok:true,legacy:false};
+ if((await hashPassword(p,'hd_v99'))===storedHash)return {ok:true,legacy:true};
+ return {ok:false,legacy:false};
+}
+
+/* ================= AUTH ================= */
+async function login(){
+ const u=$('loginUser').value.trim(),p=$('loginPass').value;
+ if(!u||!p)return alert('Enter username and password');
+ const adm=db.admin||{user:'admin',pass:'admin'};
+ if(u===adm.user){
+  let ok=false;
+  if(adm.passHash){const v=await verifyPassword(p,adm.passHash);ok=v.ok;if(ok&&v.legacy){adm.passHash=await hashPassword(p,'hd_v10');db.admin=adm;save();}}
+  else if(adm.pass){ok=(adm.pass===p);if(ok){adm.passHash=await hashPassword(p,'hd_v10');delete adm.pass;db.admin=adm;save();}}
+  if(ok){session={role:'admin',user:'admin'};openApp();return;}
+  return alert('Wrong username or password');
+ }
+ const b=db.branches.find(x=>x.user===u);
+ if(!b)return alert('Wrong username or password');
+ let ok=false;
+ if(b.passHash){const v=await verifyPassword(p,b.passHash);ok=v.ok;if(ok&&v.legacy){b.passHash=await hashPassword(p,'hd_v10');save();}}
+ else if(b.pass){ok=(b.pass===p);if(ok){b.passHash=await hashPassword(p,'hd_v10');delete b.pass;save();}}
+ if(ok){session={role:'branch',user:u,branchId:b.id};openApp();return;}
+ alert('Wrong username or password');
+}
+function openApp(){
+ $('loginScreen').style.display='none';$('app').style.display='block';
+ $('who').textContent=admin()?'HEAD OFFICE / ADMIN':branchName(session.branchId);
+ buildNav();showPage('dashboard');checkBackupReminder();
+}
+function logout(){session=null;$('app').style.display='none';$('loginScreen').style.display='flex';$('loginPass').value=''}
+function toggleSide(){$('side').classList.toggle('open')}
+function buildNav(){
+ let a=[];
+ if(admin()){
+  a=[['dashboard','📊 Dashboard'],['orders','🧾 Customer Orders'],['production','🏭 Production'],
+   ['inventory','📦 Inventory'],['issue','🚚 Material Issue'],['branchstock','🏢 Branch Stock'],
+   ['bom','🧩 BOM & Labour'],['purchases','🛒 Purchases'],['sales','💰 Sales + VAT'],
+   ['expenses','🧾 Indirect Expenses'],['fixedassets','🏭 Fixed Assets'],
+   ['accounting','📒 Accounting'],['arap','💳 Receivables & Payables'],
+   ['finance','📈 Finance / P&L'],['opening','⚖️ Opening Balance'],
+   ['employees','👷 Employees'],['reports','📋 Reports'],
+   ['settings','⚙️ Settings'],['branches','🔐 Branch Settings'],['backup','💾 Backup / Settings']];
+ }else{
+  a=[['dashboard','📊 Dashboard'],['orders','🧾 Customer Orders'],['production','🏭 Production'],
+   ['branchstock','🏢 My Branch Stock'],['sales','💰 Sales + VAT'],
+   ['expenses','🧾 Branch Expenses'],['employees','👷 Employees'],
+   ['finance','📈 Finance / P&L'],['reports','📋 Reports']];
+ }
+ $('nav').innerHTML=a.map(x=>'<button id="nav_'+x[0]+'" onclick="showPage(\''+x[0]+'\')">'+x[1]+'</button>').join('');
+}
+const BRANCH_ALLOWED=['dashboard','orders','production','branchstock','sales','expenses','employees','finance','reports'];
+function canAccess(id){return admin()?true:BRANCH_ALLOWED.includes(id)}
+function showPage(id){
+ if(!canAccess(id))id='dashboard';
+ document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+ if($(id))$(id).classList.add('active');
+ document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
+ if($('nav_'+id))$('nav_'+id).classList.add('active');
+ let names={dashboard:'Dashboard',orders:'Customer Orders',production:'Production',inventory:'Inventory',issue:'Material Issue',branchstock:'Branch Stock',bom:'BOM & Labour Cost',purchases:'Purchases',sales:'Sales + VAT',expenses:'Indirect Expenses',fixedassets:'Fixed Assets',accounting:'Accounting',arap:'Receivables & Payables',finance:'Finance / P&L',settings:'Accounting Settings',opening:'Opening Balance',employees:'Employees / Labour',reports:'Reports',branches:'Branch Settings',backup:'Backup & Settings'};
+ $('title').textContent=names[id]||id;refresh();
+ if(innerWidth<851)$('side').classList.remove('open');
+}
+function setBranches(id){
+ let el=$(id);if(!el)return;
+ const prev=el.value;
+ let arr=admin()?db.branches:db.branches.filter(b=>b.id===session.branchId);
+ el.innerHTML=arr.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
+ el.disabled=!admin()&&arr.length===1;
+ if(prev&&arr.some(b=>String(b.id)===String(prev)))el.value=prev;
+ else if(arr[0])el.value=arr[0].id;
+}
+function refresh(){
+ if(!session)return;
+ ['oBranch','sBranch','eBranch','empBranch','iBranch','faBranch'].forEach(setBranches);
+ if($('oDate')&&!$('oDate').value)$('oDate').value=today();
+ if($('eDate')&&!$('eDate').value)$('eDate').value=today();
+ if($('empJoin')&&!$('empJoin').value)$('empJoin').value=today();
+ if($('pDate')&&!$('pDate').value)$('pDate').value=today();
+ if($('sDate')&&!$('sDate').value)$('sDate').value=today();
+ fillMaterialSelects();fillOrdersSelect();fillSaleProducts();filterReportOptions();
+ renderDashboard();renderOrders();renderProduction();renderMaterials();renderFG();renderIssues();
+ renderBranchStock();renderBOM();renderPurchases();renderSales();renderExpenses();
+ renderFixedAssets();renderSettings();
+ renderAccounting();renderARAP();renderFinance();renderOpening();renderEmployees();
+ renderBranches();renderSystem();renderAudit();
+}
+function filterReportOptions(){
+ const sel=$('reportType');if(!sel)return;
+ const adminOnly=['trialbalance','balancesheet','fixedassets'];
+ [...sel.options].forEach(o=>{const hide=adminOnly.includes(o.value)&&!admin();o.hidden=hide;o.disabled=hide;});
+ if(sel.selectedOptions[0]&&sel.selectedOptions[0].disabled)sel.value='sales';
+}
+
+/* ================= IMAGE ================= */
+function compressImage(file,maxDim,quality){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=e=>{
+   const img=new Image();
+   img.onload=()=>{
+    let w=img.width,h=img.height;
+    if(w>maxDim||h>maxDim){if(w>=h){h=Math.round(h*maxDim/w);w=maxDim;}else{w=Math.round(w*maxDim/h);h=maxDim;}}
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    try{resolve(c.toDataURL('image/jpeg',quality));}catch(err){resolve(e.target.result);}
+   };
+   img.onerror=()=>reject(new Error('Invalid image file'));
+   img.src=e.target.result;
+  };
+  reader.onerror=()=>reject(new Error('Could not read file'));
+  reader.readAsDataURL(file);
+ });
+}
+
+/* ================= ORDERS ================= */
+async function saveOrder(e){
+ e.preventDefault();
+ let data='';
+ const f=$('oPhoto').files[0];
+ if(f){try{data=await compressImage(f,600,0.7);}catch(err){alert('Image could not be processed. Saving order without photo.');data='';}}
+ if(data&&!/^data:image\//.test(data))data='';
+ const br=admin()?Number($('oBranch').value):session.branchId;
+ const id=uid();
+ db.orders.push({id,customer:$('oCustomer').value.trim(),product:$('oProduct').value.trim(),
+  qty:Number($('oQty').value),price:r2($('oPrice').value||0),branch:br,
+  date:$('oDate').value||today(),notes:$('oNotes').value,photo:data,
+  status:'Order Received',completedQty:0,assembly:false,materialComplete:false});
+ audit('ORDER_ADD','#'+id+' '+$('oProduct').value.trim()+' x'+$('oQty').value);
+ save();e.target.reset();$('oDate').value=today();refresh();alert('Customer order saved');
+}
+function renderOrders(){
+ let a=filtered(db.orders);
+ const q=($('orderSearch')&&$('orderSearch').value||'').trim().toLowerCase();
+ if(q)a=a.filter(o=>(o.customer+' '+o.product+' '+branchName(o.branch)).toLowerCase().includes(q));
+ $('ordersTable').innerHTML=a.length?a.map(o=>{
+  const send=admin()&&o.status==='Order Received'?'<button class="info" onclick="sendOrder('+o.id+')">Send to Branch</button>':'';
+  const del=admin()||o.branch===session.branchId?'<button class="danger" onclick="deleteOrder('+o.id+')">Delete</button>':'';
+  return '<tr><td>'+(o.photo?'<img class="photo" src="'+o.photo+'">':'—')+'</td><td>'+esc(o.customer)+'</td><td>'+esc(o.product)+'</td><td>'+o.qty+'</td><td>'+esc(branchName(o.branch))+'</td><td>'+statusBadge(o.status)+'</td><td>'+doneQty(o)+' / '+o.qty+'</td><td class="actions">'+send+del+'</td></tr>'
+ }).join(''):'<tr><td colspan="8" class="empty">No orders</td></tr>';
+}
+function sendOrder(id){
+ if(!admin())return;
+ const o=db.orders.find(x=>x.id===id);if(!o)return;
+ if(o.status!=='Order Received')return alert('Only a new Order Received order can be sent.');
+ if(!o.branch)return alert('Assign a branch before sending the order.');
+ o.status='Sent to Branch';o.completedQty=0;o.assembly=false;o.materialComplete=false;o.fgReturned=false;
+ audit('ORDER_SEND','#'+id+' → '+branchName(o.branch));save();refresh();
+ alert('Order sent to '+branchName(o.branch)+'.');
+}
+function deleteOrder(id){
+ const o=db.orders.find(x=>x.id===id);if(!o)return;
+ if(!admin()&&o.branch!==session.branchId)return alert('Not allowed');
+ if(o.fgReturned){
+  const f=db.fg.find(x=>x.product.toLowerCase()===o.product.toLowerCase());
+  const remaining=f?Number(f.qty):0;
+  if(remaining+0.000001<Number(o.qty))return alert('Cannot delete this order: FG already sold.');
+ }
+ if(!confirm('Delete this order? Related issues will be reversed and journals voided.'))return;
+ const issueIds=db.issues.filter(i=>i.orderId===id).map(i=>i.id);
+ for(const iid of issueIds){if(voidByRef('ISSUE',iid,'Order deleted')>0)return alert('Cannot delete: journal in locked period.');}
+ if(o.status==='Completed'||o.fgReturned){if(voidByRef('COMPLETE',id,'Order deleted')>0)return alert('Cannot delete: completion journal in locked period.');}
+ db.issues.filter(i=>i.orderId===id).forEach(i=>{
+  const m=db.materials.find(x=>x.id===i.materialId);if(m)m.qty=r2(m.qty+i.qty);
+  const bs=db.branchStock.find(x=>x.branch===i.branch&&x.materialId===i.materialId);
+  if(bs){bs.qty=r2(bs.qty-i.qty);if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);}
+ });
+ db.issues=db.issues.filter(i=>i.orderId!==id);
+ if(o.fgReturned){
+  const f=db.fg.find(x=>x.product.toLowerCase()===o.product.toLowerCase());
+  if(f){f.qty=r2(f.qty-Number(o.qty));if(f.qty<=0.000001)db.fg=db.fg.filter(x=>x!==f);}
+ }
+ db.orders=db.orders.filter(x=>x.id!==id);
+ audit('ORDER_DEL','#'+id+' '+o.product);save();refresh();
+}
+
+/* ================= PRODUCTION ================= */
+function getOrderBOMRequirement(o){
+ const bom=db.boms.filter(b=>b.product.toLowerCase()===o.product.toLowerCase());
+ const req={};bom.forEach(b=>req[b.materialId]=(req[b.materialId]||0)+b.qty*o.qty);
+ return {bom,req};
+}
+function orderMaterialReady(o){
+ const x=getOrderBOMRequirement(o);
+ if(!x.bom.length)return {ok:false,reason:'No BOM'};
+ for(let mid in x.req){
+  const issued=db.issues.filter(i=>i.orderId===o.id&&i.materialId===Number(mid)).reduce((s,i)=>s+i.qty,0);
+  if(issued+0.000001<x.req[mid])return {ok:false,reason:'Material incomplete'};
+ }
+ return {ok:true,reason:'Ready'};
+}
+function renderProduction(){
+ const a=filtered(db.orders).filter(o=>o.status!=='Order Received');
+ $('prodTable').innerHTML=a.length?a.map(o=>{
+  const ready=orderMaterialReady(o);let actions='';
+  const state=o.status||'Order Received',done=doneQty(o),pct=orderPct(o);
+  if(session&&session.role==='branch'&&o.branch===session.branchId){
+   if(state==='Sent to Branch'||state==='In Production'){
+    actions+='<button class="secondary" onclick="updateCompleted('+o.id+')">Enter Pieces Done</button>';
+    if(orderDone(o))actions+='<button class="success" onclick="assemblyComplete('+o.id+')">Assembly Complete</button>';
+   }else if(state==='Assembly Complete'){actions+='<span class="badge bb">Waiting for FG Receipt</span>';}
+   else if(state==='Completed'){actions+='<span class="badge bg">Completed</span>';}
+  }
+  if(session&&session.role==='admin'&&state==='Assembly Complete'){actions+='<button class="info" onclick="returnFG('+o.id+')">Receive FG</button>';}
+  const issued=db.issues.filter(i=>i.orderId===o.id).reduce((s,i)=>s+i.qty,0);
+  const reqTotal=Object.values(getOrderBOMRequirement(o).req).reduce((s,x)=>s+x,0);
+  return '<tr><td>#'+o.id+'</td><td>'+esc(o.product)+'</td><td>'+esc(branchName(o.branch))+'</td><td>'+o.qty+'</td>'+
+   '<td style="min-width:170px"><div class="bar"><span style="width:'+pct+'%"></span></div><b>'+done+'</b> / '+o.qty+' pcs ('+pct+'%)</td>'+
+   '<td>'+statusBadge(state)+'</td>'+
+   '<td>'+(reqTotal?issued.toFixed(3)+' / '+reqTotal.toFixed(3)+(ready.ok?' ✓':''):'No BOM')+'</td>'+
+   '<td class="actions">'+actions+'</td></tr>';
+ }).join(''):'<tr><td colspan="8" class="empty">No production orders</td></tr>';
+}
+function updateCompleted(id){
+ const o=db.orders.find(x=>x.id===id);
+ if(!o||session.role!=='branch'||o.branch!==session.branchId)return alert('Only the assigned branch can update.');
+ if(!['Sent to Branch','In Production'].includes(o.status))return alert('Not currently in production.');
+ const done=doneQty(o);
+ const input=prompt('How many pieces completed?\n\nTotal: '+o.qty+' pcs\nAlready: '+done+' pcs\n\nEnter pieces:',String(done));
+ if(input===null)return;
+ const n=Number(input);
+ if(!Number.isFinite(n)||n<0)return alert('Enter a valid number.');
+ if(!Number.isInteger(n))return alert('Whole numbers only.');
+ if(n>Number(o.qty))return alert('Cannot exceed order quantity ('+o.qty+' pcs).');
+ o.completedQty=n;o.status=n>0?'In Production':'Sent to Branch';
+ audit('PROD_UPDATE','#'+id+' → '+n+'/'+o.qty+' pcs');save();refresh();
+ alert(n===Number(o.qty)?'All '+o.qty+' pieces complete. Click Assembly Complete.':'Saved: '+n+' of '+o.qty+' pieces.');
+}
+function assemblyComplete(id){
+ const o=db.orders.find(x=>x.id===id);
+ if(!o||session.role!=='branch'||o.branch!==session.branchId)return alert('Only the assigned branch.');
+ if(o.status!=='In Production')return alert('Order must be In Production.');
+ if(!orderDone(o))return alert('Only '+doneQty(o)+' of '+o.qty+' pieces complete.');
+ const ready=orderMaterialReady(o);
+ if(!ready.ok){
+  if(ready.reason==='No BOM')return alert('No BOM found. Ask Head Office.');
+  return alert('Material not fully issued.');
+ }
+ o.assembly=true;o.materialComplete=true;o.status='Assembly Complete';
+ audit('ASSY_DONE','#'+id+' ('+doneQty(o)+'/'+o.qty+' pcs)');save();refresh();
+ alert('Assembly complete. Head Office must receive the Finished Goods.');
+}
+function returnFG(id){
+ if(session.role!=='admin')return alert('Only Head Office.');
+ const o=db.orders.find(x=>x.id===id);if(!o)return;
+ if(o.status!=='Assembly Complete')return alert('FG only after Assembly Complete.');
+ if(!orderDone(o))return alert('All pieces must be completed first.');
+ if(!o.assembly)return alert('Assembly is not complete.');
+ const ready=orderMaterialReady(o);
+ if(!ready.ok)return alert('Material completion required.');
+ try{postCompletionJE(o);}catch(err){return alert('Accounting error: '+err.message);}
+ const f=db.fg.find(x=>x.product.toLowerCase()===o.product.toLowerCase());
+ const qty=Number(o.qty);
+ if(f){
+  const oldQty=Number(f.qty),oldCost=Number(f.unitCost||0),newQty=oldQty+qty;
+  const newCost=newQty>0?r2((oldQty*oldCost+qty*Number(o.unitCost||0))/newQty):0;
+  f.qty=newQty;f.unitCost=newCost;
+ }else{db.fg.push({product:o.product,qty:qty,unitCost:Number(o.unitCost||0)});}
+ o.status='Completed';o.fgReturned=true;
+ audit('FG_RECEIVE','#'+id+' '+o.product+' +'+o.qty+' pcs @ cost '+money(o.unitCost));
+ save();refresh();
+ alert('FG received: '+o.qty+' pcs at cost '+money(o.unitCost)+' per unit.');
+}
+
+/* ================= MATERIALS ================= */
+function recomputeMaterialPrice(mid){
+ const m=db.materials.find(x=>x.id===mid);if(!m)return;
+ const layers=[];(m.openingLayers||[]).forEach(l=>layers.push(l));
+ db.purchases.filter(p=>p.materialId===mid).forEach(p=>layers.push({qty:p.qty,price:p.price}));
+ const qty=layers.reduce((s,l)=>s+Number(l.qty||0),0);
+ const val=layers.reduce((s,l)=>s+Number(l.qty||0)*Number(l.price||0),0);
+ m.price=qty>0?val/qty:Number(m.price)||0;
+}
+function saveMaterial(e){
+ e.preventDefault();
+ if(!admin())return alert('Only Head Office.');
+ const name=$('mName').value.trim(),unit=$('mUnit').value,q=Number($('mQty').value),price=r2($('mPrice').value||0);
+ if(q<0)return alert('Quantity cannot be negative');
+ if(!name)return alert('Material name required');
+ const m=db.materials.find(x=>x.name.toLowerCase()===name.toLowerCase()&&x.unit===unit);
+ if(m){
+  m.qty=r2(m.qty+q);m.openingLayers=m.openingLayers||[];m.openingLayers.push({qty:q,price});
+  recomputeMaterialPrice(m.id);
+ }else{
+  const id=uid();
+  db.materials.push({id,name,unit,qty:q,price,openingLayers:[{qty:q,price}]});
+  recomputeMaterialPrice(id);
+ }
+ audit('MAT_ADD',name+' +'+q+' '+unit+' @ '+price);
+ save();e.target.reset();refresh();alert('Material stock saved');
+}
+function renderMaterials(){
+ $('matTable').innerHTML=db.materials.length?db.materials.map(m=>'<tr><td>'+esc(m.name)+'</td><td>'+m.unit+'</td><td>'+m.qty+'</td><td>'+money(m.price)+'</td><td>'+money(m.qty*m.price)+'</td><td><button class="danger" onclick="deleteMaterial('+m.id+')">Delete</button></td></tr>').join(''):'<tr><td colspan="6" class="empty">No raw materials</td></tr>';
+}
+function deleteMaterial(id){
+ if(!admin())return alert('Only Head Office.');
+ if(db.issues.some(i=>i.materialId===id)||db.boms.some(b=>b.materialId===id))return alert('Material used in BOM/issue history. Delete is blocked.');
+ const m=db.materials.find(x=>x.id===id);
+ if(confirm('Delete material?')){db.materials=db.materials.filter(x=>x.id!==id);audit('MAT_DEL',m?m.name:'');save();refresh();}
+}
+function renderFG(){
+ if(!db.fg.length){$('fgStock').innerHTML='<div class="empty">No finished goods in stock</div>';return;}
+ let total=0;
+ $('fgStock').innerHTML=db.fg.map(f=>{
+  const val=r2(f.qty*(f.unitCost||0));total=r2(total+val);
+  return '<div class="statline"><span>'+esc(f.product)+'<div class="muted">'+f.qty+' pcs @ '+money(f.unitCost||0)+'</div></span><b>'+money(val)+'</b></div>';
+ }).join('')+'<div class="statline"><span><b>Total FG value</b></span><b>'+money(total)+'</b></div>';
+}
+function fillMaterialSelects(){
+ ['bMaterial','pMaterial','iMaterial'].forEach(id=>{
+  if($(id))$(id).innerHTML=db.materials.map(m=>'<option value="'+m.id+'">'+esc(m.name)+' ('+m.unit+')</option>').join('')||'<option value="">No material available</option>';
+ });
+}
+function fillOrdersSelect(){
+ const a=filtered(db.orders).filter(o=>o.status!=='Completed'&&o.status!=='Order Received');
+ $('iOrder').innerHTML=a.map(o=>'<option value="'+o.id+'">#'+o.id+' — '+esc(o.product)+' — '+esc(branchName(o.branch))+'</option>').join('')||'<option value="">No eligible order</option>';
+ syncIssueBranch();
+}
+function syncIssueBranch(){
+ const o=db.orders.find(x=>x.id===Number($('iOrder').value));
+ if(o)$('iBranch').value=o.branch;
+}
+$('iOrder').addEventListener('change',syncIssueBranch);
+
+function fillSaleProducts(){
+ const el=$('sProduct');if(!el)return;
+ const prev=el.value;
+ const items=db.fg.filter(f=>Number(f.qty)>0.000001);
+ el.innerHTML=items.length?items.map(f=>'<option value="'+esc(f.product)+'">'+esc(f.product)+'</option>').join(''):'<option value="">No finished goods in stock</option>';
+ if(prev&&items.some(f=>f.product===prev))el.value=prev;
+ syncSaleStock();
+}
+function syncSaleStock(){
+ const el=$('sProduct'),hint=$('sStockHint'),qty=$('sQty');
+ if(!el||!hint)return;
+ const f=db.fg.find(x=>x.product===el.value);
+ const avail=f?Number(f.qty):0;
+ hint.textContent=f?('Available: '+avail+' pcs @ cost '+money(f.unitCost||0)):'Nothing available to sell';
+ if(qty)qty.max=avail>0?String(avail):'';
+}
+function issueMaterial(e){
+ e.preventDefault();
+ if(!admin())return alert('Only Head Office/Admin can issue material.');
+ const o=db.orders.find(x=>x.id===Number($('iOrder').value)),m=db.materials.find(x=>x.id===Number($('iMaterial').value)),q=Number($('iQty').value);
+ if(!o||!m)return alert('Select an order and material.');
+ if(!['Sent to Branch','In Production'].includes(o.status))return alert('Material can only be issued after the order is sent to a branch.');
+ if(q<=0)return alert('Quantity must be positive.');
+ if(m.qty<q)return alert('Head Office stock is insufficient.');
+ const bom=db.boms.find(b=>b.product.toLowerCase()===o.product.toLowerCase()&&b.materialId===m.id);
+ if(!bom)return alert('No BOM found for this product/material.');
+ const already=db.issues.filter(i=>i.orderId===o.id&&i.materialId===m.id).reduce((s,i)=>s+i.qty,0),need=bom.qty*o.qty;
+ if(already+q>need+0.000001)return alert('Issue exceeds BOM. Required: '+need+' '+m.unit+'. Already issued: '+already+'.');
+ const issue={id:uid(),date:today(),orderId:o.id,materialId:m.id,qty:q,branch:o.branch,user:session.user,cost:m.price};
+ try{postIssueJE(issue,m);}catch(err){return alert('Accounting error: '+err.message);}
+ m.qty=r2(m.qty-q);db.issues.push(issue);
+ const bs=db.branchStock.find(x=>x.branch===o.branch&&x.materialId===m.id);
+ if(bs)bs.qty=r2(bs.qty+q);else db.branchStock.push({branch:o.branch,materialId:m.id,qty:q});
+ audit('ISSUE_ADD','#'+o.id+' '+m.name+' '+q+' → '+branchName(o.branch));
+ save();e.target.reset();refresh();alert('Material issued.');
+}
+function renderIssues(){
+ const a=filtered(db.issues);
+ $('issueTable').innerHTML=a.length?a.map(i=>{
+  const o=db.orders.find(x=>x.id===i.orderId),m=db.materials.find(x=>x.id===i.materialId);
+  const del=admin()?'<button class="danger" onclick="deleteIssue('+i.id+')">Delete</button>':'';
+  return '<tr><td>'+i.date+'</td><td>#'+i.orderId+' '+(o?esc(o.product):'')+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+i.qty+'</td><td>'+esc(branchName(i.branch))+'</td><td>'+esc(i.user)+'</td><td>'+del+'</td></tr>';
+ }).join(''):'<tr><td colspan="7" class="empty">No material issue history</td></tr>';
+}
+function deleteIssue(id){
+ if(!admin())return alert('Only Head Office.');
+ const i=db.issues.find(x=>x.id===id);if(!i)return;
+ const ord=db.orders.find(o=>o.id===i.orderId);
+ if(ord&&(ord.status==='Completed'||ord.status==='Assembly Complete'))return alert('Cannot delete: order is already '+ord.status+'.');
+ if(!confirm('Delete issue and return stock? Journal will be voided.'))return;
+ if(voidByRef('ISSUE',id,'Issue deleted')>0)return alert('Cannot delete: journal in locked period.');
+ const m=db.materials.find(x=>x.id===i.materialId);if(m)m.qty=r2(m.qty+i.qty);
+ const bs=db.branchStock.find(x=>x.branch===i.branch&&x.materialId===i.materialId);
+ if(bs){bs.qty=r2(bs.qty-i.qty);if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);}
+ db.issues=db.issues.filter(x=>x.id!==id);
+ audit('ISSUE_DEL','#'+i.orderId+' '+i.qty);save();refresh();
+}
+function renderBranchStock(){
+ const a=filtered(db.branchStock);
+ $('branchStock').innerHTML=a.length?'<div class="tablewrap"><table><thead><tr><th>Branch</th><th>Material</th><th>Qty</th><th>Unit</th><th>Value</th></tr></thead><tbody>'+
+  a.map(x=>{const m=db.materials.find(y=>y.id===x.materialId);return '<tr><td>'+esc(branchName(x.branch))+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+x.qty+'</td><td>'+(m?m.unit:'')+'</td><td>'+(m?money(x.qty*m.price):'0.00')+'</td></tr>';}).join('')+
+  '</tbody></table></div>':'<div class="empty">No branch stock yet.</div>';
+}
+
+/* ================= BOM ================= */
+function saveBOM(e){
+ e.preventDefault();if(!admin())return alert('Only Head Office.');
+ const p=$('bProduct').value.trim(),mid=Number($('bMaterial').value),q=Number($('bQty').value),lab=r2($('bLabour').value||0);
+ if(!p||!mid||q<=0)return alert('Enter valid BOM details.');
+ const b=db.boms.find(x=>x.product.toLowerCase()===p.toLowerCase()&&x.materialId===mid);
+ if(b){b.qty=q;b.labour=lab;}else db.boms.push({id:uid(),product:p,materialId:mid,qty:q,labour:lab});
+ audit('BOM_ADD',p+' / material '+mid+' @ '+q);
+ save();e.target.reset();refresh();alert('BOM saved');
+}
+function renderBOM(){
+ $('bomTable').innerHTML=db.boms.length?db.boms.map(b=>{
+  const m=db.materials.find(x=>x.id===b.materialId),mc=m?r2(m.price*b.qty):0,total=r2(mc+b.labour);
+  return '<tr><td>'+esc(b.product)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+b.qty+'</td><td>'+money(mc)+'</td><td>'+money(b.labour)+'</td><td>'+money(total)+'</td><td><button class="danger" onclick="deleteBOM('+b.id+')">Delete</button></td></tr>';
+ }).join(''):'<tr><td colspan="7" class="empty">No BOM</td></tr>';
+}
+function deleteBOM(id){if(!admin())return alert('Only Head Office.');if(confirm('Delete BOM?')){db.boms=db.boms.filter(x=>x.id!==id);audit('BOM_DEL','id '+id);save();refresh();}}
+
+/* ================= PURCHASES ================= */
+function savePurchase(e){
+ e.preventDefault();if(!admin())return alert('Only Head Office.');
+ const supplier=$('pSupplier').value.trim(),mid=Number($('pMaterial').value),q=Number($('pQty').value),price=r2($('pPrice').value);
+ const vat=Number($('pVat').value||0);
+ const m=db.materials.find(x=>x.id===mid);if(!m)return alert('Add material master first.');
+ if(q<=0)return alert('Quantity must be positive.');
+ const p={id:uid(),date:$('pDate').value||today(),supplier,materialId:mid,qty:q,price,vat,payMethod:$('pPay').value,paidAmount:0};
+ try{postPurchaseJE(p);}catch(err){return alert('Accounting error: '+err.message);}
+ m.qty=r2(m.qty+q);db.purchases.push(p);recomputeMaterialPrice(mid);
+ audit('PURCH_ADD',supplier+' '+m.name+' '+q+' @ '+price+(vat?' +VAT '+vat+'%':''));
+ save();e.target.reset();$('pDate').value=today();refresh();alert('Purchase saved.');
+}
+function renderPurchases(){
+ $('purchaseTable').innerHTML=db.purchases.length?db.purchases.map(p=>{
+  const m=db.materials.find(x=>x.id===p.materialId);
+  const gross=r2(p.qty*p.price),vat=r2(gross*Number(p.vat||0)/100),total=r2(gross+vat);
+  const settle=!p.settled?'<button class="info" onclick="settlePurchase('+p.id+',\'Cash\')">Cash</button><button class="info" onclick="settlePurchase('+p.id+',\'Bank\')">Bank</button>':'';
+  return '<tr><td>'+p.date+'</td><td>'+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+p.qty+'</td><td>'+money(p.price)+'</td><td>'+money(vat)+'</td><td>'+money(total)+'</td><td>'+paidBadge(p,total,p.settleMethod||p.payMethod)+'</td><td class="actions">'+settle+'<button class="danger" onclick="deletePurchase('+p.id+')">Delete</button></td></tr>';
+ }).join(''):'<tr><td colspan="9" class="empty">No purchases</td></tr>';
+}
+function deletePurchase(id){
+ if(!admin())return alert('Only Head Office.');
+ const p=db.purchases.find(x=>x.id===id);if(!p)return;
+ if(!confirm('Delete purchase? Stock reduced, journals voided.'))return;
+ const m=db.materials.find(x=>x.id===p.materialId);
+ if(m&&m.qty+0.000001<p.qty)return alert('Cannot delete: only '+m.qty+' '+m.unit+' remaining, purchase added '+p.qty+'.');
+ if(voidByRef('PURCHASE',id,'Purchase deleted')>0)return alert('Cannot delete: journal in locked period.');
+ if(voidByRef('PAYMENT',id,'Purchase deleted')>0)return alert('Cannot delete: settlement journal in locked period.');
+ if(m)m.qty=r2(m.qty-p.qty);
+ db.purchases=db.purchases.filter(x=>x.id!==id);recomputeMaterialPrice(p.materialId);
+ audit('PURCH_DEL','id '+id);save();refresh();
+}
+
+/* ================= SALES ================= */
+function saveSale(e){
+ e.preventDefault();
+ const branchId=admin()?Number($('sBranch').value):session.branchId;
+ const q=Number($('sQty').value),price=r2($('sPrice').value),vat=Number($('sVat').value||0);
+ const product=$('sProduct').value.trim(),customer=$('sCustomer').value.trim();
+ if(!product)return alert('No finished goods available.');
+ if(!customer)return alert('Customer name required.');
+ if(!(q>0))return alert('Quantity must be positive.');
+ if(!Number.isInteger(q))return alert('Whole numbers only.');
+ const fg=db.fg.find(f=>f.product.toLowerCase()===product.toLowerCase());
+ const available=fg?Number(fg.qty):0;
+ if(q>available+0.000001)return alert('Not enough stock.\n\n'+product+'\nAvailable: '+available+' pcs\nRequested: '+q+' pcs');
+ const s={id:uid(),date:$('sDate').value||today(),customer,product,qty:q,price,vat,branch:branchId,payMethod:$('sPay').value,paidAmount:0};
+ try{postSaleJE(s,fg.unitCost||0);}catch(err){return alert('Accounting error: '+err.message);}
+ fg.qty=r2(fg.qty-q);db.sales.push(s);
+ audit('SALE_ADD',customer+' '+product+' x'+q+' @ '+price+(vat?' +VAT '+vat+'%':''));
+ save();e.target.reset();$('sDate').value=today();refresh();
+ alert('Sale saved.\n\nCOGS posted: '+money(s.cogs));
+}
+function renderSales(){
+ const a=filtered(db.sales);
+ $('salesTable').innerHTML=a.length?a.map(s=>{
+  const sub=r2(s.qty*s.price),v=r2(sub*Number(s.vat||0)/100),total=r2(sub+v);
+  const settle=!s.settled?'<button class="info" onclick="settleSale('+s.id+',\'Cash\')">Cash</button><button class="info" onclick="settleSale('+s.id+',\'Bank\')">Bank</button>':'';
+  const del=(admin()||s.branch===session.branchId)?'<button class="danger" onclick="deleteSale('+s.id+')">Delete</button>':'';
+  return '<tr><td>'+s.date+'</td><td>'+esc(s.customer)+'</td><td>'+esc(s.product)+'</td><td>'+s.qty+'</td><td>'+money(sub)+'</td><td>'+money(v)+'</td><td>'+money(total)+'</td><td>'+money(s.cogs||0)+'</td><td>'+esc(branchName(s.branch))+'</td><td>'+paidBadge(s,total,s.settleMethod||s.payMethod)+'</td><td class="actions">'+settle+del+'</td></tr>';
+ }).join(''):'<tr><td colspan="11" class="empty">No sales</td></tr>';
+}
+function deleteSale(id){
+ const s=db.sales.find(x=>x.id===id);if(!s)return;
+ if(!admin()&&s.branch!==session.branchId)return alert('Only related branch.');
+ if(!confirm('Delete sale? FG stock restored, journals voided.'))return;
+ if(voidByRef('SALE',id,'Sale deleted')>0)return alert('Cannot delete: journal in locked period.');
+ if(voidByRef('COGS',id,'Sale deleted')>0)return alert('Cannot delete: COGS journal in locked period.');
+ if(voidByRef('RECEIPT',id,'Sale deleted')>0)return alert('Cannot delete: receipt journal in locked period.');
+ const fg=db.fg.find(f=>f.product.toLowerCase()===s.product.toLowerCase());
+ if(fg)fg.qty=r2(fg.qty+s.qty);else db.fg.push({product:s.product,qty:s.qty,unitCost:0});
+ db.sales=db.sales.filter(x=>x.id!==id);
+ audit('SALE_DEL',s.product+' x'+s.qty);save();refresh();
+}
+
+/* ================= EXPENSES ================= */
+function saveExpense(e){
+ e.preventDefault();
+ const br=admin()?Number($('eBranch').value):session.branchId;
+ const exp={id:uid(),date:$('eDate').value||today(),type:$('eType').value,amount:r2($('eAmount').value),branch:br,user:session.user,note:$('eNote').value,payMethod:$('ePay').value,paidAmount:0};
+ try{postExpenseJE(exp);}catch(err){return alert('Accounting error: '+err.message);}
+ db.expenses.push(exp);
+ audit('EXP_ADD',exp.type+' '+exp.amount+' → '+branchName(br));
+ save();e.target.reset();$('eDate').value=today();refresh();alert('Indirect expense saved.');
+}
+function canDeleteExpense(x){return admin()||x.branch===session.branchId;}
+function renderExpenses(){
+ const a=filtered(db.expenses);
+ $('expenseTable').innerHTML=a.length?a.map(x=>{
+  const canDel=canDeleteExpense(x);
+  const settle=(!x.settled&&x.payMethod==='Credit')?'<button class="info" onclick="settleExpense('+x.id+',\'Cash\')">Cash</button><button class="info" onclick="settleExpense('+x.id+',\'Bank\')">Bank</button>':'';
+  return '<tr><td>'+x.date+'</td><td>'+esc(x.type)+'</td><td>'+esc(branchName(x.branch))+'</td><td>'+money(x.amount)+'</td><td>'+esc(x.payMethod||'—')+'</td><td>'+paidBadge(x,x.amount,x.settleMethod)+'</td><td>'+esc(x.user)+'</td><td>'+esc(x.note||'')+'</td><td class="actions">'+settle+(canDel?'<button class="danger" onclick="deleteExpense('+x.id+')">Delete</button>':'<span class="muted">Protected</span>')+'</td></tr>';
+ }).join(''):'<tr><td colspan="9" class="empty">No indirect expenses</td></tr>';
+}
+function deleteExpense(id){
+ const x=db.expenses.find(y=>y.id===id);if(!x)return;
+ if(!canDeleteExpense(x))return alert('You cannot delete this expense.');
+ if(!confirm('Delete expense? Journal will be voided.'))return;
+ if(voidByRef('EXPENSE',id,'Expense deleted')>0)return alert('Cannot delete: journal in locked period.');
+ if(voidByRef('EXPPAY',id,'Expense deleted')>0)return alert('Cannot delete: settlement journal in locked period.');
+ db.expenses=db.expenses.filter(y=>y.id!==id);
+ audit('EXP_DEL',x.type+' '+x.amount);save();refresh();
+}
+
+/* ================= ACCOUNTING VIEWS ================= */
+let acctTab='tb';
+function showAcct(t){acctTab=t;renderAccounting();}
+function renderAccounting(){
+ if(!$('acctOut'))return;
+ const sel=$('acctBranch');
+ if(sel){const prev=sel.value;sel.innerHTML='<option value="">All branches</option>'+db.branches.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');sel.value=prev;}
+ const from=$('acctFrom')?$('acctFrom').value:'',to=$('acctTo')?$('acctTo').value:'',br=$('acctBranch')?$('acctBranch').value:'';
+ const branchArg=br?Number(br):null;
+ ['tabTb','tabBs','tabPl','tabJ'].forEach(id=>{if($(id))$(id).classList.remove('active');});
+ if(acctTab==='tb'){
+  if($('tabTb'))$('tabTb').classList.add('active');
+  const tb=trialBalance(to||today(),branchArg);
+  const rows=tb.rows.filter(r=>Math.abs(r.balance)>0.005);
+  let html='<div class="card"><h3>Trial Balance — as of '+(to||today())+'</h3>';
+  if(branchArg)html+='<p class="muted">Branch filter shown for P&L only; company-wide postings are not branch-tagged, so this view may not self-balance.</p>';
+  html+='<div class="tablewrap"><table><thead><tr><th>Code</th><th>Account</th><th>Type</th><th class="right">Debit</th><th class="right">Credit</th></tr></thead><tbody>';
+  rows.forEach(r=>{html+='<tr><td>'+r.code+'</td><td>'+esc(r.name)+'</td><td>'+r.type+'</td><td class="right">'+(r.balance>0?money(r.balance):'')+'</td><td class="right">'+(r.balance<0?money(-r.balance):'')+'</td></tr>';});
+  html+='<tr class="bs-total"><td colspan="3">Totals</td><td class="right">'+money(tb.totalDr)+'</td><td class="right">'+money(tb.totalCr)+'</td></tr>';
+  html+='</tbody></table></div>';
+  if(Math.abs(tb.diff)>0.05)html+='<p class="red">⚠ Out of balance by '+money(tb.diff)+'.</p>';
+  else html+='<p class="green">✓ Debits equal credits.</p>';
+  html+='</div>';$('acctOut').innerHTML=html;
+ }else if(acctTab==='bs'){
+  if($('tabBs'))$('tabBs').classList.add('active');
+  const bs=balanceSheet(to||today(),branchArg);
+  let html='<div class="card"><h3>Balance Sheet — as of '+(to||today())+'</h3>';
+  if(branchArg)html+='<p class="muted">Branch filter shown for P&L only.</p>';
+  html+='<div class="grid2">';
+  html+='<div><div class="bs-head">ASSETS</div>';
+  bs.asset.filter(a=>Math.abs(a.amount)>0.005).forEach(a=>{html+='<div class="statline"><span>'+a.code+' '+esc(a.name)+'</span><b>'+money(a.amount)+'</b></div>';});
+  html+='<div class="statline bs-total"><span>Total Assets</span><b>'+money(bs.totalAssets)+'</b></div></div>';
+  html+='<div><div class="bs-head">LIABILITIES & EQUITY</div>';
+  bs.liab.filter(a=>Math.abs(a.amount)>0.005).forEach(a=>{html+='<div class="statline"><span>'+a.code+' '+esc(a.name)+'</span><b>'+money(a.amount)+'</b></div>';});
+  html+='<div class="statline"><span>Total Liabilities</span><b>'+money(bs.totalLiab)+'</b></div>';
+  html+='<div class="bs-group">Equity</div>';
+  bs.equity.filter(a=>Math.abs(a.amount)>0.005).forEach(a=>{html+='<div class="statline"><span>'+a.code+' '+esc(a.name)+'</span><b>'+money(a.amount)+'</b></div>';});
+  html+='<div class="statline"><span>Retained Earnings</span><b>'+money(bs.retained)+'</b></div>';
+  html+='<div class="statline bs-total"><span>Total L + E</span><b>'+money(r2(bs.totalLiab+bs.totalEquity))+'</b></div></div>';
+  html+='</div>';
+  if(Math.abs(bs.diff)>0.05)html+='<p class="red" style="margin-top:12px">⚠ Out of balance by '+money(bs.diff)+'.</p>';
+  else html+='<p class="green" style="margin-top:12px">✓ Assets equal L + E.</p>';
+  html+='</div>';$('acctOut').innerHTML=html;
+ }else if(acctTab==='pl'){
+  if($('tabPl'))$('tabPl').classList.add('active');
+  const pl=plReport(from,to||today(),branchArg);
+  let html='<div class="card"><h3>Profit & Loss — '+(from||db.ledgerStartDate)+' to '+(to||today())+'</h3>';
+  html+='<div class="bs-head">INCOME</div>';
+  pl.income.forEach(i=>{html+='<div class="statline"><span>'+i.code+' '+esc(i.name)+'</span><b>'+money(i.amount)+'</b></div>';});
+  html+='<div class="statline"><b>Total Income</b><b>'+money(pl.totalIncome)+'</b></div>';
+  html+='<div class="bs-head">COST OF GOODS SOLD</div>';
+  pl.cogs.forEach(c=>{html+='<div class="statline"><span>'+c.code+' '+esc(c.name)+'</span><b>'+money(c.amount)+'</b></div>';});
+  html+='<div class="statline"><b>Gross Profit</b><b class="'+(pl.grossProfit>=0?'green':'red')+'">'+money(pl.grossProfit)+'</b></div>';
+  html+='<div class="bs-head">OPERATING EXPENSES</div>';
+  pl.opex.filter(e=>Math.abs(e.amount)>0.005).forEach(e=>{html+='<div class="statline"><span>'+e.code+' '+esc(e.name)+'</span><b>'+money(e.amount)+'</b></div>';});
+  html+='<div class="statline"><b>Total Operating Expenses</b><b>'+money(pl.totalOpex)+'</b></div>';
+  html+='<div class="statline bs-total"><span>NET PROFIT</span><b class="'+(pl.netProfit>=0?'green':'red')+'">'+money(pl.netProfit)+'</b></div>';
+  html+='</div>';$('acctOut').innerHTML=html;
+ }else{
+  if($('tabJ'))$('tabJ').classList.add('active');
+  const js=db.journals.slice().reverse().filter(j=>{
+   if(from&&j.date<from)return false;
+   if(to&&j.date>to)return false;
+   if(branchArg&&!j.lines.some(l=>Number(l.branch)===branchArg))return false;
+   return true;
+  }).slice(0,100);
+  let html='<div class="card"><h3>Journal Entries (latest 100)</h3>';
+  if(!js.length)html+='<div class="empty">No journal entries yet</div>';
+  else{
+   html+='<div class="tablewrap"><table><thead><tr><th>Date</th><th>Ref</th><th>Memo</th><th>Account</th><th>Dr</th><th>Cr</th><th>Branch</th><th>User</th></tr></thead><tbody>';
+   js.forEach(j=>{
+    j.lines.forEach((l,idx)=>{
+     html+='<tr>';
+     if(idx===0){
+      html+='<td rowspan="'+j.lines.length+'" style="vertical-align:top"><b>'+j.date+'</b>'+(j.voided?' <span class="badge br">VOID</span>':'')+'</td>';
+      html+='<td rowspan="'+j.lines.length+'" style="vertical-align:top">'+esc(j.refType)+(j.refId?' #'+String(j.refId).slice(-4):'')+'</td>';
+      html+='<td rowspan="'+j.lines.length+'" style="vertical-align:top">'+esc(j.memo)+'</td>';
+     }
+     const a=getAccount(l.account);
+     html+='<td>'+l.account+' '+(a?esc(a.name):'')+'</td>';
+     html+='<td class="right">'+(l.debit>0?money(l.debit):'')+'</td>';
+     html+='<td class="right">'+(l.credit>0?money(l.credit):'')+'</td>';
+     html+='<td>'+esc(l.branch?branchName(l.branch):'')+'</td>';
+     html+='<td>'+esc(j.user)+'</td></tr>';
+    });
+   });
+   html+='</tbody></table></div>';
+  }
+  html+='</div>';$('acctOut').innerHTML=html;
+ }
+}
+
+/* ================= AR / AP ================= */
+function remainingOn(rec,total){return r2(total-Number(rec.paidAmount||0));}
+function renderARAP(){
+ if(!$('arList'))return;
+ const sales=filtered(db.sales).filter(s=>!s.settled);
+ const purchases=(admin()?db.purchases:[]).filter(p=>!p.settled);
+ const expenses=(admin()?db.expenses:filtered(db.expenses)).filter(e=>!e.settled&&e.payMethod==='Credit');
+ let arTotal=0,apTotal=0;
+ $('arList').innerHTML=sales.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Product</th><th>Qty</th><th>Total / Paid / Due</th><th>Branch</th><th>Actions</th></tr></thead><tbody>'+
+  sales.map(s=>{
+   const sub=r2(s.qty*s.price),v=r2(sub*Number(s.vat||0)/100),total=r2(sub+v);
+   const remaining=remainingOn(s,total);arTotal=r2(arTotal+remaining);
+   return '<tr><td>'+s.date+'</td><td>'+esc(s.customer)+'</td><td>'+esc(s.product)+'</td><td>'+s.qty+'</td><td>'+money(total)+'<div class="muted">Paid '+money(s.paidAmount||0)+' · Due '+money(remaining)+'</div></td><td>'+esc(branchName(s.branch))+'</td><td class="actions"><button class="info" onclick="settleSale('+s.id+',\'Cash\')">Receipt Cash</button><button class="info" onclick="settleSale('+s.id+',\'Bank\')">Receipt Bank</button></td></tr>';
+  }).join('')+'</tbody></table></div>':'<div class="empty">No outstanding receivables</div>';
+ const apRows=purchases.map(p=>{
+  const m=db.materials.find(x=>x.id===p.materialId);
+  const gross=r2(p.qty*p.price),v=r2(gross*Number(p.vat||0)/100),total=r2(gross+v);
+  const remaining=remainingOn(p,total);apTotal=r2(apTotal+remaining);
+  return '<tr><td>'+p.date+'</td><td>Supplier: '+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'—')+'</td><td>'+p.qty+'</td><td>'+money(total)+'<div class="muted">Paid '+money(p.paidAmount||0)+' · Due '+money(remaining)+'</div></td><td class="actions"><button class="info" onclick="settlePurchase('+p.id+',\'Cash\')">Pay Cash</button><button class="info" onclick="settlePurchase('+p.id+',\'Bank\')">Pay Bank</button></td></tr>';
+ }).concat(expenses.map(e=>{
+  const total=Number(e.amount||0);const remaining=remainingOn(e,total);apTotal=r2(apTotal+remaining);
+  return '<tr><td>'+e.date+'</td><td>Expense: '+esc(e.type)+'</td><td>—</td><td>—</td><td>'+money(total)+'<div class="muted">Paid '+money(e.paidAmount||0)+' · Due '+money(remaining)+'</div></td><td class="actions"><button class="info" onclick="settleExpense('+e.id+',\'Cash\')">Pay Cash</button><button class="info" onclick="settleExpense('+e.id+',\'Bank\')">Pay Bank</button></td></tr>';
+ }));
+ $('apList').innerHTML=apRows.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Counterparty</th><th>Item</th><th>Qty</th><th>Total / Paid / Due</th><th>Actions</th></tr></thead><tbody>'+apRows.join('')+'</tbody></table></div>':'<div class="empty">No outstanding payables</div>';
+ const inputVat=accountBalance('1300',{to:today()});
+ const outputVat=r2(-accountBalance('2100',{to:today()}));
+ const netVat=r2(outputVat-Math.max(0,inputVat));
+ const cash=accountBalance('1000',{to:today()});
+ const bank=accountBalance('1010',{to:today()});
+ $('kAR').textContent=money(arTotal);$('kAP').textContent=money(apTotal);
+ $('kVat').textContent=money(netVat);$('kCB').textContent=money(cash+bank);
+ $('vatSummary').innerHTML=
+  '<div class="statline"><span>Output VAT (collected)</span><b>'+money(outputVat)+'</b></div>'+
+  '<div class="statline"><span>Input VAT (recoverable)</span><b>'+money(-inputVat)+'</b></div>'+
+  '<div class="statline bs-total"><span>Net VAT '+(netVat>=0?'payable':'refundable')+'</span><b>'+money(Math.abs(netVat))+'</b></div>';
+}
+
+/* ================= FINANCE PAGE ================= */
+function renderFinance(){
+ const from=db.ledgerStartDate||'',to=today();
+ const branchArg=admin()?null:session.branchId;
+ const pl=plReport(from,to,branchArg);
+ $('fSales').textContent=money(pl.totalIncome);
+ $('fCogs').textContent=money(pl.totalCOGS);
+ $('fExp').textContent=money(pl.totalOpex);
+ $('fProfit').textContent=money(pl.netProfit);
+ $('pl').innerHTML=
+  '<div class="statline"><span>Net Sales Revenue</span><b>'+money(pl.totalIncome)+'</b></div>'+
+  '<div class="statline"><span>Cost of Goods Sold</span><b>'+money(pl.totalCOGS)+'</b></div>'+
+  '<div class="statline"><span>Gross Profit</span><b class="'+(pl.grossProfit>=0?'green':'red')+'">'+money(pl.grossProfit)+'</b></div>'+
+  '<div class="statline"><span>Operating Expenses</span><b>'+money(pl.totalOpex)+'</b></div>'+
+  '<div class="statline bs-total"><span>Net Profit</span><b class="'+(pl.netProfit>=0?'green':'red')+'">'+money(pl.netProfit)+'</b></div>';
+ if(!admin()){
+  $('branchPL').innerHTML='<div class="muted">Branch users see only their own branch figure above.</div>';
+ }else{
+  $('branchPL').innerHTML=db.branches.map(b=>{
+   const p=plReport(from,to,b.id);
+   return '<div class="statline"><span>'+esc(b.name)+'</span><b class="'+(p.netProfit>=0?'green':'red')+'">'+money(p.netProfit)+'</b></div>';
+  }).join('');
+ }
+}
+
+/* ================= OPENING BALANCE ================= */
+function saveOpening(e){
+ e.preventDefault();
+ if(!admin())return alert('Only Head Office.');
+ const cash=r2($('obCash').value||0),bank=r2($('obBank').value||0),rec=r2($('obRec').value||0),pay=r2($('obPay').value||0),capIn=r2($('obCap').value||0);
+ const date=$('obDate').value||today();
+ if(db.opening&&db.opening.jeId){
+  if(voidByRef('OPENING','OPENING','Opening re-posted')>0)return alert('Cannot re-post: previous opening journal in locked period.');
+ }
+ const rmVal=r2(db.materials.reduce((s,m)=>s+r2(m.qty*(m.price||0)),0));
+ const fgVal=r2(db.fg.reduce((s,f)=>s+r2(Number(f.qty||0)*Number(f.unitCost||0)),0));
+ const securityVal=r2((db.employees||[]).reduce((s,e)=>s+Number(e.security||0),0));
+ const debits=r2(cash+bank+rec+rmVal+fgVal);
+ const credits=r2(pay+securityVal+capIn);
+ const diff=r2(debits-credits);
+ let cap;
+ if(capIn>0.005){
+  if(Math.abs(diff)>0.05)return alert('Opening balances do not balance.\n\nDebits: '+money(debits)+'\nCredits: '+money(credits)+'\nDiff: '+money(diff)+'\n\nCorrect the figures, or leave Owner\'s Capital blank to auto-balance.');
+  cap=capIn;
+ }else{
+  cap=r2(capIn+diff);
+  if(cap<0)return alert('Balancing Owner\'s Capital would be negative.');
+ }
+ const lines=[
+  {account:'1000',debit:cash},{account:'1010',debit:bank},{account:'1100',debit:rec},
+  {account:'1200',debit:rmVal},{account:'1220',debit:fgVal},
+  {account:'2000',credit:pay},{account:'2200',credit:securityVal},{account:'3000',credit:cap}
+ ].filter(l=>Number(l.debit||0)>0||Number(l.credit||0)>0);
+ if(!lines.length)return alert('Nothing to post.');
+ let jeId;
+ try{jeId=postJournal({date,memo:'Opening balances',refType:'OPENING',refId:'OPENING',lines});}
+ catch(err){return alert('Could not post opening journal: '+err.message);}
+ db.opening={cash,bank,receivable:rec,payable:pay,capital:cap,date,jeId};
+ db.ledgerStartDate=date;audit('OPENING_SAVE','cash='+cash+' bank='+bank+' capital='+cap);
+ save();$('obStatus').textContent='Opening journal posted on '+date+'. Capital: '+money(cap);
+ refresh();alert('Opening journal posted.\n\nOwner\'s Capital (balancing): '+money(cap));
+}
+function renderOpening(){
+ const map={obCash:db.opening.cash||0,obBank:db.opening.bank||0,obRec:db.opening.receivable||0,obPay:db.opening.payable||0,obCap:db.opening.capital||0};
+ Object.keys(map).forEach(id=>{if($(id)&&document.activeElement!==$(id))$(id).value=map[id];});
+ if($('obDate')&&!$('obDate').value)$('obDate').value=db.opening.date||today();
+ const on=admin();
+ ['obCash','obBank','obRec','obPay','obCap','obDate'].forEach(id=>{if($(id))$(id).disabled=!on;});
+}
+
+/* ================= EMPLOYEES ================= */
+function saveEmployee(e){
+ e.preventDefault();const br=admin()?Number($('empBranch').value):session.branchId;
+ const emp={id:uid(),name:$('empName').value.trim(),branch:br,join:$('empJoin').value||today(),security:r2($('empSec').value||0)};
+ db.employees.push(emp);audit('EMP_ADD',emp.name);
+ save();e.target.reset();$('empJoin').value=today();refresh();alert('Employee saved');
+}
+function renderEmployees(){
+ const a=filtered(db.employees);
+ $('empTable').innerHTML=a.length?a.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(branchName(x.branch))+'</td><td>'+x.join+'</td><td>'+money(x.security)+'</td><td><button class="danger" onclick="deleteEmployee('+x.id+')">Delete</button></td></tr>').join(''):'<tr><td colspan="5" class="empty">No employees</td></tr>';
+}
+function deleteEmployee(id){
+ const x=db.employees.find(y=>y.id===id);if(!x)return;
+ if(!admin()&&x.branch!==session.branchId)return alert('Not allowed');
+ if(confirm('Delete employee?')){db.employees=db.employees.filter(y=>y.id!==id);audit('EMP_DEL',x.name);save();refresh();}
+}
+
+/* ================= BRANCH SETTINGS ================= */
+function renderBranches(){
+ if(!admin())return;
+ const sel=$('brId');
+ const keep=Number(sel.value)||(db.branches[0]&&db.branches[0].id);
+ sel.innerHTML=db.branches.map(b=>'<option value="'+b.id+'">'+b.id+' — '+esc(b.name)+'</option>').join('');
+ if(keep)sel.value=keep;
+ const b=db.branches.find(x=>x.id===Number(sel.value))||db.branches[0];
+ if(b){$('brName').value=b.name;$('brUser').value=b.user;$('brPass').value='';}
+ $('branchTable').innerHTML=db.branches.map(b=>'<tr><td>'+b.id+'</td><td>'+esc(b.name)+'</td><td>'+esc(b.user)+'</td><td>••••</td><td><button class="secondary" onclick="editBranch('+b.id+')">Edit</button></td></tr>').join('');
+}
+function editBranch(id){
+ const b=db.branches.find(x=>x.id===id);if(!b)return;
+ $('brId').value=id;$('brName').value=b.name;$('brUser').value=b.user;$('brPass').value='';
+}
+$('brId').addEventListener('change',()=>editBranch(Number($('brId').value)));
+async function saveBranch(e){
+ e.preventDefault();if(!admin())return;
+ const b=db.branches.find(x=>x.id===Number($('brId').value));if(!b)return;
+ const newUser=$('brUser').value.trim(),newPass=$('brPass').value;
+ if(newUser===((db.admin||{}).user))return alert('Username "'+newUser+'" is reserved for Head Office.');
+ const dup=db.branches.find(x=>x.user===newUser&&x.id!==b.id);
+ if(dup)return alert('Username already used by another branch.');
+ b.name=$('brName').value.trim();b.user=newUser;
+ if(newPass){b.passHash=await hashPassword(newPass,'hd_v10');delete b.pass;}
+ audit('BRANCH_UPDATE',b.name+' user='+newUser+(newPass?' (password changed)':''));
+ save();$('who').textContent='HEAD OFFICE / ADMIN';buildNav();refresh();alert('Branch settings saved');
+}
+
+/* ================= DASHBOARD ================= */
+function renderDashboard(){
+ const orders=filtered(db.orders),prod=orders.filter(o=>o.status==='In Production').length,fg=db.fg.reduce((s,x)=>s+Number(x.qty),0);
+ const pl=plReport(db.ledgerStartDate||'',today(),admin()?null:session.branchId);
+ $('kOrders').textContent=orders.length;$('kProd').textContent=prod;$('kFG').textContent=fg;$('kProfit').textContent=money(pl.netProfit);
+ const states=['Order Received','Sent to Branch','In Production','Assembly Complete','Completed'];
+ const c={};orders.forEach(o=>c[o.status]=(c[o.status]||0)+1);
+ $('flow').innerHTML=states.map(s=>'<div class="statline"><span>'+statusBadge(s)+'</span><b>'+((c[s]||0))+'</b></div>').join('');
+ const branchesToShow=admin()?db.branches:db.branches.filter(b=>b.id===session.branchId);
+ $('branchChart').innerHTML=branchesToShow.map(b=>{
+  const a=db.orders.filter(o=>o.branch===b.id);
+  const totalQty=a.reduce((s,o)=>s+Number(o.qty||0),0);
+  const doneTotal=a.reduce((s,o)=>s+doneQty(o),0);
+  const pct=totalQty>0?Math.round(doneTotal/totalQty*100):0;
+  return '<div style="margin:9px 0"><div style="display:flex;justify-content:space-between"><span>'+esc(b.name)+'</span><b>'+doneTotal+' / '+totalQty+' pcs ('+pct+'%)</b></div><div class="bar"><span style="width:'+pct+'%"></span></div></div>';
+ }).join('');
+ if($('bsCard'))$('bsCard').style.display=admin()?'':'none';
+ if($('branchDashCard'))$('branchDashCard').style.display=admin()?'none':'';
+ if(!admin()){
+  const myBranch=session.branchId;
+  const mySales=db.sales.filter(s=>Number(s.branch)===Number(myBranch));
+  const myExp=db.expenses.filter(e=>Number(e.branch)===Number(myBranch));
+  const myStock=db.branchStock.filter(x=>Number(x.branch)===Number(myBranch));
+  const stockVal=r2(myStock.reduce((s,x)=>{const m=db.materials.find(y=>y.id===x.materialId);return s+r2(x.qty*(m?m.price:0))},0));
+  const outstanding=r2(mySales.filter(s=>!s.settled).reduce((s,sa)=>{const tot=r2(sa.qty*sa.price*(1+Number(sa.vat||0)/100));return s+(tot-Number(sa.paidAmount||0));},0));
+  $('branchDash').innerHTML=
+   '<div class="statline"><span>My branch</span><b>'+esc(branchName(myBranch))+'</b></div>'+
+   '<div class="statline"><span>My sales this period</span><b>'+mySales.length+'</b></div>'+
+   '<div class="statline"><span>Outstanding receivables (my sales)</span><b>'+money(outstanding)+'</b></div>'+
+   '<div class="statline"><span>My branch expenses logged</span><b>'+money(r2(myExp.reduce((s,e)=>s+Number(e.amount||0),0)))+'</b></div>'+
+   '<div class="statline"><span>Material stock value on hand</span><b>'+money(stockVal)+'</b></div>';
+ }
+ if(admin()){
+  const bs=balanceSheet(today(),null);
+  $('bsSnap').innerHTML=
+   '<div class="statline"><span>Total Assets</span><b>'+money(bs.totalAssets)+'</b></div>'+
+   '<div class="statline"><span>Total Liabilities</span><b>'+money(bs.totalLiab)+'</b></div>'+
+   '<div class="statline"><span>Total Equity</span><b>'+money(bs.totalEquity)+'</b></div>'+
+   '<div class="statline"><span>Cash + Bank</span><b>'+money(accountBalance('1000',{to:today()})+accountBalance('1010',{to:today()}))+'</b></div>'+
+   (Math.abs(bs.diff)>0.05?'<p class="red">Balance sheet out by '+money(bs.diff)+'</p>':'<p class="green">✓ Balanced</p>');
+ }
+}
+
+/* ================= REPORTS ================= */
+function dateOK(d,from,to){return (!from||d>=from)&&(!to||d<=to);}
+function runReport(){
+ const type=$('reportType').value,from=$('rFrom').value,to=$('rTo').value;
+ if(type==='sales'){
+  const a=filtered(db.sales).filter(x=>dateOK(x.date,from,to));
+  let total=0;a.forEach(x=>total=r2(total+r2(x.qty*x.price*(1+Number(x.vat||0)/100))));
+  $('reportOut').innerHTML='<h4>Sales Report</h4><p>Total (incl VAT): <b>'+money(total)+'</b></p>'+table(['Date','Customer','Product','Qty','Total'],a.map(x=>[x.date,esc(x.customer),esc(x.product),x.qty,money(r2(x.qty*x.price*(1+Number(x.vat||0)/100)))]));
+ }else if(type==='orders'){
+  const a=filtered(db.orders).filter(x=>dateOK(x.date,from,to));
+  $('reportOut').innerHTML='<h4>Order Report</h4>'+table(['Date','Customer','Product','Branch','Qty','Done (pcs)','Status'],a.map(x=>[x.date,esc(x.customer),esc(x.product),esc(branchName(x.branch)),x.qty,doneQty(x)+' / '+x.qty,statusBadge(x.status)]));
+ }else if(type==='production'){
+  const a=filtered(db.orders).filter(x=>x.status!=='Order Received').filter(x=>dateOK(x.date,from,to));
+  const totQty=a.reduce((s,o)=>s+Number(o.qty||0),0),totDone=a.reduce((s,o)=>s+doneQty(o),0);
+  $('reportOut').innerHTML='<h4>Production Report (pieces)</h4><p>Total ordered: <b>'+totQty+' pcs</b> &middot; Completed: <b>'+totDone+' pcs</b> &middot; Remaining: <b>'+Math.max(0,totQty-totDone)+' pcs</b></p>'+
+   table(['Date','Order','Product','Branch','Qty','Done (pcs)','Status'],a.map(x=>[x.date,'#'+x.id,esc(x.product),esc(branchName(x.branch)),x.qty,doneQty(x)+' / '+x.qty,statusBadge(x.status)]));
+ }else if(type==='expenses'){
+  const a=filtered(db.expenses).filter(x=>dateOK(x.date,from,to));
+  const tot=r2(a.reduce((s,x)=>s+Number(x.amount||0),0));
+  $('reportOut').innerHTML='<h4>Expense Report</h4><p>Total: <b>'+money(tot)+'</b></p>'+table(['Date','Type','Branch','Amount'],a.map(x=>[x.date,esc(x.type),esc(branchName(x.branch)),money(x.amount)]));
+ }else if(type==='stock'){
+  $('reportOut').innerHTML='<h4>Stock Report</h4>'+table(['Material','Unit','Qty','Value'],db.materials.map(x=>[esc(x.name),x.unit,x.qty,money(r2(x.qty*x.price))]));
+ }else if(type==='profit'){
+  const pl=plReport(from||db.ledgerStartDate,to||today(),admin()?null:session.branchId);
+  $('reportOut').innerHTML='<h4>Profit Report (ledger-based)</h4>'+
+   '<div class="statline"><span>Net Sales</span><b>'+money(pl.totalIncome)+'</b></div>'+
+   '<div class="statline"><span>COGS</span><b>'+money(pl.totalCOGS)+'</b></div>'+
+   '<div class="statline"><span>Gross Profit</span><b>'+money(pl.grossProfit)+'</b></div>'+
+   '<div class="statline"><span>Operating Expenses</span><b>'+money(pl.totalOpex)+'</b></div>'+
+   '<div class="statline bs-total"><span>Net Profit</span><b>'+money(pl.netProfit)+'</b></div>';
+ }else if(type==='trialbalance'){
+  if(!admin())return alert('Only Head Office.');
+  const tb=trialBalance(to||today(),null);
+  const rows=tb.rows.filter(r=>Math.abs(r.balance)>0.005);
+  $('reportOut').innerHTML='<h4>Trial Balance — '+(to||today())+'</h4>'+table(['Code','Account','Type','Debit','Credit'],rows.map(r=>[r.code,esc(r.name),r.type,r.balance>0?money(r.balance):'',r.balance<0?money(-r.balance):'']).concat([['','<b>Totals</b>','',money(tb.totalDr),money(tb.totalCr)]]));
+ }else if(type==='balancesheet'){
+  if(!admin())return alert('Only Head Office.');
+  const bs=balanceSheet(to||today(),null);
+  $('reportOut').innerHTML='<h4>Balance Sheet — '+(to||today())+'</h4>'+
+   '<div class="statline"><span>Total Assets</span><b>'+money(bs.totalAssets)+'</b></div>'+
+   '<div class="statline"><span>Total Liabilities</span><b>'+money(bs.totalLiab)+'</b></div>'+
+   '<div class="statline"><span>Equity (capital + retained)</span><b>'+money(bs.totalEquity)+'</b></div>'+
+   '<div class="statline bs-total"><span>L + E</span><b>'+money(r2(bs.totalLiab+bs.totalEquity))+'</b></div>';
+ }else if(type==='fixedassets'){
+  if(!admin())return alert('Only Head Office.');
+  $('reportOut').innerHTML='<h4>Fixed Asset Register</h4>'+table(['Name','Category','Branch','Cost','Accum. Dep.','NBV'],db.fixedAssets.map(f=>[esc(f.name),esc(f.category),esc(branchName(f.branch)),money(f.cost),money(f.accumulated||0),money(r2(f.cost-(f.accumulated||0)))]));
+ }
+}
+function table(head,rows){
+ return '<div class="tablewrap"><table><thead><tr>'+head.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+(rows.length?rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+head.length+'" class="empty">No data</td></tr>')+'</tbody></table></div>';
+}
+
+/* ================= BACKUP ================= */
+function backup(){
+ if(!admin())return;
+ const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V10.3_Backup_'+today()+'.json';a.click();
+ setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+ localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();
+}
+function restore(e){
+ if(!admin())return;
+ const f=e.target.files[0];if(!f)return;
+ const r=new FileReader();
+ r.onload=async()=>{
+  try{
+   const x=JSON.parse(r.result);
+   if(!x.branches||!Array.isArray(x.orders))throw new Error();
+   db=migrateDB(x);
+   db.lastModified=new Date().toISOString();
+   db.lastModifiedBy=session?session.user:'system';
+   if(fbRef)await fbRef.set(db).catch(err=>alert('Firebase write failed: '+err.message));
+   try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e2){}
+   alert('Backup restored. App will reload.');location.reload();
+  }catch(err){alert('Invalid ERP backup file.');}
+ };
+ r.readAsText(f);
+}
+function checkBackupReminder(){
+ const btn=$('backupReminder');if(!btn)return;
+ if(!admin()){btn.style.display='none';return;}
+ const last=Number(localStorage.getItem(BACKUP_KEY)||0);
+ const days=last?(Date.now()-last)/(1000*60*60*24):999;
+ btn.style.display=days>7?'inline-block':'none';
+}
+function clearAudit(){
+ if(!admin())return;
+ if(!confirm('Clear the audit log? Does not delete business data or journals.'))return;
+ db.audit=[];save();renderAudit();renderSystem();
+}
+function renderAudit(){
+ const el=$('auditLog');if(!el)return;
+ const a=(db.audit||[]).slice(-50).reverse();
+ el.innerHTML=a.length?'<div class="tablewrap"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th></tr></thead><tbody>'+
+  a.map(x=>'<tr><td>'+esc(x.t.slice(0,19).replace('T',' '))+'</td><td>'+esc(x.user)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.detail)+'</td></tr>').join('')+
+  '</tbody></table></div>':'<div class="empty">No activity yet</div>';
+}
+function renderSystem(){
+ if(!$('sysInfo'))return;
+ const tb=trialBalance(today(),null);
+ $('sysInfo').innerHTML=
+  '<div class="statline"><span>ERP Version</span><b>V10.3 Live (Firebase sync)</b></div>'+
+  '<div class="statline"><span>Storage</span><b>Firebase + localStorage cache</b></div>'+
+  '<div class="statline"><span>Sync status</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Connected':'🔴 Offline')+'</b></div>'+
+  '<div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div>'+
+  '<div class="statline"><span>Orders</span><b>'+db.orders.length+'</b></div>'+
+  '<div class="statline"><span>Fixed assets</span><b>'+db.fixedAssets.length+'</b></div>'+
+  '<div class="statline"><span>Journal entries</span><b>'+db.journals.filter(j=>!j.voided).length+' active / '+db.journals.length+' total</b></div>'+
+  '<div class="statline"><span>Trial balance check</span><b class="'+(Math.abs(tb.diff)<0.05?'green':'red')+'">'+(Math.abs(tb.diff)<0.05?'✓ Balanced':'⚠ Out by '+money(tb.diff))+'</b></div>'+
+  '<div class="statline"><span>Overhead rate</span><b>'+((db.settings&&db.settings.overheadRate)||0)+'%</b></div>'+
+  '<div class="statline"><span>Period locked through</span><b>'+((db.settings&&db.settings.lockedThrough)||'—')+'</b></div>'+
+  '<div class="statline"><span>Ledger start date</span><b>'+(db.ledgerStartDate||'—')+'</b></div>'+
+  '<div class="statline"><span>Last modified</span><b>'+(db.lastModified?db.lastModified.slice(0,19).replace('T',' '):'—')+'</b></div>'+
+  '<div class="statline"><span>Audit entries</span><b>'+((db.audit||[]).length)+'</b></div>';
+}
+async function resetData(){
+ if(!admin())return;
+ if(!confirm('Delete ALL ERP data?'))return;
+ if(!confirm('FINAL WARNING — all orders, stock, BOM, sales, purchases, expenses, journals, fixed assets, settings will be deleted.'))return;
+ if(fbRef)await fbRef.set(null).catch(()=>{});
+ localStorage.removeItem(KEY);
+ localStorage.removeItem(KEY+"_CACHE");
+ localStorage.removeItem(BACKUP_KEY);
+ location.reload();
+}
+
+/* ================= BOOT ================= */
+window.addEventListener('load',attachSync);
+</script>
+</body>
+</html>
