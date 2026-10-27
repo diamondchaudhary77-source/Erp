@@ -24,7 +24,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer;border:0;border-
 .actions{display:flex;gap:4px;flex-wrap:wrap}.actions button{padding:6px 8px;font-size:11px}
 .tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;background:#fff}th,td{padding:8px;border-bottom:1px solid var(--line);font-size:12px;text-align:left;white-space:nowrap}th{background:#faf8fa;color:#555}
 .badge{display:inline-block;padding:4px 7px;border-radius:20px;background:#eee;font-size:10px}.bg{background:#def4e7;color:#176b3d}.br{background:#fde2df;color:#9e281e}.bo{background:#fff0dc;color:#a65a00}.bb{background:#e0edfc;color:#1b5d9d}
-.notice{padding:10px;background:#fff5d7;border-radius:8px;font-size:12px;margin-bottom:10px}.empty{text-align:center;color:#888;padding:25px}.bar{height:10px;background:#eee;border-radius:10px;overflow:hidden}.bar span{display:block;height:100%;background:var(--p)}.photo{width:43px;height:43px;object-fit:cover;border-radius:6px}.right{text-align:right}
+.notice{padding:10px;background:#fff5d7;border-radius:8px;font-size:12px;margin-bottom:10px}.empty{text-align:center;color:#888;padding:25px}.bar{height:10px;background:#eee;border-radius:10px;overflow:hidden}.bar span{display:block;height:100%;background:var(--p)}.photo{width:43px;height:43px;object-fit:cover;border-radius:6px;cursor:zoom-in}.right{text-align:right}
 .statline{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee}.green{color:var(--green)}.red{color:var(--red)}
 hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 .searchbox{width:100%;padding:9px;border:1px solid #d9d4d9;border-radius:8px;margin-bottom:10px;background:#fff}
@@ -35,6 +35,32 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 .sync-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#999;margin-right:5px;vertical-align:middle}
 .sync-dot.live{background:var(--green)}
 .sync-dot.offline{background:var(--red)}
+.notes-cell{white-space:normal;min-width:150px;max-width:280px;font-size:11px;color:#444}
+.photo-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:1000;align-items:center;justify-content:center;padding:18px}
+.photo-modal.open{display:flex}
+.photo-modal-inner{max-width:94vw;max-height:94vh;display:flex;flex-direction:column;align-items:center;gap:12px}
+.photo-modal-inner img{max-width:94vw;max-height:72vh;object-fit:contain;border-radius:10px;background:#fff;box-shadow:0 10px 40px #0009}
+.photo-modal-bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.photo-dl{background:var(--p);color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:bold;display:inline-block}
+.photo-dl:hover{background:var(--p2)}
+.print-head{display:none}
+@page{size:A4 landscape;margin:10mm}
+@media print{
+  body{background:#fff}
+  .side,.top,.mobile,.notice,.searchbox,form,.photo-modal,.tabs{display:none!important}
+  .main{margin:0;width:100%;padding:0}
+  .page{display:none!important}
+  .page.active{display:block!important}
+  .card{box-shadow:none;border:0;padding:0;margin-bottom:10px}
+  .print-head{display:block!important;margin-bottom:8px;font-size:12px}
+  .print-head h2{margin:0 0 4px;color:#714B67;font-size:17px}
+  button{display:none!important}
+  table{font-size:10.5px}
+  th,td{white-space:normal;padding:5px}
+  tr{page-break-inside:avoid}
+  .photo{width:38px;height:38px;cursor:default}
+  .bar{display:none}
+}
 @media(max-width:850px){.side{transform:translateX(-100%);transition:.2s}.side.open{transform:translateX(0)}.main{margin-left:0;width:100%;padding:11px}.mobile{display:block}.grid,.grid3{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.row{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.row{grid-template-columns:1fr}.top h2{font-size:18px}}
 </style>
@@ -67,10 +93,13 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
       <span class="badge" id="syncStatus" title="Sync status"><span id="syncDotApp" class="sync-dot"></span><span id="syncLabelApp">Connecting</span></span>
       <button id="backupReminder" class="orange" style="display:none;font-size:11px;padding:6px 9px" onclick="backup()">⚠ Backup needed</button>
+      <button class="secondary" onclick="printPage()" title="Print the current page">🖨 Print</button>
       <span class="badge" id="who"></span>
       <button class="secondary" onclick="logout()">Logout</button>
     </div>
    </div>
+
+   <div class="print-head" id="printHead"></div>
 
    <section id="dashboard" class="page active">
     <div class="grid">
@@ -106,14 +135,14 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
      </form>
     </div>
     <div class="card">
-     <input id="orderSearch" class="searchbox" placeholder="🔎 Search by customer, product, or branch…" oninput="renderOrders()">
-     <div class="tablewrap"><table><thead><tr><th>Photo</th><th>Customer</th><th>Product</th><th>Qty</th><th>Branch</th><th>Status</th><th>Done (pcs)</th><th>Actions</th></tr></thead><tbody id="ordersTable"></tbody></table></div>
+     <input id="orderSearch" class="searchbox" placeholder="🔎 Search by customer, product, branch or notes…" oninput="renderOrders()">
+     <div class="tablewrap"><table><thead><tr><th>Photo</th><th>Customer</th><th>Product</th><th>Qty</th><th>Branch</th><th>Status</th><th>Done (pcs)</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="ordersTable"></tbody></table></div>
     </div>
    </section>
 
    <section id="production" class="page">
     <div class="card"><h3>Production / Branch Work</h3>
-     <div class="notice">Workflow: Order Received → Sent to Branch → In Production → Assembly Complete → FG Received → Completed. Completion is entered as a <b>piece count</b>, not a percentage. Material cost is capitalised into FG at completion; labour and absorbed overhead are added.</div>
+     <div class="notice">Workflow: Order Received → Sent to Branch → In Production → Assembly Complete → FG Received → Completed. Branch material stock is <b>consumed at Assembly Complete</b> — the moment the branch physically uses the material. Head Office then receives the FG.</div>
      <div class="tablewrap"><table><thead><tr><th>Order</th><th>Product</th><th>Branch</th><th>Qty</th><th>Completed (pcs)</th><th>Status</th><th>Material</th><th>Actions</th></tr></thead><tbody id="prodTable"></tbody></table></div>
     </div>
    </section>
@@ -135,7 +164,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 
    <section id="issue" class="page">
     <div class="card"><h3>Material Issue to Branch</h3>
-     <div class="notice">Material is issued according to BOM. Blocks over-issue and insufficient stock. <b>Only Head Office/Admin can issue material.</b> Posts Dr WIP / Cr Raw Materials.</div>
+     <div class="notice">Material is issued according to BOM. Blocks over-issue and insufficient stock. <b>Only Head Office/Admin can issue material.</b> Posts Dr WIP / Cr Raw Materials. Branch stock increases here; it decreases when the branch marks <b>Assembly Complete</b>.</div>
      <form onsubmit="issueMaterial(event)"><div class="row">
       <div class="field"><label>Order</label><select id="iOrder" required></select></div>
       <div class="field"><label>Material</label><select id="iMaterial" required></select></div>
@@ -376,6 +405,26 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
  </div>
 </div>
 
+<div id="photoModal" class="photo-modal" onclick="if(event.target===this)closePhotoModal()">
+ <div class="photo-modal-inner">
+  <img id="photoModalImg" src="" alt="Order photo">
+  <div class="photo-modal-bar">
+   <a id="photoDownload" class="photo-dl" href="#" download>⬇ Download Photo</a>
+   <button class="secondary" onclick="closePhotoModal()">✕ Close</button>
+  </div>
+ </div>
+</div>
+
+<div id="orderModal" class="photo-modal" onclick="if(event.target===this)closeOrderModal()">
+ <div class="photo-modal-inner" style="max-width:620px;background:#fff;border-radius:14px;padding:20px;color:#29252b;max-height:92vh;overflow:auto">
+  <div id="orderModalContent"></div>
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+   <button class="secondary" onclick="closeOrderModal()">✕ Close</button>
+   <button class="primary" onclick="printPage()">🖨 Print this page</button>
+  </div>
+ </div>
+</div>
+
 <script>
 const KEY='HANDMADE_DECOR_ERP_V10';
 const BACKUP_KEY='HANDMADE_DECOR_ERP_LASTBACKUP';
@@ -386,7 +435,6 @@ function uid(){return Date.now()*1000+Math.floor(Math.random()*1000);}
 let db=loadDB();
 let session=null;
 
-/* ============ FIREBASE SYNC (compat SDK) ============ */
 const firebaseConfig={
  apiKey:"AIzaSyC5HxlN4M2Y1ZyYhyk-fZs5i4wXFPA5Pao",
  authDomain:"handmade-decor-erp.firebaseapp.com",
@@ -406,62 +454,26 @@ function setSyncStatus(state){
  fbConnected=(state==='live');
  const dot=fbConnected?'live':(state==='offline'?'offline':'');
  const label=state==='live'?'Live':(state==='offline'?'Offline':'Connecting');
- ['syncDot','syncDotApp'].forEach(id=>{
-   const el=$(id);if(el)el.className='sync-dot '+dot;
- });
- ['syncLabel','syncLabelApp'].forEach(id=>{
-   const el=$(id);if(el)el.textContent=label;
- });
+ ['syncDot','syncDotApp'].forEach(id=>{const el=$(id);if(el)el.className='sync-dot '+dot;});
+ ['syncLabel','syncLabelApp'].forEach(id=>{const el=$(id);if(el)el.textContent=label;});
 }
-
-function enableLogin(){
- const btn=$('loginBtn');
- if(btn){btn.disabled=false;btn.textContent='Login';}
-}
-
+function enableLogin(){const btn=$('loginBtn');if(btn){btn.disabled=false;btn.textContent='Login';}}
 function attachSync(){
  if(!fbRef){ setSyncStatus('offline'); enableLogin(); return; }
-
  fbRef.on('value',snap=>{
   const remote=snap.val();
   setSyncStatus('live');
-
-  if(!remote){
-   // first run — seed cloud with local data
-   if(!firstSnapshotSeen){ firstSnapshotSeen=true; save(true); }
-   enableLogin();
-   return;
-  }
-
+  if(!remote){ if(!firstSnapshotSeen){ firstSnapshotSeen=true; save(true); } enableLogin(); return; }
   firstSnapshotSeen=true;
-
-  // our own echo
-  if(remote.lastModified && db.lastModified===remote.lastModified){
-   enableLogin(); return;
-  }
-
-  // local newer (offline edits queued)
-  if(db.lastModified && remote.lastModified && db.lastModified>remote.lastModified){
-   save(true); enableLogin(); return;
-  }
-
-  // remote newer → adopt
+  if(remote.lastModified && db.lastModified===remote.lastModified){ enableLogin(); return; }
+  if(db.lastModified && remote.lastModified && db.lastModified>remote.lastModified){ save(true); enableLogin(); return; }
   db=migrateDB(remote);
   try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e){}
-  if(session)refresh();
-  enableLogin();
- },err=>{
-  console.error("Firebase read failed:",err);
-  setSyncStatus('offline');
-  enableLogin();
- });
-
- firebase.database().ref(".info/connected").on('value',s=>{
-  setSyncStatus(s.val()?'live':'offline');
- });
+  if(session)refresh(); enableLogin();
+ },err=>{ console.error("Firebase read failed:",err); setSyncStatus('offline'); enableLogin(); });
+ firebase.database().ref(".info/connected").on('value',s=>{ setSyncStatus(s.val()?'live':'offline'); });
 }
 
-/* ================= DATA ================= */
 function defaultCOA(){
  return [
   {code:'1000',name:'Cash on Hand',type:'Asset'},
@@ -511,14 +523,8 @@ function defaultDB(){
  };
 }
 function loadDB(){
- try{
-  const cached=localStorage.getItem(KEY+"_CACHE");
-  if(cached){const x=JSON.parse(cached);if(x&&x.branches)return migrateDB(x);}
- }catch(e){}
- try{
-  const old=localStorage.getItem(KEY);
-  if(old)return migrateDB(JSON.parse(old));
- }catch(e){}
+ try{ const cached=localStorage.getItem(KEY+"_CACHE"); if(cached){const x=JSON.parse(cached);if(x&&x.branches)return migrateDB(x);} }catch(e){}
+ try{ const old=localStorage.getItem(KEY); if(old)return migrateDB(JSON.parse(old)); }catch(e){}
  try{
   const older=localStorage.getItem('HANDMADE_DECOR_ERP_V99_FULL');
   if(older){
@@ -556,6 +562,8 @@ function migrateDB(x){
   if(o.completedQty===undefined)o.completedQty=Math.round(Number(o.qty||0)*(Number(o.progress||0)/100));
   o.completedQty=Number(o.completedQty)||0;
   if(o.completedQty>Number(o.qty||0))o.completedQty=Number(o.qty||0);
+  if(o.notes===undefined)o.notes='';
+  if(o.branchStockConsumed===undefined)o.branchStockConsumed=false;
   delete o.progress;
  });
  return x;
@@ -601,7 +609,61 @@ function doneQty(o){return Number(o&&o.completedQty||0)}
 function orderPct(o){const q=Number(o&&o.qty||0);return q>0?Math.min(100,Math.max(0,Math.round(doneQty(o)/q*100))):0}
 function orderDone(o){return Number(o&&o.qty||0)>0&&doneQty(o)>=Number(o.qty)}
 
-/* ================= ACCOUNTING CORE ================= */
+function openPhoto(id){
+ id=String(id);
+ const o=db.orders.find(x=>String(x.id)===id);
+ if(!o||!o.photo)return alert('No photo attached to this order.');
+ $('photoModalImg').src=o.photo;
+ const a=$('photoDownload');
+ a.href=o.photo;
+ a.download='Order_'+id+'_'+String(o.product||'photo').replace(/[^\w\-]+/g,'_')+'.jpg';
+ $('photoModal').classList.add('open');
+}
+function closePhotoModal(){$('photoModal').classList.remove('open');}
+function downloadPhoto(id){
+ id=String(id);
+ const o=db.orders.find(x=>String(x.id)===id);
+ if(!o||!o.photo)return alert('No photo attached to this order.');
+ const a=document.createElement('a');
+ a.href=o.photo;
+ a.download='Order_'+id+'_'+String(o.product||'photo').replace(/[^\w\-]+/g,'_')+'.jpg';
+ document.body.appendChild(a);a.click();a.remove();
+}
+function viewOrder(id){
+ id=String(id);
+ const o=db.orders.find(x=>String(x.id)===id);
+ if(!o)return alert('Order not found.');
+ const noteHtml=o.notes?esc(o.notes):'<span class="muted">No notes</span>';
+ const photoHtml=o.photo
+   ?'<div style="text-align:center;margin:10px 0"><img src="'+o.photo+'" style="max-width:100%;max-height:380px;border-radius:8px;border:1px solid #ddd"></div>'+
+    '<div style="text-align:center;margin-bottom:12px"><a class="photo-dl" href="'+o.photo+'" download="Order_'+id+'.jpg">⬇ Download Photo</a></div>'
+   :'<div class="empty" style="padding:15px">No photo attached</div>';
+ $('orderModalContent').innerHTML=
+  '<h2 style="margin:0 0 8px;color:#714B67">Order #'+id+'</h2>'+
+  photoHtml+
+  '<div class="statline"><span>Customer</span><b>'+esc(o.customer)+'</b></div>'+
+  '<div class="statline"><span>Product</span><b>'+esc(o.product)+'</b></div>'+
+  '<div class="statline"><span>Quantity</span><b>'+o.qty+' pcs</b></div>'+
+  '<div class="statline"><span>Price / Unit</span><b>'+money(o.price||0)+'</b></div>'+
+  '<div class="statline"><span>Branch</span><b>'+esc(branchName(o.branch))+'</b></div>'+
+  '<div class="statline"><span>Order Date</span><b>'+esc(o.date)+'</b></div>'+
+  '<div class="statline"><span>Status</span><b>'+statusBadge(o.status)+'</b></div>'+
+  '<div class="statline"><span>Completed</span><b>'+doneQty(o)+' / '+o.qty+' pcs</b></div>'+
+  '<div class="statline"><span>Notes</span><b style="text-align:right;max-width:60%">'+noteHtml+'</b></div>';
+ $('orderModal').classList.add('open');
+}
+function closeOrderModal(){$('orderModal').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePhotoModal();closeOrderModal();}});
+
+function printPage(){
+ closePhotoModal();closeOrderModal();
+ const t=$('title').textContent||'Report';
+ const who=session?(admin()?'Head Office / Admin':branchName(session.branchId)):'';
+ $('printHead').innerHTML='<h2>🧶 Handmade Decor ERP — '+esc(t)+'</h2>'+
+  '<div>Printed: '+new Date().toLocaleString()+(who?' &nbsp;·&nbsp; User: '+esc(who):'')+'</div><hr>';
+ setTimeout(()=>window.print(),80);
+}
+
 function postJournal(entry){
  if(db.settings&&db.settings.lockedThrough){
   const d=entry.date||today();
@@ -694,7 +756,6 @@ function balanceSheet(asOf,branchArg){
  return {asset,liab,equity,retained,totalAssets,totalLiab,totalEquity,diff:r2(totalAssets-totalLiab-totalEquity)};
 }
 
-/* ================= OPERATIONAL POSTINGS ================= */
 function expenseAccountFor(type){
  const map={'Rent':'6000','Electricity':'6010','Transport':'6020','Fixed Staff Salary':'6030','Water':'6040','Repair & Maintenance':'6050','Other':'6090'};
  return map[type]||'6090';
@@ -769,7 +830,8 @@ function postCompletionJE(o){
  o.totalCost=totalCost;o.unitCost=unitCost;
 }
 function settleSale(id,method){
- const s=db.sales.find(x=>x.id===id);if(!s)return;
+ id=String(id);
+ const s=db.sales.find(x=>String(x.id)===id);if(!s)return;
  const sub=r2(s.qty*s.price),vat=r2(sub*Number(s.vat||0)/100),total=r2(sub+vat);
  const paid=Number(s.paidAmount||0),remaining=r2(total-paid);
  if(remaining<=0.01)return alert('Already fully settled.');
@@ -787,7 +849,8 @@ function settleSale(id,method){
  audit('SALE_SETTLE','#'+id+' '+money(amt)+' '+method);save();refresh();
 }
 function settlePurchase(id,method){
- const p=db.purchases.find(x=>x.id===id);if(!p)return;
+ id=String(id);
+ const p=db.purchases.find(x=>String(x.id)===id);if(!p)return;
  const gross=r2(p.qty*p.price),vat=r2(gross*Number(p.vat||0)/100),total=r2(gross+vat);
  const paid=Number(p.paidAmount||0),remaining=r2(total-paid);
  if(remaining<=0.01)return alert('Already fully settled.');
@@ -805,7 +868,8 @@ function settlePurchase(id,method){
  audit('PURCH_SETTLE','#'+id+' '+money(amt)+' '+method);save();refresh();
 }
 function settleExpense(id,method){
- const e=db.expenses.find(x=>x.id===id);if(!e)return;
+ id=String(id);
+ const e=db.expenses.find(x=>String(x.id)===id);if(!e)return;
  const total=Number(e.amount||0);
  const paid=Number(e.paidAmount||0),remaining=r2(total-paid);
  if(remaining<=0.01)return alert('Already fully settled.');
@@ -850,8 +914,8 @@ function renderFixedAssets(){
  $('faTable').innerHTML=arr.length?arr.map(f=>{
   const monthly=r2((f.cost-f.salvage)/f.lifeMonths),nbv=r2(f.cost-(f.accumulated||0));
   const status=f.disposed?'<span class="badge br">Disposed</span>':'<span class="badge bg">Active</span>';
-  const actions=f.disposed?(admin()?'<button class="danger" onclick="deleteFixedAsset('+f.id+')">Delete</button>':'—'):
-   ((admin()?'<button class="info" onclick="disposeFixedAsset('+f.id+')">Dispose</button>':'')+(admin()?'<button class="danger" onclick="deleteFixedAsset('+f.id+')">Delete</button>':''));
+  const actions=f.disposed?(admin()?'<button class="danger" data-fid="'+f.id+'" onclick="deleteFixedAsset(this.dataset.fid)">Delete</button>':'—'):
+   ((admin()?'<button class="info" data-fid="'+f.id+'" onclick="disposeFixedAsset(this.dataset.fid)">Dispose</button>':'')+(admin()?'<button class="danger" data-fid="'+f.id+'" onclick="deleteFixedAsset(this.dataset.fid)">Delete</button>':''));
   return '<tr><td>'+esc(f.name)+'</td><td>'+esc(f.category)+'</td><td>'+esc(branchName(f.branch))+'</td><td>'+money(f.cost)+'</td><td>'+money(monthly)+'</td><td>'+money(f.accumulated||0)+'</td><td>'+money(nbv)+'</td><td>'+status+'</td><td class="actions">'+actions+'</td></tr>';
  }).join(''):'<tr><td colspan="9" class="empty">No fixed assets</td></tr>';
 }
@@ -886,7 +950,8 @@ function runDepreciation(){
 }
 function disposeFixedAsset(id){
  if(!admin())return alert('Only Head Office.');
- const fa=db.fixedAssets.find(x=>x.id===id);
+ id=String(id);
+ const fa=db.fixedAssets.find(x=>String(x.id)===id);
  if(!fa||fa.disposed)return;
  const input=prompt('Disposal proceeds (enter 0 if scrapped):','0');
  if(input===null)return;
@@ -904,11 +969,12 @@ function disposeFixedAsset(id){
 }
 function deleteFixedAsset(id){
  if(!admin())return alert('Only Head Office.');
- const fa=db.fixedAssets.find(x=>x.id===id);if(!fa)return;
+ id=String(id);
+ const fa=db.fixedAssets.find(x=>String(x.id)===id);if(!fa)return;
  if((fa.accumulated||0)>0.01)return alert('Cannot delete: depreciation has been posted.');
  if(!confirm('Delete this asset? The purchase journal will be voided.'))return;
  if(voidByRef('FA_ADD',id,'Asset deleted')>0)return alert('Cannot delete: journal is in a locked period.');
- db.fixedAssets=db.fixedAssets.filter(x=>x.id!==id);
+ db.fixedAssets=db.fixedAssets.filter(x=>String(x.id)!==id);
  audit('FA_DEL',fa.name);save();refresh();
 }
 function saveSettings(e){
@@ -930,7 +996,6 @@ function renderSettings(){
  if(document.activeElement!==$('setLockDate'))$('setLockDate').value=(db.settings&&db.settings.lockedThrough)||'';
 }
 
-/* ================= PASSWORD ================= */
 async function hashPassword(p,saltTag){
  const salted=(saltTag||'hd_v10')+'::'+p+'::x';
  if(window.crypto&&crypto.subtle&&crypto.subtle.digest){
@@ -952,7 +1017,6 @@ async function verifyPassword(p,storedHash){
  return {ok:false,legacy:false};
 }
 
-/* ================= AUTH ================= */
 async function login(){
  const u=$('loginUser').value.trim(),p=$('loginPass').value;
  if(!u||!p)return alert('Enter username and password');
@@ -1041,7 +1105,6 @@ function filterReportOptions(){
  if(sel.selectedOptions[0]&&sel.selectedOptions[0].disabled)sel.value='sales';
 }
 
-/* ================= IMAGE ================= */
 function compressImage(file,maxDim,quality){
  return new Promise((resolve,reject)=>{
   const reader=new FileReader();
@@ -1062,7 +1125,6 @@ function compressImage(file,maxDim,quality){
  });
 }
 
-/* ================= ORDERS ================= */
 async function saveOrder(e){
  e.preventDefault();
  let data='';
@@ -1074,31 +1136,39 @@ async function saveOrder(e){
  db.orders.push({id,customer:$('oCustomer').value.trim(),product:$('oProduct').value.trim(),
   qty:Number($('oQty').value),price:r2($('oPrice').value||0),branch:br,
   date:$('oDate').value||today(),notes:$('oNotes').value,photo:data,
-  status:'Order Received',completedQty:0,assembly:false,materialComplete:false});
+  status:'Order Received',completedQty:0,assembly:false,materialComplete:false,branchStockConsumed:false});
  audit('ORDER_ADD','#'+id+' '+$('oProduct').value.trim()+' x'+$('oQty').value);
  save();e.target.reset();$('oDate').value=today();refresh();alert('Customer order saved');
 }
 function renderOrders(){
  let a=filtered(db.orders);
  const q=($('orderSearch')&&$('orderSearch').value||'').trim().toLowerCase();
- if(q)a=a.filter(o=>(o.customer+' '+o.product+' '+branchName(o.branch)).toLowerCase().includes(q));
+ if(q)a=a.filter(o=>(o.customer+' '+o.product+' '+branchName(o.branch)+' '+(o.notes||'')).toLowerCase().includes(q));
  $('ordersTable').innerHTML=a.length?a.map(o=>{
-  const send=admin()&&o.status==='Order Received'?'<button class="info" onclick="sendOrder('+o.id+')">Send to Branch</button>':'';
-  const del=admin()||o.branch===session.branchId?'<button class="danger" onclick="deleteOrder('+o.id+')">Delete</button>':'';
-  return '<tr><td>'+(o.photo?'<img class="photo" src="'+o.photo+'">':'—')+'</td><td>'+esc(o.customer)+'</td><td>'+esc(o.product)+'</td><td>'+o.qty+'</td><td>'+esc(branchName(o.branch))+'</td><td>'+statusBadge(o.status)+'</td><td>'+doneQty(o)+' / '+o.qty+'</td><td class="actions">'+send+del+'</td></tr>'
- }).join(''):'<tr><td colspan="8" class="empty">No orders</td></tr>';
+  const oid=String(o.id);
+  const send=admin()&&o.status==='Order Received'?'<button class="info" data-oid="'+oid+'" onclick="sendOrder(this.dataset.oid)">Send to Branch</button>':'';
+  const del=(admin()||o.branch===session.branchId)?'<button class="danger" data-oid="'+oid+'" onclick="deleteOrder(this.dataset.oid)">Delete</button>':'';
+  const dl=o.photo?'<button class="secondary" data-oid="'+oid+'" onclick="downloadPhoto(this.dataset.oid)" title="Download photo">⬇ Photo</button>':'';
+  const photo=o.photo
+    ?'<img class="photo" src="'+o.photo+'" data-oid="'+oid+'" onclick="openPhoto(this.dataset.oid)" title="Click to view large / download">'
+    :'—';
+  const noteText=o.notes?esc(o.notes):'<span class="muted">—</span>';
+  return '<tr><td>'+photo+'</td><td>'+esc(o.customer)+'</td><td>'+esc(o.product)+'</td><td>'+o.qty+'</td><td>'+esc(branchName(o.branch))+'</td><td>'+statusBadge(o.status)+'</td><td>'+doneQty(o)+' / '+o.qty+'</td><td class="notes-cell">'+noteText+'</td><td class="actions"><button class="info" data-oid="'+oid+'" onclick="viewOrder(this.dataset.oid)">👁 View</button>'+dl+send+del+'</td></tr>'
+ }).join(''):'<tr><td colspan="9" class="empty">No orders</td></tr>';
 }
 function sendOrder(id){
  if(!admin())return;
- const o=db.orders.find(x=>x.id===id);if(!o)return;
+ id=String(id);
+ const o=db.orders.find(x=>String(x.id)===id);if(!o)return;
  if(o.status!=='Order Received')return alert('Only a new Order Received order can be sent.');
  if(!o.branch)return alert('Assign a branch before sending the order.');
- o.status='Sent to Branch';o.completedQty=0;o.assembly=false;o.materialComplete=false;o.fgReturned=false;
+ o.status='Sent to Branch';o.completedQty=0;o.assembly=false;o.materialComplete=false;o.fgReturned=false;o.branchStockConsumed=false;
  audit('ORDER_SEND','#'+id+' → '+branchName(o.branch));save();refresh();
  alert('Order sent to '+branchName(o.branch)+'.');
 }
 function deleteOrder(id){
- const o=db.orders.find(x=>x.id===id);if(!o)return;
+ id=String(id);
+ const o=db.orders.find(x=>String(x.id)===id);if(!o)return;
  if(!admin()&&o.branch!==session.branchId)return alert('Not allowed');
  if(o.fgReturned){
   const f=db.fg.find(x=>x.product.toLowerCase()===o.product.toLowerCase());
@@ -1106,24 +1176,27 @@ function deleteOrder(id){
   if(remaining+0.000001<Number(o.qty))return alert('Cannot delete this order: FG already sold.');
  }
  if(!confirm('Delete this order? Related issues will be reversed and journals voided.'))return;
- const issueIds=db.issues.filter(i=>i.orderId===id).map(i=>i.id);
+ const issueIds=db.issues.filter(i=>i.orderId===o.id).map(i=>i.id);
  for(const iid of issueIds){if(voidByRef('ISSUE',iid,'Order deleted')>0)return alert('Cannot delete: journal in locked period.');}
  if(o.status==='Completed'||o.fgReturned){if(voidByRef('COMPLETE',id,'Order deleted')>0)return alert('Cannot delete: completion journal in locked period.');}
  db.issues.filter(i=>i.orderId===id).forEach(i=>{
   const m=db.materials.find(x=>x.id===i.materialId);if(m)m.qty=r2(m.qty+i.qty);
-  const bs=db.branchStock.find(x=>x.branch===i.branch&&x.materialId===i.materialId);
-  if(bs){bs.qty=r2(bs.qty-i.qty);if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);}
  });
+ if(!o.branchStockConsumed){
+  db.issues.filter(i=>i.orderId===id).forEach(i=>{
+   const bs=db.branchStock.find(x=>Number(x.branch)===Number(i.branch)&&Number(x.materialId)===Number(i.materialId));
+   if(bs){bs.qty=r2(bs.qty-i.qty);if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);}
+  });
+ }
  db.issues=db.issues.filter(i=>i.orderId!==id);
  if(o.fgReturned){
   const f=db.fg.find(x=>x.product.toLowerCase()===o.product.toLowerCase());
   if(f){f.qty=r2(f.qty-Number(o.qty));if(f.qty<=0.000001)db.fg=db.fg.filter(x=>x!==f);}
  }
- db.orders=db.orders.filter(x=>x.id!==id);
+ db.orders=db.orders.filter(x=>String(x.id)!==id);
  audit('ORDER_DEL','#'+id+' '+o.product);save();refresh();
 }
 
-/* ================= PRODUCTION ================= */
 function getOrderBOMRequirement(o){
  const bom=db.boms.filter(b=>b.product.toLowerCase()===o.product.toLowerCase());
  const req={};bom.forEach(b=>req[b.materialId]=(req[b.materialId]||0)+b.qty*o.qty);
@@ -1145,15 +1218,16 @@ function renderProduction(){
   const state=o.status||'Order Received',done=doneQty(o),pct=orderPct(o);
   if(session&&session.role==='branch'&&o.branch===session.branchId){
    if(state==='Sent to Branch'||state==='In Production'){
-    actions+='<button class="secondary" onclick="updateCompleted('+o.id+')">Enter Pieces Done</button>';
-    if(orderDone(o))actions+='<button class="success" onclick="assemblyComplete('+o.id+')">Assembly Complete</button>';
+    actions+='<button class="secondary" data-oid="'+o.id+'" onclick="updateCompleted(this.dataset.oid)">Enter Pieces Done</button>';
+    if(orderDone(o))actions+='<button class="success" data-oid="'+o.id+'" onclick="assemblyComplete(this.dataset.oid)">Assembly Complete</button>';
    }else if(state==='Assembly Complete'){actions+='<span class="badge bb">Waiting for FG Receipt</span>';}
    else if(state==='Completed'){actions+='<span class="badge bg">Completed</span>';}
   }
-  if(session&&session.role==='admin'&&state==='Assembly Complete'){actions+='<button class="info" onclick="returnFG('+o.id+')">Receive FG</button>';}
+  if(session&&session.role==='admin'&&state==='Assembly Complete'){actions+='<button class="info" data-oid="'+o.id+'" onclick="returnFG(this.dataset.oid)">Receive FG</button>';}
   const issued=db.issues.filter(i=>i.orderId===o.id).reduce((s,i)=>s+i.qty,0);
   const reqTotal=Object.values(getOrderBOMRequirement(o).req).reduce((s,x)=>s+x,0);
-  return '<tr><td>#'+o.id+'</td><td>'+esc(o.product)+'</td><td>'+esc(branchName(o.branch))+'</td><td>'+o.qty+'</td>'+
+  const notesHtml=o.notes?'<div class="muted" style="white-space:normal;max-width:220px">📝 '+esc(o.notes)+'</div>':'';
+  return '<tr><td>#'+o.id+'</td><td>'+esc(o.product)+notesHtml+'</td><td>'+esc(branchName(o.branch))+'</td><td>'+o.qty+'</td>'+
    '<td style="min-width:170px"><div class="bar"><span style="width:'+pct+'%"></span></div><b>'+done+'</b> / '+o.qty+' pcs ('+pct+'%)</td>'+
    '<td>'+statusBadge(state)+'</td>'+
    '<td>'+(reqTotal?issued.toFixed(3)+' / '+reqTotal.toFixed(3)+(ready.ok?' ✓':''):'No BOM')+'</td>'+
@@ -1161,7 +1235,8 @@ function renderProduction(){
  }).join(''):'<tr><td colspan="8" class="empty">No production orders</td></tr>';
 }
 function updateCompleted(id){
- const o=db.orders.find(x=>x.id===id);
+ id=String(id);
+ const o=db.orders.find(x=>String(x.id)===id);
  if(!o||session.role!=='branch'||o.branch!==session.branchId)return alert('Only the assigned branch can update.');
  if(!['Sent to Branch','In Production'].includes(o.status))return alert('Not currently in production.');
  const done=doneQty(o);
@@ -1176,7 +1251,8 @@ function updateCompleted(id){
  alert(n===Number(o.qty)?'All '+o.qty+' pieces complete. Click Assembly Complete.':'Saved: '+n+' of '+o.qty+' pieces.');
 }
 function assemblyComplete(id){
- const o=db.orders.find(x=>x.id===id);
+ id=String(id);
+ const o=db.orders.find(x=>String(x.id)===id);
  if(!o||session.role!=='branch'||o.branch!==session.branchId)return alert('Only the assigned branch.');
  if(o.status!=='In Production')return alert('Order must be In Production.');
  if(!orderDone(o))return alert('Only '+doneQty(o)+' of '+o.qty+' pieces complete.');
@@ -1185,19 +1261,36 @@ function assemblyComplete(id){
   if(ready.reason==='No BOM')return alert('No BOM found. Ask Head Office.');
   return alert('Material not fully issued.');
  }
+
+ let consumedCount=0,totalConsumed=0;
+ db.issues.filter(i=>i.orderId===o.id).forEach(i=>{
+  const bs=db.branchStock.find(x=>Number(x.branch)===Number(i.branch)&&Number(x.materialId)===Number(i.materialId));
+  if(bs){
+   bs.qty=r2(bs.qty-i.qty);
+   consumedCount++;
+   totalConsumed=r2(totalConsumed+i.qty);
+   if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);
+  }
+ });
+ o.branchStockConsumed=true;
+
  o.assembly=true;o.materialComplete=true;o.status='Assembly Complete';
- audit('ASSY_DONE','#'+id+' ('+doneQty(o)+'/'+o.qty+' pcs)');save();refresh();
- alert('Assembly complete. Head Office must receive the Finished Goods.');
+ audit('ASSY_DONE','#'+id+' ('+doneQty(o)+'/'+o.qty+' pcs) — branch stock consumed: '+consumedCount+' lines');
+ save();refresh();
+ alert('Assembly complete. Head Office must receive the Finished Goods.\n\nMaterial consumed from branch stock: '+consumedCount+' line(s), '+totalConsumed+' total qty.');
 }
 function returnFG(id){
+ id=String(id);
  if(session.role!=='admin')return alert('Only Head Office.');
- const o=db.orders.find(x=>x.id===id);if(!o)return;
+ const o=db.orders.find(x=>String(x.id)===id);if(!o)return;
  if(o.status!=='Assembly Complete')return alert('FG only after Assembly Complete.');
  if(!orderDone(o))return alert('All pieces must be completed first.');
  if(!o.assembly)return alert('Assembly is not complete.');
  const ready=orderMaterialReady(o);
  if(!ready.ok)return alert('Material completion required.');
+
  try{postCompletionJE(o);}catch(err){return alert('Accounting error: '+err.message);}
+
  const f=db.fg.find(x=>x.product.toLowerCase()===o.product.toLowerCase());
  const qty=Number(o.qty);
  if(f){
@@ -1211,7 +1304,6 @@ function returnFG(id){
  alert('FG received: '+o.qty+' pcs at cost '+money(o.unitCost)+' per unit.');
 }
 
-/* ================= MATERIALS ================= */
 function recomputeMaterialPrice(mid){
  const m=db.materials.find(x=>x.id===mid);if(!m)return;
  const layers=[];(m.openingLayers||[]).forEach(l=>layers.push(l));
@@ -1239,13 +1331,14 @@ function saveMaterial(e){
  save();e.target.reset();refresh();alert('Material stock saved');
 }
 function renderMaterials(){
- $('matTable').innerHTML=db.materials.length?db.materials.map(m=>'<tr><td>'+esc(m.name)+'</td><td>'+m.unit+'</td><td>'+m.qty+'</td><td>'+money(m.price)+'</td><td>'+money(m.qty*m.price)+'</td><td><button class="danger" onclick="deleteMaterial('+m.id+')">Delete</button></td></tr>').join(''):'<tr><td colspan="6" class="empty">No raw materials</td></tr>';
+ $('matTable').innerHTML=db.materials.length?db.materials.map(m=>'<tr><td>'+esc(m.name)+'</td><td>'+m.unit+'</td><td>'+m.qty+'</td><td>'+money(m.price)+'</td><td>'+money(m.qty*m.price)+'</td><td><button class="danger" data-mid="'+m.id+'" onclick="deleteMaterial(this.dataset.mid)">Delete</button></td></tr>').join(''):'<tr><td colspan="6" class="empty">No raw materials</td></tr>';
 }
 function deleteMaterial(id){
  if(!admin())return alert('Only Head Office.');
- if(db.issues.some(i=>i.materialId===id)||db.boms.some(b=>b.materialId===id))return alert('Material used in BOM/issue history. Delete is blocked.');
- const m=db.materials.find(x=>x.id===id);
- if(confirm('Delete material?')){db.materials=db.materials.filter(x=>x.id!==id);audit('MAT_DEL',m?m.name:'');save();refresh();}
+ id=String(id);
+ if(db.issues.some(i=>String(i.materialId)===id)||db.boms.some(b=>String(b.materialId)===id))return alert('Material used in BOM/issue history. Delete is blocked.');
+ const m=db.materials.find(x=>String(x.id)===id);
+ if(confirm('Delete material?')){db.materials=db.materials.filter(x=>String(x.id)!==id);audit('MAT_DEL',m?m.name:'');save();refresh();}
 }
 function renderFG(){
  if(!db.fg.length){$('fgStock').innerHTML='<div class="empty">No finished goods in stock</div>';return;}
@@ -1266,7 +1359,7 @@ function fillOrdersSelect(){
  syncIssueBranch();
 }
 function syncIssueBranch(){
- const o=db.orders.find(x=>x.id===Number($('iOrder').value));
+ const o=db.orders.find(x=>String(x.id)===String($('iOrder').value));
  if(o)$('iBranch').value=o.branch;
 }
 $('iOrder').addEventListener('change',syncIssueBranch);
@@ -1290,19 +1383,19 @@ function syncSaleStock(){
 function issueMaterial(e){
  e.preventDefault();
  if(!admin())return alert('Only Head Office/Admin can issue material.');
- const o=db.orders.find(x=>x.id===Number($('iOrder').value)),m=db.materials.find(x=>x.id===Number($('iMaterial').value)),q=Number($('iQty').value);
+ const o=db.orders.find(x=>String(x.id)===String($('iOrder').value)),m=db.materials.find(x=>String(x.id)===String($('iMaterial').value)),q=Number($('iQty').value);
  if(!o||!m)return alert('Select an order and material.');
  if(!['Sent to Branch','In Production'].includes(o.status))return alert('Material can only be issued after the order is sent to a branch.');
  if(q<=0)return alert('Quantity must be positive.');
  if(m.qty<q)return alert('Head Office stock is insufficient.');
- const bom=db.boms.find(b=>b.product.toLowerCase()===o.product.toLowerCase()&&b.materialId===m.id);
+ const bom=db.boms.find(b=>b.product.toLowerCase()===o.product.toLowerCase()&&String(b.materialId)===String(m.id));
  if(!bom)return alert('No BOM found for this product/material.');
- const already=db.issues.filter(i=>i.orderId===o.id&&i.materialId===m.id).reduce((s,i)=>s+i.qty,0),need=bom.qty*o.qty;
+ const already=db.issues.filter(i=>String(i.orderId)===String(o.id)&&String(i.materialId)===String(m.id)).reduce((s,i)=>s+i.qty,0),need=bom.qty*o.qty;
  if(already+q>need+0.000001)return alert('Issue exceeds BOM. Required: '+need+' '+m.unit+'. Already issued: '+already+'.');
  const issue={id:uid(),date:today(),orderId:o.id,materialId:m.id,qty:q,branch:o.branch,user:session.user,cost:m.price};
  try{postIssueJE(issue,m);}catch(err){return alert('Accounting error: '+err.message);}
  m.qty=r2(m.qty-q);db.issues.push(issue);
- const bs=db.branchStock.find(x=>x.branch===o.branch&&x.materialId===m.id);
+ const bs=db.branchStock.find(x=>Number(x.branch)===Number(o.branch)&&String(x.materialId)===String(m.id));
  if(bs)bs.qty=r2(bs.qty+q);else db.branchStock.push({branch:o.branch,materialId:m.id,qty:q});
  audit('ISSUE_ADD','#'+o.id+' '+m.name+' '+q+' → '+branchName(o.branch));
  save();e.target.reset();refresh();alert('Material issued.');
@@ -1310,55 +1403,54 @@ function issueMaterial(e){
 function renderIssues(){
  const a=filtered(db.issues);
  $('issueTable').innerHTML=a.length?a.map(i=>{
-  const o=db.orders.find(x=>x.id===i.orderId),m=db.materials.find(x=>x.id===i.materialId);
-  const del=admin()?'<button class="danger" onclick="deleteIssue('+i.id+')">Delete</button>':'';
+  const o=db.orders.find(x=>String(x.id)===String(i.orderId)),m=db.materials.find(x=>String(x.id)===String(i.materialId));
+  const del=admin()?'<button class="danger" data-iid="'+i.id+'" onclick="deleteIssue(this.dataset.iid)">Delete</button>':'';
   return '<tr><td>'+i.date+'</td><td>#'+i.orderId+' '+(o?esc(o.product):'')+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+i.qty+'</td><td>'+esc(branchName(i.branch))+'</td><td>'+esc(i.user)+'</td><td>'+del+'</td></tr>';
  }).join(''):'<tr><td colspan="7" class="empty">No material issue history</td></tr>';
 }
 function deleteIssue(id){
  if(!admin())return alert('Only Head Office.');
- const i=db.issues.find(x=>x.id===id);if(!i)return;
- const ord=db.orders.find(o=>o.id===i.orderId);
+ id=String(id);
+ const i=db.issues.find(x=>String(x.id)===id);if(!i)return;
+ const ord=db.orders.find(o=>String(o.id)===String(i.orderId));
  if(ord&&(ord.status==='Completed'||ord.status==='Assembly Complete'))return alert('Cannot delete: order is already '+ord.status+'.');
  if(!confirm('Delete issue and return stock? Journal will be voided.'))return;
  if(voidByRef('ISSUE',id,'Issue deleted')>0)return alert('Cannot delete: journal in locked period.');
- const m=db.materials.find(x=>x.id===i.materialId);if(m)m.qty=r2(m.qty+i.qty);
- const bs=db.branchStock.find(x=>x.branch===i.branch&&x.materialId===i.materialId);
+ const m=db.materials.find(x=>String(x.id)===String(i.materialId));if(m)m.qty=r2(m.qty+i.qty);
+ const bs=db.branchStock.find(x=>Number(x.branch)===Number(i.branch)&&String(x.materialId)===String(i.materialId));
  if(bs){bs.qty=r2(bs.qty-i.qty);if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);}
- db.issues=db.issues.filter(x=>x.id!==id);
+ db.issues=db.issues.filter(x=>String(x.id)!==id);
  audit('ISSUE_DEL','#'+i.orderId+' '+i.qty);save();refresh();
 }
 function renderBranchStock(){
  const a=filtered(db.branchStock);
  $('branchStock').innerHTML=a.length?'<div class="tablewrap"><table><thead><tr><th>Branch</th><th>Material</th><th>Qty</th><th>Unit</th><th>Value</th></tr></thead><tbody>'+
-  a.map(x=>{const m=db.materials.find(y=>y.id===x.materialId);return '<tr><td>'+esc(branchName(x.branch))+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+x.qty+'</td><td>'+(m?m.unit:'')+'</td><td>'+(m?money(x.qty*m.price):'0.00')+'</td></tr>';}).join('')+
+  a.map(x=>{const m=db.materials.find(y=>String(y.id)===String(x.materialId));return '<tr><td>'+esc(branchName(x.branch))+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+x.qty+'</td><td>'+(m?m.unit:'')+'</td><td>'+(m?money(x.qty*m.price):'0.00')+'</td></tr>';}).join('')+
   '</tbody></table></div>':'<div class="empty">No branch stock yet.</div>';
 }
 
-/* ================= BOM ================= */
 function saveBOM(e){
  e.preventDefault();if(!admin())return alert('Only Head Office.');
- const p=$('bProduct').value.trim(),mid=Number($('bMaterial').value),q=Number($('bQty').value),lab=r2($('bLabour').value||0);
+ const p=$('bProduct').value.trim(),mid=$('bMaterial').value,q=Number($('bQty').value),lab=r2($('bLabour').value||0);
  if(!p||!mid||q<=0)return alert('Enter valid BOM details.');
- const b=db.boms.find(x=>x.product.toLowerCase()===p.toLowerCase()&&x.materialId===mid);
+ const b=db.boms.find(x=>x.product.toLowerCase()===p.toLowerCase()&&String(x.materialId)===String(mid));
  if(b){b.qty=q;b.labour=lab;}else db.boms.push({id:uid(),product:p,materialId:mid,qty:q,labour:lab});
  audit('BOM_ADD',p+' / material '+mid+' @ '+q);
  save();e.target.reset();refresh();alert('BOM saved');
 }
 function renderBOM(){
  $('bomTable').innerHTML=db.boms.length?db.boms.map(b=>{
-  const m=db.materials.find(x=>x.id===b.materialId),mc=m?r2(m.price*b.qty):0,total=r2(mc+b.labour);
-  return '<tr><td>'+esc(b.product)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+b.qty+'</td><td>'+money(mc)+'</td><td>'+money(b.labour)+'</td><td>'+money(total)+'</td><td><button class="danger" onclick="deleteBOM('+b.id+')">Delete</button></td></tr>';
+  const m=db.materials.find(x=>String(x.id)===String(b.materialId)),mc=m?r2(m.price*b.qty):0,total=r2(mc+b.labour);
+  return '<tr><td>'+esc(b.product)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+b.qty+'</td><td>'+money(mc)+'</td><td>'+money(b.labour)+'</td><td>'+money(total)+'</td><td><button class="danger" data-bid="'+b.id+'" onclick="deleteBOM(this.dataset.bid)">Delete</button></td></tr>';
  }).join(''):'<tr><td colspan="7" class="empty">No BOM</td></tr>';
 }
-function deleteBOM(id){if(!admin())return alert('Only Head Office.');if(confirm('Delete BOM?')){db.boms=db.boms.filter(x=>x.id!==id);audit('BOM_DEL','id '+id);save();refresh();}}
+function deleteBOM(id){if(!admin())return alert('Only Head Office.');id=String(id);if(confirm('Delete BOM?')){db.boms=db.boms.filter(x=>String(x.id)!==id);audit('BOM_DEL','id '+id);save();refresh();}}
 
-/* ================= PURCHASES ================= */
 function savePurchase(e){
  e.preventDefault();if(!admin())return alert('Only Head Office.');
- const supplier=$('pSupplier').value.trim(),mid=Number($('pMaterial').value),q=Number($('pQty').value),price=r2($('pPrice').value);
+ const supplier=$('pSupplier').value.trim(),mid=$('pMaterial').value,q=Number($('pQty').value),price=r2($('pPrice').value);
  const vat=Number($('pVat').value||0);
- const m=db.materials.find(x=>x.id===mid);if(!m)return alert('Add material master first.');
+ const m=db.materials.find(x=>String(x.id)===String(mid));if(!m)return alert('Add material master first.');
  if(q<=0)return alert('Quantity must be positive.');
  const p={id:uid(),date:$('pDate').value||today(),supplier,materialId:mid,qty:q,price,vat,payMethod:$('pPay').value,paidAmount:0};
  try{postPurchaseJE(p);}catch(err){return alert('Accounting error: '+err.message);}
@@ -1368,26 +1460,26 @@ function savePurchase(e){
 }
 function renderPurchases(){
  $('purchaseTable').innerHTML=db.purchases.length?db.purchases.map(p=>{
-  const m=db.materials.find(x=>x.id===p.materialId);
+  const m=db.materials.find(x=>String(x.id)===String(p.materialId));
   const gross=r2(p.qty*p.price),vat=r2(gross*Number(p.vat||0)/100),total=r2(gross+vat);
-  const settle=!p.settled?'<button class="info" onclick="settlePurchase('+p.id+',\'Cash\')">Cash</button><button class="info" onclick="settlePurchase('+p.id+',\'Bank\')">Bank</button>':'';
-  return '<tr><td>'+p.date+'</td><td>'+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+p.qty+'</td><td>'+money(p.price)+'</td><td>'+money(vat)+'</td><td>'+money(total)+'</td><td>'+paidBadge(p,total,p.settleMethod||p.payMethod)+'</td><td class="actions">'+settle+'<button class="danger" onclick="deletePurchase('+p.id+')">Delete</button></td></tr>';
+  const settle=!p.settled?'<button class="info" data-pid="'+p.id+'" onclick="settlePurchase(this.dataset.pid,\'Cash\')">Cash</button><button class="info" data-pid="'+p.id+'" onclick="settlePurchase(this.dataset.pid,\'Bank\')">Bank</button>':'';
+  return '<tr><td>'+p.date+'</td><td>'+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+p.qty+'</td><td>'+money(p.price)+'</td><td>'+money(vat)+'</td><td>'+money(total)+'</td><td>'+paidBadge(p,total,p.settleMethod||p.payMethod)+'</td><td class="actions">'+settle+'<button class="danger" data-pid="'+p.id+'" onclick="deletePurchase(this.dataset.pid)">Delete</button></td></tr>';
  }).join(''):'<tr><td colspan="9" class="empty">No purchases</td></tr>';
 }
 function deletePurchase(id){
  if(!admin())return alert('Only Head Office.');
- const p=db.purchases.find(x=>x.id===id);if(!p)return;
+ id=String(id);
+ const p=db.purchases.find(x=>String(x.id)===id);if(!p)return;
  if(!confirm('Delete purchase? Stock reduced, journals voided.'))return;
- const m=db.materials.find(x=>x.id===p.materialId);
+ const m=db.materials.find(x=>String(x.id)===String(p.materialId));
  if(m&&m.qty+0.000001<p.qty)return alert('Cannot delete: only '+m.qty+' '+m.unit+' remaining, purchase added '+p.qty+'.');
  if(voidByRef('PURCHASE',id,'Purchase deleted')>0)return alert('Cannot delete: journal in locked period.');
  if(voidByRef('PAYMENT',id,'Purchase deleted')>0)return alert('Cannot delete: settlement journal in locked period.');
  if(m)m.qty=r2(m.qty-p.qty);
- db.purchases=db.purchases.filter(x=>x.id!==id);recomputeMaterialPrice(p.materialId);
+ db.purchases=db.purchases.filter(x=>String(x.id)!==id);recomputeMaterialPrice(p.materialId);
  audit('PURCH_DEL','id '+id);save();refresh();
 }
 
-/* ================= SALES ================= */
 function saveSale(e){
  e.preventDefault();
  const branchId=admin()?Number($('sBranch').value):session.branchId;
@@ -1411,13 +1503,14 @@ function renderSales(){
  const a=filtered(db.sales);
  $('salesTable').innerHTML=a.length?a.map(s=>{
   const sub=r2(s.qty*s.price),v=r2(sub*Number(s.vat||0)/100),total=r2(sub+v);
-  const settle=!s.settled?'<button class="info" onclick="settleSale('+s.id+',\'Cash\')">Cash</button><button class="info" onclick="settleSale('+s.id+',\'Bank\')">Bank</button>':'';
-  const del=(admin()||s.branch===session.branchId)?'<button class="danger" onclick="deleteSale('+s.id+')">Delete</button>':'';
+  const settle=!s.settled?'<button class="info" data-sid="'+s.id+'" onclick="settleSale(this.dataset.sid,\'Cash\')">Cash</button><button class="info" data-sid="'+s.id+'" onclick="settleSale(this.dataset.sid,\'Bank\')">Bank</button>':'';
+  const del=(admin()||s.branch===session.branchId)?'<button class="danger" data-sid="'+s.id+'" onclick="deleteSale(this.dataset.sid)">Delete</button>':'';
   return '<tr><td>'+s.date+'</td><td>'+esc(s.customer)+'</td><td>'+esc(s.product)+'</td><td>'+s.qty+'</td><td>'+money(sub)+'</td><td>'+money(v)+'</td><td>'+money(total)+'</td><td>'+money(s.cogs||0)+'</td><td>'+esc(branchName(s.branch))+'</td><td>'+paidBadge(s,total,s.settleMethod||s.payMethod)+'</td><td class="actions">'+settle+del+'</td></tr>';
  }).join(''):'<tr><td colspan="11" class="empty">No sales</td></tr>';
 }
 function deleteSale(id){
- const s=db.sales.find(x=>x.id===id);if(!s)return;
+ id=String(id);
+ const s=db.sales.find(x=>String(x.id)===id);if(!s)return;
  if(!admin()&&s.branch!==session.branchId)return alert('Only related branch.');
  if(!confirm('Delete sale? FG stock restored, journals voided.'))return;
  if(voidByRef('SALE',id,'Sale deleted')>0)return alert('Cannot delete: journal in locked period.');
@@ -1425,11 +1518,10 @@ function deleteSale(id){
  if(voidByRef('RECEIPT',id,'Sale deleted')>0)return alert('Cannot delete: receipt journal in locked period.');
  const fg=db.fg.find(f=>f.product.toLowerCase()===s.product.toLowerCase());
  if(fg)fg.qty=r2(fg.qty+s.qty);else db.fg.push({product:s.product,qty:s.qty,unitCost:0});
- db.sales=db.sales.filter(x=>x.id!==id);
+ db.sales=db.sales.filter(x=>String(x.id)!==id);
  audit('SALE_DEL',s.product+' x'+s.qty);save();refresh();
 }
 
-/* ================= EXPENSES ================= */
 function saveExpense(e){
  e.preventDefault();
  const br=admin()?Number($('eBranch').value):session.branchId;
@@ -1444,21 +1536,21 @@ function renderExpenses(){
  const a=filtered(db.expenses);
  $('expenseTable').innerHTML=a.length?a.map(x=>{
   const canDel=canDeleteExpense(x);
-  const settle=(!x.settled&&x.payMethod==='Credit')?'<button class="info" onclick="settleExpense('+x.id+',\'Cash\')">Cash</button><button class="info" onclick="settleExpense('+x.id+',\'Bank\')">Bank</button>':'';
-  return '<tr><td>'+x.date+'</td><td>'+esc(x.type)+'</td><td>'+esc(branchName(x.branch))+'</td><td>'+money(x.amount)+'</td><td>'+esc(x.payMethod||'—')+'</td><td>'+paidBadge(x,x.amount,x.settleMethod)+'</td><td>'+esc(x.user)+'</td><td>'+esc(x.note||'')+'</td><td class="actions">'+settle+(canDel?'<button class="danger" onclick="deleteExpense('+x.id+')">Delete</button>':'<span class="muted">Protected</span>')+'</td></tr>';
+  const settle=(!x.settled&&x.payMethod==='Credit')?'<button class="info" data-eid="'+x.id+'" onclick="settleExpense(this.dataset.eid,\'Cash\')">Cash</button><button class="info" data-eid="'+x.id+'" onclick="settleExpense(this.dataset.eid,\'Bank\')">Bank</button>':'';
+  return '<tr><td>'+x.date+'</td><td>'+esc(x.type)+'</td><td>'+esc(branchName(x.branch))+'</td><td>'+money(x.amount)+'</td><td>'+esc(x.payMethod||'—')+'</td><td>'+paidBadge(x,x.amount,x.settleMethod)+'</td><td>'+esc(x.user)+'</td><td>'+esc(x.note||'')+'</td><td class="actions">'+settle+(canDel?'<button class="danger" data-eid="'+x.id+'" onclick="deleteExpense(this.dataset.eid)">Delete</button>':'<span class="muted">Protected</span>')+'</td></tr>';
  }).join(''):'<tr><td colspan="9" class="empty">No indirect expenses</td></tr>';
 }
 function deleteExpense(id){
- const x=db.expenses.find(y=>y.id===id);if(!x)return;
+ id=String(id);
+ const x=db.expenses.find(y=>String(y.id)===id);if(!x)return;
  if(!canDeleteExpense(x))return alert('You cannot delete this expense.');
  if(!confirm('Delete expense? Journal will be voided.'))return;
  if(voidByRef('EXPENSE',id,'Expense deleted')>0)return alert('Cannot delete: journal in locked period.');
  if(voidByRef('EXPPAY',id,'Expense deleted')>0)return alert('Cannot delete: settlement journal in locked period.');
- db.expenses=db.expenses.filter(y=>y.id!==id);
+ db.expenses=db.expenses.filter(y=>String(y.id)!==id);
  audit('EXP_DEL',x.type+' '+x.amount);save();refresh();
 }
 
-/* ================= ACCOUNTING VIEWS ================= */
 let acctTab='tb';
 function showAcct(t){acctTab=t;renderAccounting();}
 function renderAccounting(){
@@ -1550,7 +1642,6 @@ function renderAccounting(){
  }
 }
 
-/* ================= AR / AP ================= */
 function remainingOn(rec,total){return r2(total-Number(rec.paidAmount||0));}
 function renderARAP(){
  if(!$('arList'))return;
@@ -1562,16 +1653,16 @@ function renderARAP(){
   sales.map(s=>{
    const sub=r2(s.qty*s.price),v=r2(sub*Number(s.vat||0)/100),total=r2(sub+v);
    const remaining=remainingOn(s,total);arTotal=r2(arTotal+remaining);
-   return '<tr><td>'+s.date+'</td><td>'+esc(s.customer)+'</td><td>'+esc(s.product)+'</td><td>'+s.qty+'</td><td>'+money(total)+'<div class="muted">Paid '+money(s.paidAmount||0)+' · Due '+money(remaining)+'</div></td><td>'+esc(branchName(s.branch))+'</td><td class="actions"><button class="info" onclick="settleSale('+s.id+',\'Cash\')">Receipt Cash</button><button class="info" onclick="settleSale('+s.id+',\'Bank\')">Receipt Bank</button></td></tr>';
+   return '<tr><td>'+s.date+'</td><td>'+esc(s.customer)+'</td><td>'+esc(s.product)+'</td><td>'+s.qty+'</td><td>'+money(total)+'<div class="muted">Paid '+money(s.paidAmount||0)+' · Due '+money(remaining)+'</div></td><td>'+esc(branchName(s.branch))+'</td><td class="actions"><button class="info" data-sid="'+s.id+'" onclick="settleSale(this.dataset.sid,\'Cash\')">Receipt Cash</button><button class="info" data-sid="'+s.id+'" onclick="settleSale(this.dataset.sid,\'Bank\')">Receipt Bank</button></td></tr>';
   }).join('')+'</tbody></table></div>':'<div class="empty">No outstanding receivables</div>';
  const apRows=purchases.map(p=>{
-  const m=db.materials.find(x=>x.id===p.materialId);
+  const m=db.materials.find(x=>String(x.id)===String(p.materialId));
   const gross=r2(p.qty*p.price),v=r2(gross*Number(p.vat||0)/100),total=r2(gross+v);
   const remaining=remainingOn(p,total);apTotal=r2(apTotal+remaining);
-  return '<tr><td>'+p.date+'</td><td>Supplier: '+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'—')+'</td><td>'+p.qty+'</td><td>'+money(total)+'<div class="muted">Paid '+money(p.paidAmount||0)+' · Due '+money(remaining)+'</div></td><td class="actions"><button class="info" onclick="settlePurchase('+p.id+',\'Cash\')">Pay Cash</button><button class="info" onclick="settlePurchase('+p.id+',\'Bank\')">Pay Bank</button></td></tr>';
+  return '<tr><td>'+p.date+'</td><td>Supplier: '+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'—')+'</td><td>'+p.qty+'</td><td>'+money(total)+'<div class="muted">Paid '+money(p.paidAmount||0)+' · Due '+money(remaining)+'</div></td><td class="actions"><button class="info" data-pid="'+p.id+'" onclick="settlePurchase(this.dataset.pid,\'Cash\')">Pay Cash</button><button class="info" data-pid="'+p.id+'" onclick="settlePurchase(this.dataset.pid,\'Bank\')">Pay Bank</button></td></tr>';
  }).concat(expenses.map(e=>{
   const total=Number(e.amount||0);const remaining=remainingOn(e,total);apTotal=r2(apTotal+remaining);
-  return '<tr><td>'+e.date+'</td><td>Expense: '+esc(e.type)+'</td><td>—</td><td>—</td><td>'+money(total)+'<div class="muted">Paid '+money(e.paidAmount||0)+' · Due '+money(remaining)+'</div></td><td class="actions"><button class="info" onclick="settleExpense('+e.id+',\'Cash\')">Pay Cash</button><button class="info" onclick="settleExpense('+e.id+',\'Bank\')">Pay Bank</button></td></tr>';
+  return '<tr><td>'+e.date+'</td><td>Expense: '+esc(e.type)+'</td><td>—</td><td>—</td><td>'+money(total)+'<div class="muted">Paid '+money(e.paidAmount||0)+' · Due '+money(remaining)+'</div></td><td class="actions"><button class="info" data-eid="'+e.id+'" onclick="settleExpense(this.dataset.eid,\'Cash\')">Pay Cash</button><button class="info" data-eid="'+e.id+'" onclick="settleExpense(this.dataset.eid,\'Bank\')">Pay Bank</button></td></tr>';
  }));
  $('apList').innerHTML=apRows.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Counterparty</th><th>Item</th><th>Qty</th><th>Total / Paid / Due</th><th>Actions</th></tr></thead><tbody>'+apRows.join('')+'</tbody></table></div>':'<div class="empty">No outstanding payables</div>';
  const inputVat=accountBalance('1300',{to:today()});
@@ -1587,7 +1678,6 @@ function renderARAP(){
   '<div class="statline bs-total"><span>Net VAT '+(netVat>=0?'payable':'refundable')+'</span><b>'+money(Math.abs(netVat))+'</b></div>';
 }
 
-/* ================= FINANCE PAGE ================= */
 function renderFinance(){
  const from=db.ledgerStartDate||'',to=today();
  const branchArg=admin()?null:session.branchId;
@@ -1612,7 +1702,6 @@ function renderFinance(){
  }
 }
 
-/* ================= OPENING BALANCE ================= */
 function saveOpening(e){
  e.preventDefault();
  if(!admin())return alert('Only Head Office.');
@@ -1657,7 +1746,6 @@ function renderOpening(){
  ['obCash','obBank','obRec','obPay','obCap','obDate'].forEach(id=>{if($(id))$(id).disabled=!on;});
 }
 
-/* ================= EMPLOYEES ================= */
 function saveEmployee(e){
  e.preventDefault();const br=admin()?Number($('empBranch').value):session.branchId;
  const emp={id:uid(),name:$('empName').value.trim(),branch:br,join:$('empJoin').value||today(),security:r2($('empSec').value||0)};
@@ -1666,15 +1754,15 @@ function saveEmployee(e){
 }
 function renderEmployees(){
  const a=filtered(db.employees);
- $('empTable').innerHTML=a.length?a.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(branchName(x.branch))+'</td><td>'+x.join+'</td><td>'+money(x.security)+'</td><td><button class="danger" onclick="deleteEmployee('+x.id+')">Delete</button></td></tr>').join(''):'<tr><td colspan="5" class="empty">No employees</td></tr>';
+ $('empTable').innerHTML=a.length?a.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(branchName(x.branch))+'</td><td>'+x.join+'</td><td>'+money(x.security)+'</td><td><button class="danger" data-eid="'+x.id+'" onclick="deleteEmployee(this.dataset.eid)">Delete</button></td></tr>').join(''):'<tr><td colspan="5" class="empty">No employees</td></tr>';
 }
 function deleteEmployee(id){
- const x=db.employees.find(y=>y.id===id);if(!x)return;
+ id=String(id);
+ const x=db.employees.find(y=>String(y.id)===id);if(!x)return;
  if(!admin()&&x.branch!==session.branchId)return alert('Not allowed');
- if(confirm('Delete employee?')){db.employees=db.employees.filter(y=>y.id!==id);audit('EMP_DEL',x.name);save();refresh();}
+ if(confirm('Delete employee?')){db.employees=db.employees.filter(y=>String(y.id)!==id);audit('EMP_DEL',x.name);save();refresh();}
 }
 
-/* ================= BRANCH SETTINGS ================= */
 function renderBranches(){
  if(!admin())return;
  const sel=$('brId');
@@ -1683,9 +1771,10 @@ function renderBranches(){
  if(keep)sel.value=keep;
  const b=db.branches.find(x=>x.id===Number(sel.value))||db.branches[0];
  if(b){$('brName').value=b.name;$('brUser').value=b.user;$('brPass').value='';}
- $('branchTable').innerHTML=db.branches.map(b=>'<tr><td>'+b.id+'</td><td>'+esc(b.name)+'</td><td>'+esc(b.user)+'</td><td>••••</td><td><button class="secondary" onclick="editBranch('+b.id+')">Edit</button></td></tr>').join('');
+ $('branchTable').innerHTML=db.branches.map(b=>'<tr><td>'+b.id+'</td><td>'+esc(b.name)+'</td><td>'+esc(b.user)+'</td><td>••••</td><td><button class="secondary" data-bid="'+b.id+'" onclick="editBranch(this.dataset.bid)">Edit</button></td></tr>').join('');
 }
 function editBranch(id){
+ id=Number(id);
  const b=db.branches.find(x=>x.id===id);if(!b)return;
  $('brId').value=id;$('brName').value=b.name;$('brUser').value=b.user;$('brPass').value='';
 }
@@ -1703,7 +1792,6 @@ async function saveBranch(e){
  save();$('who').textContent='HEAD OFFICE / ADMIN';buildNav();refresh();alert('Branch settings saved');
 }
 
-/* ================= DASHBOARD ================= */
 function renderDashboard(){
  const orders=filtered(db.orders),prod=orders.filter(o=>o.status==='In Production').length,fg=db.fg.reduce((s,x)=>s+Number(x.qty),0);
  const pl=plReport(db.ledgerStartDate||'',today(),admin()?null:session.branchId);
@@ -1726,7 +1814,7 @@ function renderDashboard(){
   const mySales=db.sales.filter(s=>Number(s.branch)===Number(myBranch));
   const myExp=db.expenses.filter(e=>Number(e.branch)===Number(myBranch));
   const myStock=db.branchStock.filter(x=>Number(x.branch)===Number(myBranch));
-  const stockVal=r2(myStock.reduce((s,x)=>{const m=db.materials.find(y=>y.id===x.materialId);return s+r2(x.qty*(m?m.price:0))},0));
+  const stockVal=r2(myStock.reduce((s,x)=>{const m=db.materials.find(y=>String(y.id)===String(x.materialId));return s+r2(x.qty*(m?m.price:0))},0));
   const outstanding=r2(mySales.filter(s=>!s.settled).reduce((s,sa)=>{const tot=r2(sa.qty*sa.price*(1+Number(sa.vat||0)/100));return s+(tot-Number(sa.paidAmount||0));},0));
   $('branchDash').innerHTML=
    '<div class="statline"><span>My branch</span><b>'+esc(branchName(myBranch))+'</b></div>'+
@@ -1746,7 +1834,6 @@ function renderDashboard(){
  }
 }
 
-/* ================= REPORTS ================= */
 function dateOK(d,from,to){return (!from||d>=from)&&(!to||d<=to);}
 function runReport(){
  const type=$('reportType').value,from=$('rFrom').value,to=$('rTo').value;
@@ -1756,7 +1843,7 @@ function runReport(){
   $('reportOut').innerHTML='<h4>Sales Report</h4><p>Total (incl VAT): <b>'+money(total)+'</b></p>'+table(['Date','Customer','Product','Qty','Total'],a.map(x=>[x.date,esc(x.customer),esc(x.product),x.qty,money(r2(x.qty*x.price*(1+Number(x.vat||0)/100)))]));
  }else if(type==='orders'){
   const a=filtered(db.orders).filter(x=>dateOK(x.date,from,to));
-  $('reportOut').innerHTML='<h4>Order Report</h4>'+table(['Date','Customer','Product','Branch','Qty','Done (pcs)','Status'],a.map(x=>[x.date,esc(x.customer),esc(x.product),esc(branchName(x.branch)),x.qty,doneQty(x)+' / '+x.qty,statusBadge(x.status)]));
+  $('reportOut').innerHTML='<h4>Order Report</h4>'+table(['Date','Customer','Product','Branch','Qty','Done (pcs)','Status','Notes'],a.map(x=>[x.date,esc(x.customer),esc(x.product),esc(branchName(x.branch)),x.qty,doneQty(x)+' / '+x.qty,statusBadge(x.status),esc(x.notes||'')]));
  }else if(type==='production'){
   const a=filtered(db.orders).filter(x=>x.status!=='Order Received').filter(x=>dateOK(x.date,from,to));
   const totQty=a.reduce((s,o)=>s+Number(o.qty||0),0),totDone=a.reduce((s,o)=>s+doneQty(o),0);
@@ -1798,7 +1885,6 @@ function table(head,rows){
  return '<div class="tablewrap"><table><thead><tr>'+head.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+(rows.length?rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+head.length+'" class="empty">No data</td></tr>')+'</tbody></table></div>';
 }
 
-/* ================= BACKUP ================= */
 function backup(){
  if(!admin())return;
  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');
@@ -1847,7 +1933,7 @@ function renderSystem(){
  if(!$('sysInfo'))return;
  const tb=trialBalance(today(),null);
  $('sysInfo').innerHTML=
-  '<div class="statline"><span>ERP Version</span><b>V10.3 Live (Firebase sync)</b></div>'+
+  '<div class="statline"><span>ERP Version</span><b>V10.4 Live</b></div>'+
   '<div class="statline"><span>Storage</span><b>Firebase + localStorage cache</b></div>'+
   '<div class="statline"><span>Sync status</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Connected':'🔴 Offline')+'</b></div>'+
   '<div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div>'+
@@ -1872,8 +1958,7 @@ async function resetData(){
  location.reload();
 }
 
-/* ================= BOOT ================= */
-window.addEventListener('load',attachSync);
+window.addEventListener('load',()=>{attachSync();console.log('ERP V10.4 loaded — photo/notes/print + branch-stock-at-assembly fixes active');});
 </script>
 </body>
 </html>
