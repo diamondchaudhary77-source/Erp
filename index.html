@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#714B67">
-<title>Handmade Decor ERP V10.3 Live</title>
+<title>Handmade Decor ERP V10.5 Live</title>
 <style>
 *{box-sizing:border-box}
 :root{--p:#714B67;--p2:#8f6385;--bg:#f5f3f5;--card:#fff;--text:#29252b;--muted:#777;--green:#198754;--red:#c0392b;--orange:#e67e22;--blue:#2878c8;--line:#e7e2e7}
@@ -72,7 +72,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <div id="loginScreen" class="login">
  <div class="loginbox">
   <h1>🧶 Handmade Decor ERP</h1>
-  <b>V10.3 — Live Multi-Branch</b>
+  <b>V10.5 — Live Multi-Branch</b>
   <p class="muted"><span id="syncDot" class="sync-dot"></span><span id="syncLabel">Connecting…</span></p>
   <div class="field"><label>Username</label><input id="loginUser" value="admin" onkeydown="if(event.key==='Enter')$('loginPass').focus()"></div>
   <div class="field"><label>Password</label><input id="loginPass" type="password" value="admin" onkeydown="if(event.key==='Enter')login()"></div>
@@ -84,7 +84,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <div id="app" style="display:none">
  <div class="layout">
   <aside class="side" id="side">
-   <div class="brand">🧶 Handmade Decor<br><small>ERP V10.3 Live</small></div>
+   <div class="brand">🧶 Handmade Decor<br><small>ERP V10.5 Live</small></div>
    <div class="nav" id="nav"></div>
   </aside>
   <main class="main">
@@ -181,7 +181,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 
    <section id="bom" class="page">
     <div class="card"><h3>BOM & Labour Cost</h3>
-     <div class="notice">Labour per unit is charged to FG at order completion, credited to <b>Labour Payable (2210)</b>. Overhead absorption is added on top per Settings.</div>
+     <div class="notice">Labour per unit is charged to FG at order completion, credited to <b>Labour Payable (2210)</b>. Overhead absorption is added on top per Settings. Pay off Labour Payable from the <b>Receivables & Payables</b> page.</div>
      <form onsubmit="saveBOM(event)"><div class="row">
       <div class="field"><label>Finished Product</label><input id="bProduct" required></div>
       <div class="field"><label>Material</label><select id="bMaterial" required></select></div>
@@ -248,7 +248,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 
    <section id="fixedassets" class="page">
     <div class="card"><h3>Add Fixed Asset</h3>
-     <div class="notice">Straight-line depreciation only. Assets recognised at cost; depreciation posts monthly to 6100 / 1505.</div>
+     <div class="notice">Straight-line depreciation only. Assets recognised at cost; depreciation posts monthly to 6100 / 1505. Credit purchases are tracked under Accounts Payable — pay from ARAP page.</div>
      <form onsubmit="saveFixedAsset(event)"><div class="row">
       <div class="field"><label>Asset Name</label><input id="faName" required></div>
       <div class="field"><label>Category</label><select id="faCategory"><option>Machinery</option><option>Furniture</option><option>Vehicles</option><option>Computer Equipment</option><option>Buildings</option><option>Other</option></select></div>
@@ -295,11 +295,12 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
     <div class="grid">
      <div class="card"><div class="muted">Receivable (unpaid)</div><div class="kpi" id="kAR">0</div></div>
      <div class="card"><div class="muted">Payable (unpaid)</div><div class="kpi" id="kAP">0</div></div>
-     <div class="card"><div class="muted">Net VAT position</div><div class="kpi" id="kVat">0</div></div>
+     <div class="card"><div class="muted">Labour Payable</div><div class="kpi" id="kLabour">0</div></div>
      <div class="card"><div class="muted">Cash + Bank</div><div class="kpi" id="kCB">0</div></div>
     </div>
     <div class="card"><h3>Receivables — Unpaid Sales</h3><div id="arList"></div></div>
     <div class="card"><h3>Payables — Unpaid Purchases & Expenses</h3><div id="apList"></div></div>
+    <div class="card"><h3>Labour Payable (Piece-work)</h3><div id="labourList"></div></div>
     <div class="card"><h3>VAT Summary</h3><div id="vatSummary"></div></div>
    </section>
 
@@ -505,7 +506,7 @@ function defaultCOA(){
 }
 function defaultDB(){
  return {
-  version:'10.3',
+  version:'10.5',
   admin:{user:'admin',pass:'admin'},
   branches:[
    {id:1,name:'Branch 1',user:'branch1',pass:'1234'},
@@ -564,6 +565,8 @@ function migrateDB(x){
   if(o.completedQty>Number(o.qty||0))o.completedQty=Number(o.qty||0);
   if(o.notes===undefined)o.notes='';
   if(o.branchStockConsumed===undefined)o.branchStockConsumed=false;
+  if(o.labourPaid===undefined)o.labourPaid=0;
+  if(o.labourSettled===undefined)o.labourSettled=(Number(o.labourCost||0)<=0.01);
   delete o.progress;
  });
  return x;
@@ -816,7 +819,8 @@ function postCompletionJE(o){
  const rate=Number((db.settings&&db.settings.overheadRate)||0);
  const overheadCost=r2((materialCost+labourCost)*rate/100);
  const totalCost=r2(materialCost+labourCost+overheadCost);
- const unitCost=r2(totalCost/Math.max(1,o.qty));
+ // === COST PRECISION FIX: keep full precision so FG account balance matches FG stock value exactly ===
+ const unitCost=totalCost/Math.max(1,o.qty);
  const lines=[
   {account:'1220',debit:totalCost,branch:o.branch,memo:o.product},
   {account:'1210',credit:materialCost,branch:o.branch,memo:o.product},
@@ -828,6 +832,7 @@ function postCompletionJE(o){
  }
  o.materialCost=materialCost;o.labourCost=labourCost;o.overheadCost=overheadCost;
  o.totalCost=totalCost;o.unitCost=unitCost;
+ o.labourPaid=0;o.labourSettled=(labourCost<=0.01);
 }
 function settleSale(id,method){
  id=String(id);
@@ -885,6 +890,29 @@ function settleExpense(id,method){
  e.paidAmount=r2(paid+amt);e.settled=e.paidAmount>=total-0.01;
  if(e.settled){e.settledDate=today();e.settleMethod=method;}
  audit('EXP_SETTLE','#'+id+' '+money(amt)+' '+method);save();refresh();
+}
+function settleLabour(id,method){
+ id=String(id);
+ if(!admin())return alert('Only Head Office.');
+ const o=db.orders.find(x=>String(x.id)===id);if(!o)return;
+ const total=r2(Number(o.labourCost||0));
+ if(total<=0.01)return alert('No labour cost recorded on this order.');
+ const paid=r2(Number(o.labourPaid||0));
+ const remaining=r2(total-paid);
+ if(remaining<=0.01)return alert('Already fully paid.');
+ const input=prompt('Labour payment for order #'+id+'\nProduct: '+(o.product||'')+'\nRemaining: '+money(remaining),String(remaining));
+ if(input===null)return;
+ const amt=r2(input);
+ if(!(amt>0))return alert('Amount must be positive.');
+ if(amt>remaining+0.01)return alert('Amount exceeds remaining '+money(remaining)+'.');
+ try{postJournal({date:today(),memo:'Labour payment: order #'+id+' ('+(o.product||'')+')',refType:'LABOURPAY',refId:o.id,lines:[
+  {account:'2210',debit:amt,branch:o.branch,memo:'Labour paid'},
+  {account:method==='Bank'?'1010':'1000',credit:amt,branch:o.branch}
+ ]});}catch(err){return alert('Accounting error: '+err.message);}
+ o.labourPaid=r2(paid+amt);o.labourSettled=o.labourPaid>=total-0.01;
+ if(o.labourSettled){o.labourSettledDate=today();o.labourSettleMethod=method;}
+ audit('LABOUR_SETTLE','#'+id+' '+money(amt)+' '+method);
+ save();refresh();
 }
 function saveFixedAsset(e){
  e.preventDefault();
@@ -1136,7 +1164,7 @@ async function saveOrder(e){
  db.orders.push({id,customer:$('oCustomer').value.trim(),product:$('oProduct').value.trim(),
   qty:Number($('oQty').value),price:r2($('oPrice').value||0),branch:br,
   date:$('oDate').value||today(),notes:$('oNotes').value,photo:data,
-  status:'Order Received',completedQty:0,assembly:false,materialComplete:false,branchStockConsumed:false});
+  status:'Order Received',completedQty:0,assembly:false,materialComplete:false,branchStockConsumed:false,labourPaid:0,labourSettled:true});
  audit('ORDER_ADD','#'+id+' '+$('oProduct').value.trim()+' x'+$('oQty').value);
  save();e.target.reset();$('oDate').value=today();refresh();alert('Customer order saved');
 }
@@ -1179,6 +1207,7 @@ function deleteOrder(id){
  const issueIds=db.issues.filter(i=>i.orderId===o.id).map(i=>i.id);
  for(const iid of issueIds){if(voidByRef('ISSUE',iid,'Order deleted')>0)return alert('Cannot delete: journal in locked period.');}
  if(o.status==='Completed'||o.fgReturned){if(voidByRef('COMPLETE',id,'Order deleted')>0)return alert('Cannot delete: completion journal in locked period.');}
+ if(Number(o.labourPaid||0)>0.01){if(voidByRef('LABOURPAY',id,'Order deleted')>0)return alert('Cannot delete: labour payment journal in locked period.');}
  db.issues.filter(i=>i.orderId===id).forEach(i=>{
   const m=db.materials.find(x=>x.id===i.materialId);if(m)m.qty=r2(m.qty+i.qty);
  });
@@ -1295,13 +1324,14 @@ function returnFG(id){
  const qty=Number(o.qty);
  if(f){
   const oldQty=Number(f.qty),oldCost=Number(f.unitCost||0),newQty=oldQty+qty;
-  const newCost=newQty>0?r2((oldQty*oldCost+qty*Number(o.unitCost||0))/newQty):0;
+  // === COST PRECISION FIX: keep full precision on weighted-average unit cost ===
+  const newCost=newQty>0?((oldQty*oldCost+qty*Number(o.unitCost||0))/newQty):0;
   f.qty=newQty;f.unitCost=newCost;
  }else{db.fg.push({product:o.product,qty:qty,unitCost:Number(o.unitCost||0)});}
  o.status='Completed';o.fgReturned=true;
  audit('FG_RECEIVE','#'+id+' '+o.product+' +'+o.qty+' pcs @ cost '+money(o.unitCost));
  save();refresh();
- alert('FG received: '+o.qty+' pcs at cost '+money(o.unitCost)+' per unit.');
+ alert('FG received: '+o.qty+' pcs at cost '+money(o.unitCost)+' per unit.\n\nLabour accrued to Labour Payable: '+money(o.labourCost||0)+'\nPay it from Receivables & Payables page.');
 }
 
 function recomputeMaterialPrice(mid){
@@ -1665,13 +1695,28 @@ function renderARAP(){
   return '<tr><td>'+e.date+'</td><td>Expense: '+esc(e.type)+'</td><td>—</td><td>—</td><td>'+money(total)+'<div class="muted">Paid '+money(e.paidAmount||0)+' · Due '+money(remaining)+'</div></td><td class="actions"><button class="info" data-eid="'+e.id+'" onclick="settleExpense(this.dataset.eid,\'Cash\')">Pay Cash</button><button class="info" data-eid="'+e.id+'" onclick="settleExpense(this.dataset.eid,\'Bank\')">Pay Bank</button></td></tr>';
  }));
  $('apList').innerHTML=apRows.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Counterparty</th><th>Item</th><th>Qty</th><th>Total / Paid / Due</th><th>Actions</th></tr></thead><tbody>'+apRows.join('')+'</tbody></table></div>':'<div class="empty">No outstanding payables</div>';
+ const labourOrders=(admin()?db.orders:filtered(db.orders)).filter(o=>Number(o.labourCost||0)>0.01&&!o.labourSettled);
+ let labourTotal=0;
+ const labourRows=labourOrders.map(o=>{
+  const total=r2(Number(o.labourCost||0));
+  const paid=r2(Number(o.labourPaid||0));
+  const remaining=r2(total-paid);
+  labourTotal=r2(labourTotal+remaining);
+  return '<tr><td>'+esc(o.date)+'</td><td>#'+o.id+' — '+esc(o.product)+'</td><td>'+esc(branchName(o.branch))+'</td><td>'+money(total)+'<div class="muted">Paid '+money(paid)+' · Due '+money(remaining)+'</div></td><td class="actions"><button class="info" data-oid="'+o.id+'" onclick="settleLabour(this.dataset.oid,\'Cash\')">Pay Cash</button><button class="info" data-oid="'+o.id+'" onclick="settleLabour(this.dataset.oid,\'Bank\')">Pay Bank</button></td></tr>';
+ }).join('');
+ if($('labourList')){
+  $('labourList').innerHTML=labourRows
+    ?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Order</th><th>Branch</th><th>Total / Paid / Due</th><th>Actions</th></tr></thead><tbody>'+labourRows+'</tbody></table></div>'
+    :'<div class="empty">No outstanding labour payable</div>';
+ }
  const inputVat=accountBalance('1300',{to:today()});
  const outputVat=r2(-accountBalance('2100',{to:today()}));
  const netVat=r2(outputVat-Math.max(0,inputVat));
  const cash=accountBalance('1000',{to:today()});
  const bank=accountBalance('1010',{to:today()});
  $('kAR').textContent=money(arTotal);$('kAP').textContent=money(apTotal);
- $('kVat').textContent=money(netVat);$('kCB').textContent=money(cash+bank);
+ if($('kLabour'))$('kLabour').textContent=money(labourTotal);
+ $('kCB').textContent=money(cash+bank);
  $('vatSummary').innerHTML=
   '<div class="statline"><span>Output VAT (collected)</span><b>'+money(outputVat)+'</b></div>'+
   '<div class="statline"><span>Input VAT (recoverable)</span><b>'+money(-inputVat)+'</b></div>'+
@@ -1888,7 +1933,7 @@ function table(head,rows){
 function backup(){
  if(!admin())return;
  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');
- a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V10.3_Backup_'+today()+'.json';a.click();
+ a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V10.5_Backup_'+today()+'.json';a.click();
  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
  localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();
 }
@@ -1933,7 +1978,7 @@ function renderSystem(){
  if(!$('sysInfo'))return;
  const tb=trialBalance(today(),null);
  $('sysInfo').innerHTML=
-  '<div class="statline"><span>ERP Version</span><b>V10.4 Live</b></div>'+
+  '<div class="statline"><span>ERP Version</span><b>V10.5 Live</b></div>'+
   '<div class="statline"><span>Storage</span><b>Firebase + localStorage cache</b></div>'+
   '<div class="statline"><span>Sync status</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Connected':'🔴 Offline')+'</b></div>'+
   '<div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div>'+
@@ -1958,7 +2003,7 @@ async function resetData(){
  location.reload();
 }
 
-window.addEventListener('load',()=>{attachSync();console.log('ERP V10.4 loaded — photo/notes/print + branch-stock-at-assembly fixes active');});
+window.addEventListener('load',()=>{attachSync();console.log('ERP V10.5 loaded — cost precision fix + labour payable settlement');});
 </script>
 </body>
-</html>
+  </html>
