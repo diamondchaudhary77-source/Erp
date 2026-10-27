@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#714B67">
-<title>Handmade Decor ERP V11.0 Live</title>
+<title>Handmade Decor ERP V11.1 Live</title>
 <style>
 *{box-sizing:border-box}
 :root{--p:#714B67;--p2:#8f6385;--bg:#f5f3f5;--card:#fff;--text:#29252b;--muted:#777;--green:#198754;--red:#c0392b;--orange:#e67e22;--blue:#2878c8;--line:#e7e2e7}
@@ -44,7 +44,6 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 .photo-dl{background:var(--p);color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:bold;display:inline-block}
 .photo-dl:hover{background:var(--p2)}
 .print-head{display:none}
-/* Hide all financial columns & blocks for non-admin */
 body.no-financials .fin{display:none!important}
 @page{size:A4 landscape;margin:10mm}
 @media print{
@@ -74,7 +73,7 @@ body.no-financials .fin{display:none!important}
 <div id="loginScreen" class="login">
  <div class="loginbox">
   <h1>🧶 Handmade Decor ERP</h1>
-  <b>V11.0 — Confidential Financials</b>
+  <b>V11.1 — Confidential Financials + Admin Password</b>
   <p class="muted"><span id="syncDot" class="sync-dot"></span><span id="syncLabel">Connecting…</span></p>
   <div class="field"><label>Username</label><input id="loginUser" value="admin" onkeydown="if(event.key==='Enter')$('loginPass').focus()"></div>
   <div class="field"><label>Password</label><input id="loginPass" type="password" value="admin" onkeydown="if(event.key==='Enter')login()"></div>
@@ -86,7 +85,7 @@ body.no-financials .fin{display:none!important}
 <div id="app" style="display:none">
  <div class="layout">
   <aside class="side" id="side">
-   <div class="brand">🧶 Handmade Decor<br><small>ERP V11.0 Live</small></div>
+   <div class="brand">🧶 Handmade Decor<br><small>ERP V11.1 Live</small></div>
    <div class="nav" id="nav"></div>
   </aside>
   <main class="main">
@@ -316,6 +315,18 @@ body.no-financials .fin{display:none!important}
      </div></form>
      <p class="muted">Leave lock date blank to disable locking.</p>
     </div>
+    <div class="card"><h3>Change Admin Password</h3>
+     <div class="notice">Changes the password for the <b>admin</b> login only. You'll need your current password to confirm. The change syncs to every device.</div>
+     <form onsubmit="changeAdminPass(event)">
+      <div class="row">
+       <div class="field"><label>Current Password</label><input id="apOldPass" type="password" required autocomplete="current-password"></div>
+       <div class="field"><label>New Password</label><input id="apNewPass" type="password" required minlength="4" autocomplete="new-password"></div>
+       <div class="field"><label>Confirm New Password</label><input id="apConfirmPass" type="password" required minlength="4" autocomplete="new-password"></div>
+       <div class="field" style="display:flex;align-items:end"><button class="primary">Update Admin Password</button></div>
+      </div>
+     </form>
+     <p class="muted">There is no password recovery. Write your new password in a safe place.</p>
+    </div>
    </section>
 
    <section id="opening" class="page">
@@ -541,7 +552,7 @@ function defaultCOA(){
 }
 function defaultDB(){
  return {
-  version:'11.0',
+  version:'11.1',
   admin:{user:'admin',pass:'admin'},
   branches:[
    {id:1,name:'Branch 1',user:'branch1',pass:'1234'},
@@ -1066,6 +1077,29 @@ function renderSettings(){
  if(!$('setOverheadRate'))return;
  if(document.activeElement!==$('setOverheadRate'))$('setOverheadRate').value=(db.settings&&db.settings.overheadRate)||0;
  if(document.activeElement!==$('setLockDate'))$('setLockDate').value=(db.settings&&db.settings.lockedThrough)||'';
+}
+
+/* ===== ADMIN PASSWORD CHANGE ===== */
+async function changeAdminPass(e){
+ e.preventDefault();
+ if(!admin())return alert('Only admin can change admin password.');
+ const oldP=$('apOldPass').value;
+ const newP=$('apNewPass').value;
+ const conP=$('apConfirmPass').value;
+ if(newP!==conP)return alert('New passwords do not match.');
+ if(newP.length<4)return alert('New password must be at least 4 characters.');
+ const adm=db.admin||{user:'admin',pass:'admin'};
+ let ok=false;
+ if(adm.passHash){const v=await verifyPassword(oldP,adm.passHash);ok=v.ok;}
+ else if(adm.pass){ok=(adm.pass===oldP);}
+ if(!ok)return alert('Current password is incorrect.');
+ adm.passHash=await hashPassword(newP,'hd_v10');
+ delete adm.pass;
+ db.admin=adm;
+ audit('ADMIN_PASS_CHANGE','Password updated');
+ save(true);
+ e.target.reset();
+ alert('Admin password updated successfully.\n\nNote it down somewhere safe — there is no recovery if forgotten.');
 }
 
 function setAllPerms(checked){
@@ -2015,7 +2049,6 @@ function renderDashboard(){
   const pct=totalQty>0?Math.round(doneTotal/totalQty*100):0;
   return '<div style="margin:9px 0"><div style="display:flex;justify-content:space-between"><span>'+esc(b.name)+'</span><b>'+doneTotal+' / '+totalQty+' pcs ('+pct+'%)</b></div><div class="bar"><span style="width:'+pct+'%"></span></div></div>';
  }).join('');
- // Balance sheet snapshot: admin only
  if($('bsCard'))$('bsCard').style.display=admin()?'':'none';
  if($('branchDashCard'))$('branchDashCard').style.display=admin()?'none':'';
  if(!admin()){
@@ -2102,7 +2135,7 @@ function table(head,rows){
 function backup(){
  if(!hasPerm('backup'))return;
  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');
- a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V11.0_Backup_'+today()+'.json';a.click();
+ a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V11.1_Backup_'+today()+'.json';a.click();
  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
  localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();
 }
@@ -2147,7 +2180,7 @@ function renderSystem(){
  if(!$('sysInfo'))return;
  const tb=trialBalance(today(),null);
  $('sysInfo').innerHTML=
-  '<div class="statline"><span>ERP Version</span><b>V11.0 Live</b></div>'+
+  '<div class="statline"><span>ERP Version</span><b>V11.1 Live</b></div>'+
   '<div class="statline"><span>Storage</span><b>Firebase + localStorage cache</b></div>'+
   '<div class="statline"><span>Sync status</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Connected':'🔴 Offline')+'</b></div>'+
   '<div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div>'+
@@ -2173,7 +2206,7 @@ async function resetData(){
  location.reload();
 }
 
-window.addEventListener('load',()=>{attachSync();console.log('ERP V11.0 loaded — financials admin-only');});
+window.addEventListener('load',()=>{attachSync();console.log('ERP V11.1 loaded — admin password change + confidential financials');});
 </script>
 </body>
-  </html>
+                                                           </html>
