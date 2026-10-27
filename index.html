@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#714B67">
-<title>Handmade Decor ERP V10.9 Live</title>
+<title>Handmade Decor ERP V11.0 Live</title>
 <style>
 *{box-sizing:border-box}
 :root{--p:#714B67;--p2:#8f6385;--bg:#f5f3f5;--card:#fff;--text:#29252b;--muted:#777;--green:#198754;--red:#c0392b;--orange:#e67e22;--blue:#2878c8;--line:#e7e2e7}
@@ -44,6 +44,8 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 .photo-dl{background:var(--p);color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:bold;display:inline-block}
 .photo-dl:hover{background:var(--p2)}
 .print-head{display:none}
+/* Hide all financial columns & blocks for non-admin */
+body.no-financials .fin{display:none!important}
 @page{size:A4 landscape;margin:10mm}
 @media print{
   body{background:#fff}
@@ -72,19 +74,19 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <div id="loginScreen" class="login">
  <div class="loginbox">
   <h1>🧶 Handmade Decor ERP</h1>
-  <b>V10.9 — Staff Accounts (all branches)</b>
+  <b>V11.0 — Confidential Financials</b>
   <p class="muted"><span id="syncDot" class="sync-dot"></span><span id="syncLabel">Connecting…</span></p>
   <div class="field"><label>Username</label><input id="loginUser" value="admin" onkeydown="if(event.key==='Enter')$('loginPass').focus()"></div>
   <div class="field"><label>Password</label><input id="loginPass" type="password" value="admin" onkeydown="if(event.key==='Enter')login()"></div>
   <button id="loginBtn" class="primary" style="width:100%" onclick="login()" disabled>Connecting…</button>
-  <p class="muted">Admin: admin / admin<br>Branches: branch1–branch5 / 1234<br>Staff: created by Admin (all branches)</p>
+  <p class="muted">Admin: admin / admin<br>Branches: branch1–branch5 / 1234<br>Staff: created by Admin</p>
  </div>
 </div>
 
 <div id="app" style="display:none">
  <div class="layout">
   <aside class="side" id="side">
-   <div class="brand">🧶 Handmade Decor<br><small>ERP V10.9 Live</small></div>
+   <div class="brand">🧶 Handmade Decor<br><small>ERP V11.0 Live</small></div>
    <div class="nav" id="nav"></div>
   </aside>
   <main class="main">
@@ -106,7 +108,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
      <div class="card"><div class="muted">Customer Orders</div><div class="kpi" id="kOrders">0</div></div>
      <div class="card"><div class="muted">In Production</div><div class="kpi" id="kProd">0</div></div>
      <div class="card"><div class="muted">Finished Goods</div><div class="kpi" id="kFG">0</div></div>
-     <div class="card"><div class="muted">Net Profit</div><div class="kpi green" id="kProfit">0.00</div></div>
+     <div class="card" id="kProfitCard"><div class="muted" id="kProfitLabel">Net Profit</div><div class="kpi green" id="kProfit">0.00</div></div>
     </div>
     <div class="grid2">
      <div class="card"><h3>Order Workflow</h3><div id="flow"></div></div>
@@ -154,12 +156,12 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
        <div class="field"><label>Material</label><input id="mName" required></div>
        <div class="field"><label>Unit</label><select id="mUnit"><option>kg</option><option>gram</option><option>pcs</option><option>meter</option><option>liter</option></select></div>
        <div class="field"><label>Quantity</label><input id="mQty" type="number" step="0.001" required></div>
-       <div class="field"><label>Price / Unit</label><input id="mPrice" type="number" step="0.01" value="0"></div>
+       <div class="field fin"><label>Price / Unit</label><input id="mPrice" type="number" step="0.01" value="0"></div>
       </div><button class="primary">Save / Add Stock</button></form>
      </div>
      <div class="card"><h3>Finished Goods Stock (at cost)</h3><div id="fgStock"></div></div>
     </div>
-    <div class="card"><h3>Raw Materials</h3><div class="tablewrap"><table><thead><tr><th>Material</th><th>Unit</th><th>Qty</th><th>Avg Price</th><th>Value</th><th>Actions</th></tr></thead><tbody id="matTable"></tbody></table></div></div>
+    <div class="card"><h3>Raw Materials</h3><div class="tablewrap"><table><thead><tr><th>Material</th><th>Unit</th><th>Qty</th><th class="fin">Avg Price</th><th class="fin">Value</th><th>Actions</th></tr></thead><tbody id="matTable"></tbody></table></div></div>
    </section>
 
    <section id="issue" class="page">
@@ -181,32 +183,32 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 
    <section id="bom" class="page">
     <div class="card"><h3>BOM & Labour Cost</h3>
-     <div class="notice">Labour per unit is charged to FG at order completion, credited to <b>Labour Payable (2210)</b>. Pay it from the ARAP page.</div>
+     <div class="notice">Labour per unit is charged to FG at order completion, credited to <b>Labour Payable (2210)</b>.</div>
      <form onsubmit="saveBOM(event)"><div class="row">
       <div class="field"><label>Finished Product</label><input id="bProduct" required></div>
       <div class="field"><label>Material</label><select id="bMaterial" required></select></div>
       <div class="field"><label>Qty per Unit</label><input id="bQty" type="number" step="0.001" required></div>
-      <div class="field"><label>Labour Cost / Unit</label><input id="bLabour" type="number" step="0.01" value="0"></div>
+      <div class="field fin"><label>Labour Cost / Unit</label><input id="bLabour" type="number" step="0.01" value="0"></div>
      </div><button class="primary">Save BOM</button></form>
     </div>
-    <div class="card"><div class="tablewrap"><table><thead><tr><th>Product</th><th>Material</th><th>Qty/Unit</th><th>Material Cost/Unit</th><th>Labour/Unit</th><th>Total Unit Cost</th><th>Actions</th></tr></thead><tbody id="bomTable"></tbody></table></div></div>
+    <div class="card"><div class="tablewrap"><table><thead><tr><th>Product</th><th>Material</th><th>Qty/Unit</th><th class="fin">Material Cost/Unit</th><th class="fin">Labour/Unit</th><th class="fin">Total Unit Cost</th><th>Actions</th></tr></thead><tbody id="bomTable"></tbody></table></div></div>
    </section>
 
    <section id="purchases" class="page">
     <div class="card"><h3>Purchase Orders / Purchases</h3>
-     <div class="notice">Posts Dr Inventory + Dr Input VAT / Cr AP, Cash or Bank. Settle unpaid purchases from ARAP page.</div>
+     <div class="notice">Posts Dr Inventory + Dr Input VAT / Cr AP, Cash or Bank.</div>
      <form onsubmit="savePurchase(event)"><div class="row">
       <div class="field"><label>Supplier</label><input id="pSupplier" required></div>
       <div class="field"><label>Material</label><select id="pMaterial" required></select></div>
       <div class="field"><label>Quantity</label><input id="pQty" type="number" step="0.001" required></div>
-      <div class="field"><label>Price / Unit</label><input id="pPrice" type="number" step="0.01" required></div>
+      <div class="field fin"><label>Price / Unit</label><input id="pPrice" type="number" step="0.01" required></div>
      </div><div class="row">
-      <div class="field"><label>Input VAT %</label><input id="pVat" type="number" step="0.01" value="0"></div>
+      <div class="field fin"><label>Input VAT %</label><input id="pVat" type="number" step="0.01" value="0"></div>
       <div class="field"><label>Payment Method</label><select id="pPay"><option value="Credit">Credit (AP)</option><option value="Cash">Cash</option><option value="Bank">Bank</option></select></div>
       <div class="field"><label>Date</label><input id="pDate" type="date"></div>
      </div><button class="primary">Save Purchase</button></form>
     </div>
-    <div class="card"><div class="tablewrap"><table><thead><tr><th>Date</th><th>Supplier</th><th>Material</th><th>Qty</th><th>Price</th><th>VAT</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead><tbody id="purchaseTable"></tbody></table></div></div>
+    <div class="card"><div class="tablewrap"><table><thead><tr><th>Date</th><th>Supplier</th><th>Material</th><th>Qty</th><th class="fin">Price</th><th class="fin">VAT</th><th class="fin">Total</th><th>Status</th><th>Actions</th></tr></thead><tbody id="purchaseTable"></tbody></table></div></div>
    </section>
 
    <section id="sales" class="page">
@@ -219,20 +221,20 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
        <div class="muted" id="sStockHint"></div>
       </div>
       <div class="field"><label>Quantity</label><input id="sQty" type="number" min="1" step="1" required></div>
-      <div class="field"><label>Price / Unit</label><input id="sPrice" type="number" step="0.01" required></div>
+      <div class="field fin"><label>Price / Unit</label><input id="sPrice" type="number" step="0.01" required></div>
      </div><div class="row">
-      <div class="field"><label>Output VAT %</label><input id="sVat" type="number" step="0.01" value="0"></div>
+      <div class="field fin"><label>Output VAT %</label><input id="sVat" type="number" step="0.01" value="0"></div>
       <div class="field"><label>Payment Method</label><select id="sPay"><option value="Credit">Credit (AR)</option><option value="Cash">Cash</option><option value="Bank">Bank</option></select></div>
       <div class="field"><label>Branch</label><select id="sBranch"></select></div>
       <div class="field"><label>Date</label><input id="sDate" type="date"></div>
      </div><button class="primary">Save Sale</button></form>
     </div>
-    <div class="card"><div class="tablewrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Product</th><th>Qty</th><th>Sub</th><th>VAT</th><th>Total</th><th>COGS</th><th>Branch</th><th>Status</th><th>Actions</th></tr></thead><tbody id="salesTable"></tbody></table></div></div>
+    <div class="card"><div class="tablewrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Product</th><th>Qty</th><th class="fin">Sub</th><th class="fin">VAT</th><th class="fin">Total</th><th class="fin">COGS</th><th>Branch</th><th>Status</th><th>Actions</th></tr></thead><tbody id="salesTable"></tbody></table></div></div>
    </section>
 
    <section id="expenses" class="page">
     <div class="card"><h3>Indirect Expenses</h3>
-     <div class="notice">Each expense posts to its expense account. Partial settlement supported from AR/AP page.</div>
+     <div class="notice">Each expense posts to its expense account.</div>
      <form onsubmit="saveExpense(event)"><div class="row">
       <div class="field"><label>Expense Type</label><select id="eType"><option>Rent</option><option>Electricity</option><option>Transport</option><option>Fixed Staff Salary</option><option>Water</option><option>Repair & Maintenance</option><option>Other</option></select></div>
       <div class="field"><label>Amount</label><input id="eAmount" type="number" min="0" step="0.01" required></div>
@@ -248,15 +250,15 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 
    <section id="fixedassets" class="page">
     <div class="card"><h3>Add Fixed Asset</h3>
-     <div class="notice">Straight-line depreciation only. Assets recognised at cost; depreciation posts monthly to 6100 / 1505.</div>
+     <div class="notice">Straight-line depreciation only.</div>
      <form onsubmit="saveFixedAsset(event)"><div class="row">
       <div class="field"><label>Asset Name</label><input id="faName" required></div>
       <div class="field"><label>Category</label><select id="faCategory"><option>Machinery</option><option>Furniture</option><option>Vehicles</option><option>Computer Equipment</option><option>Buildings</option><option>Other</option></select></div>
-      <div class="field"><label>Cost</label><input id="faCost" type="number" step="0.01" min="0.01" required></div>
+      <div class="field fin"><label>Cost</label><input id="faCost" type="number" step="0.01" min="0.01" required></div>
       <div class="field"><label>Purchase Date</label><input id="faDate" type="date"></div>
      </div><div class="row">
       <div class="field"><label>Useful Life (months)</label><input id="faLife" type="number" min="1" step="1" required></div>
-      <div class="field"><label>Salvage Value</label><input id="faSalvage" type="number" step="0.01" value="0"></div>
+      <div class="field fin"><label>Salvage Value</label><input id="faSalvage" type="number" step="0.01" value="0"></div>
       <div class="field"><label>Branch</label><select id="faBranch"></select></div>
       <div class="field"><label>Paid By</label><select id="faPay"><option value="Credit">Credit (AP)</option><option value="Cash">Cash</option><option value="Bank">Bank</option></select></div>
      </div><button class="primary">Add Asset</button></form>
@@ -269,7 +271,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
      <p class="muted">Already-depreciated months are skipped. Assets purchased after period end are skipped. Fully-depreciated assets are skipped.</p>
     </div>
     <div class="card"><h3>Fixed Asset Register</h3>
-     <div class="tablewrap"><table><thead><tr><th>Name</th><th>Category</th><th>Branch</th><th>Cost</th><th>Monthly</th><th>Accum.</th><th>NBV</th><th>Status</th><th>Actions</th></tr></thead><tbody id="faTable"></tbody></table></div>
+     <div class="tablewrap"><table><thead><tr><th>Name</th><th>Category</th><th>Branch</th><th class="fin">Cost</th><th class="fin">Monthly</th><th class="fin">Accum.</th><th class="fin">NBV</th><th>Status</th><th>Actions</th></tr></thead><tbody id="faTable"></tbody></table></div>
     </div>
    </section>
 
@@ -302,17 +304,6 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
     <div class="card"><h3>Payables — Unpaid Purchases & Expenses</h3><div id="apList"></div></div>
     <div class="card"><h3>Labour Payable (Piece-work)</h3><div id="labourList"></div></div>
     <div class="card"><h3>VAT Summary</h3><div id="vatSummary"></div></div>
-   </section>
-
-   <section id="finance" class="page">
-    <div class="grid">
-     <div class="card"><div class="muted">Net Sales (ex VAT)</div><div class="kpi" id="fSales">0</div></div>
-     <div class="card"><div class="muted">Cost of Goods Sold</div><div class="kpi" id="fCogs">0</div></div>
-     <div class="card"><div class="muted">Operating Expenses</div><div class="kpi" id="fExp">0</div></div>
-     <div class="card"><div class="muted">Net Profit</div><div class="kpi green" id="fProfit">0</div></div>
-    </div>
-    <div class="card"><h3>Profit & Loss (from ledger)</h3><div id="pl"></div></div>
-    <div class="card"><h3>Branch Profit</h3><div id="branchPL"></div></div>
    </section>
 
    <section id="settings" class="page">
@@ -358,7 +349,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 
    <section id="staff" class="page">
     <div class="card"><h3>Add / Edit Staff Account</h3>
-     <div class="notice">Staff automatically gets all <b>branch features</b> for <b>all branches</b>: Orders, Production, Branch Stock, Sales, Expenses, Employees, Finance, Reports. Tick the <b>admin-level permissions</b> below to grant privileged operations. The <b>Staff Accounts</b> page and <b>Reset Data</b> remain admin-only forever.</div>
+     <div class="notice">Staff automatically gets all <b>branch features</b> for <b>all branches</b>. <b>Financial data (prices, costs, profit, loss) is hidden from staff</b> — only the Admin sees those. Tick the admin-level permissions below to grant privileged operations.</div>
      <form onsubmit="saveStaff(event)">
       <div class="row">
        <div class="field"><label>Name</label><input id="stName" required placeholder="e.g. Ram Kumar"></div>
@@ -374,7 +365,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
         </div>
        </div>
        <div id="stPerms" style="display:flex;flex-wrap:wrap;gap:14px;padding:12px;background:#faf8fa;border-radius:8px;border:1px solid #d9d4d9"></div>
-       <div class="muted" style="margin-top:6px">Branch features are always available for all branches. These checkboxes add admin-level powers on top.</div>
+       <div class="muted" style="margin-top:6px">Branch features are always available. These checkboxes add admin-level powers on top. <b>Financial amounts are always hidden from staff regardless of permissions.</b></div>
       </div>
       <input type="hidden" id="stId" value="">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
@@ -550,7 +541,7 @@ function defaultCOA(){
 }
 function defaultDB(){
  return {
-  version:'10.9',
+  version:'11.0',
   admin:{user:'admin',pass:'admin'},
   branches:[
    {id:1,name:'Branch 1',user:'branch1',pass:'1234'},
@@ -627,7 +618,6 @@ function branch(id){return db.branches.find(b=>Number(b.id)===Number(id))}
 function branchName(id){let b=branch(id);return b?b.name:'—'}
 function admin(){return session&&session.role==='admin'}
 function isBranchRole(){return session&&(session.role==='branch'||session.role==='staff')}
-// ---- NEW: staff has no branch — sees all branches like admin ----
 function canPickBranch(){return admin()||(session&&session.role==='staff')}
 function canActOnOrder(o){
  if(!session)return false;
@@ -653,7 +643,7 @@ function statusBadge(s){
 function paidBadge(rec,total,method){
  if(rec.settled)return '<span class="badge bg">'+(method||'Settled')+'</span>';
  const paid=Number(rec.paidAmount||0);
- if(paid>0.01)return '<span class="badge bo">Partial '+money(paid)+'</span>';
+ if(paid>0.01)return '<span class="badge bo">'+(admin()?'Partial '+money(paid):'Partial')+'</span>';
  return '<span class="badge bo">Unpaid</span>';
 }
 function audit(action,detail){
@@ -694,13 +684,14 @@ function viewOrder(id){
    ?'<div style="text-align:center;margin:10px 0"><img src="'+o.photo+'" style="max-width:100%;max-height:380px;border-radius:8px;border:1px solid #ddd"></div>'+
     '<div style="text-align:center;margin-bottom:12px"><a class="photo-dl" href="'+o.photo+'" download="Order_'+id+'.jpg">⬇ Download Photo</a></div>'
    :'<div class="empty" style="padding:15px">No photo attached</div>';
+ const priceHtml=admin()?'<div class="statline"><span>Price / Unit</span><b>'+money(o.price||0)+'</b></div>':'';
  $('orderModalContent').innerHTML=
   '<h2 style="margin:0 0 8px;color:#714B67">Order #'+id+'</h2>'+
   photoHtml+
   '<div class="statline"><span>Customer</span><b>'+esc(o.customer)+'</b></div>'+
   '<div class="statline"><span>Product</span><b>'+esc(o.product)+'</b></div>'+
   '<div class="statline"><span>Quantity</span><b>'+o.qty+' pcs</b></div>'+
-  '<div class="statline"><span>Price / Unit</span><b>'+money(o.price||0)+'</b></div>'+
+  priceHtml+
   '<div class="statline"><span>Branch</span><b>'+esc(branchName(o.branch))+'</b></div>'+
   '<div class="statline"><span>Order Date</span><b>'+esc(o.date)+'</b></div>'+
   '<div class="statline"><span>Status</span><b>'+statusBadge(o.status)+'</b></div>'+
@@ -997,7 +988,7 @@ function renderFixedAssets(){
   const canManage=hasPerm('fixedassets');
   const actions=f.disposed?(canManage?'<button class="danger" data-fid="'+f.id+'" onclick="deleteFixedAsset(this.dataset.fid)">Delete</button>':'—'):
    ((canManage?'<button class="info" data-fid="'+f.id+'" onclick="disposeFixedAsset(this.dataset.fid)">Dispose</button>':'')+(canManage?'<button class="danger" data-fid="'+f.id+'" onclick="deleteFixedAsset(this.dataset.fid)">Delete</button>':''));
-  return '<tr><td>'+esc(f.name)+'</td><td>'+esc(f.category)+'</td><td>'+esc(branchName(f.branch))+'</td><td>'+money(f.cost)+'</td><td>'+money(monthly)+'</td><td>'+money(f.accumulated||0)+'</td><td>'+money(nbv)+'</td><td>'+status+'</td><td class="actions">'+actions+'</td></tr>';
+  return '<tr><td>'+esc(f.name)+'</td><td>'+esc(f.category)+'</td><td>'+esc(branchName(f.branch))+'</td><td class="fin">'+money(f.cost)+'</td><td class="fin">'+money(monthly)+'</td><td class="fin">'+money(f.accumulated||0)+'</td><td class="fin">'+money(nbv)+'</td><td>'+status+'</td><td class="actions">'+actions+'</td></tr>';
  }).join(''):'<tr><td colspan="9" class="empty">No fixed assets</td></tr>';
 }
 function runDepreciation(){
@@ -1077,7 +1068,6 @@ function renderSettings(){
  if(document.activeElement!==$('setLockDate'))$('setLockDate').value=(db.settings&&db.settings.lockedThrough)||'';
 }
 
-/* ===== STAFF ===== */
 function setAllPerms(checked){
  document.querySelectorAll('#stPerms input[type=checkbox]').forEach(c=>c.checked=checked);
 }
@@ -1157,7 +1147,6 @@ function renderStaff(){
  }).join(''):'<tr><td colspan="5" class="empty">No staff accounts yet. Add one above.</td></tr>';
 }
 
-/* ===== AUTH ===== */
 async function hashPassword(p,saltTag){
  const salted=(saltTag||'hd_v10')+'::'+p+'::x';
  if(window.crypto&&crypto.subtle&&crypto.subtle.digest){
@@ -1210,11 +1199,14 @@ async function login(){
 }
 function openApp(){
  $('loginScreen').style.display='none';$('app').style.display='block';
- $('who').textContent = admin() ? 'HEAD OFFICE / ADMIN'
+ $('who').textContent = admin()
+  ? 'HEAD OFFICE / ADMIN'
   : (session.role==='staff' ? session.name+' · All branches' : branchName(session.branchId));
+ if(!admin()) document.body.classList.add('no-financials');
+ else document.body.classList.remove('no-financials');
  buildNav();showPage('dashboard');checkBackupReminder();
 }
-function logout(){session=null;$('app').style.display='none';$('loginScreen').style.display='flex';$('loginPass').value=''}
+function logout(){session=null;$('app').style.display='none';$('loginScreen').style.display='flex';$('loginPass').value='';document.body.classList.remove('no-financials');}
 function toggleSide(){$('side').classList.toggle('open')}
 function buildNav(){
  let a=[];
@@ -1224,7 +1216,7 @@ function buildNav(){
    ['bom','🧩 BOM & Labour'],['purchases','🛒 Purchases'],['sales','💰 Sales + VAT'],
    ['expenses','🧾 Indirect Expenses'],['fixedassets','🏭 Fixed Assets'],
    ['accounting','📒 Accounting'],['arap','💳 Receivables & Payables'],
-   ['finance','📈 Finance / P&L'],['opening','⚖️ Opening Balance'],
+   ['opening','⚖️ Opening Balance'],
    ['employees','👷 Employees'],['staff','👥 Staff Accounts'],['reports','📋 Reports'],
    ['settings','⚙️ Settings'],['branches','🔐 Branch Settings'],['backup','💾 Backup / Settings']];
  }else if(session&&session.role==='staff'){
@@ -1236,7 +1228,6 @@ function buildNav(){
    ['sales','💰 Sales + VAT'],
    ['expenses','🧾 Expenses'],
    ['employees','👷 Employees'],
-   ['finance','📈 Finance / P&L'],
    ['reports','📋 Reports']
   ];
   const adminFeatures=[
@@ -1257,14 +1248,14 @@ function buildNav(){
   a=[['dashboard','📊 Dashboard'],['orders','🧾 Customer Orders'],['production','🏭 Production'],
    ['branchstock','🏢 My Branch Stock'],['sales','💰 Sales + VAT'],
    ['expenses','🧾 Branch Expenses'],['employees','👷 Employees'],
-   ['finance','📈 Finance / P&L'],['reports','📋 Reports']];
+   ['reports','📋 Reports']];
  }
  $('nav').innerHTML=a.map(x=>'<button id="nav_'+x[0]+'" onclick="showPage(\''+x[0]+'\')">'+x[1]+'</button>').join('');
 }
-const BRANCH_ALLOWED=['dashboard','orders','production','branchstock','sales','expenses','employees','finance','reports'];
+const BRANCH_ALLOWED=['dashboard','orders','production','branchstock','sales','expenses','employees','reports'];
 function canAccess(id){
  if(admin())return true;
- if(id==='staff'||id==='branches')return false;
+ if(id==='staff'||id==='branches'||id==='finance')return false;
  if(session&&session.role==='staff'){
   if(BRANCH_ALLOWED.includes(id))return true;
   return !!(session.perms && session.perms[id]===true);
@@ -1302,12 +1293,12 @@ function refresh(){
  renderDashboard();renderOrders();renderProduction();renderMaterials();renderFG();renderIssues();
  renderBranchStock();renderBOM();renderPurchases();renderSales();renderExpenses();
  renderFixedAssets();renderSettings();
- renderAccounting();renderARAP();renderFinance();renderOpening();renderEmployees();
+ renderAccounting();renderARAP();renderOpening();renderEmployees();
  renderStaff();renderBranches();renderSystem();renderAudit();
 }
 function filterReportOptions(){
  const sel=$('reportType');if(!sel)return;
- const adminOnly=['trialbalance','balancesheet','fixedassets'];
+ const adminOnly=['trialbalance','balancesheet','fixedassets','profit'];
  [...sel.options].forEach(o=>{const hide=adminOnly.includes(o.value)&&!admin();o.hidden=hide;o.disabled=hide;});
  if(sel.selectedOptions[0]&&sel.selectedOptions[0].disabled)sel.value='sales';
 }
@@ -1539,7 +1530,7 @@ function saveMaterial(e){
 }
 function renderMaterials(){
  const canDel=hasPerm('inventory');
- $('matTable').innerHTML=db.materials.length?db.materials.map(m=>'<tr><td>'+esc(m.name)+'</td><td>'+m.unit+'</td><td>'+m.qty+'</td><td>'+money(m.price)+'</td><td>'+money(m.qty*m.price)+'</td><td>'+(canDel?'<button class="danger" data-mid="'+m.id+'" onclick="deleteMaterial(this.dataset.mid)">Delete</button>':'—')+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">No raw materials</td></tr>';
+ $('matTable').innerHTML=db.materials.length?db.materials.map(m=>'<tr><td>'+esc(m.name)+'</td><td>'+m.unit+'</td><td>'+m.qty+'</td><td class="fin">'+money(m.price)+'</td><td class="fin">'+money(m.qty*m.price)+'</td><td>'+(canDel?'<button class="danger" data-mid="'+m.id+'" onclick="deleteMaterial(this.dataset.mid)">Delete</button>':'—')+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">No raw materials</td></tr>';
 }
 function deleteMaterial(id){
  if(!hasPerm('inventory'))return alert('You do not have permission.');
@@ -1553,8 +1544,9 @@ function renderFG(){
  let total=0;
  $('fgStock').innerHTML=db.fg.map(f=>{
   const val=r2(f.qty*(f.unitCost||0));total=r2(total+val);
-  return '<div class="statline"><span>'+esc(f.product)+'<div class="muted">'+f.qty+' pcs @ '+money(f.unitCost||0)+'</div></span><b>'+money(val)+'</b></div>';
- }).join('')+'<div class="statline"><span><b>Total FG value</b></span><b>'+money(total)+'</b></div>';
+  if(admin()) return '<div class="statline"><span>'+esc(f.product)+'<div class="muted">'+f.qty+' pcs @ '+money(f.unitCost||0)+'</div></span><b>'+money(val)+'</b></div>';
+  return '<div class="statline"><span>'+esc(f.product)+'</span><b>'+f.qty+' pcs</b></div>';
+ }).join('')+(admin()?'<div class="statline"><span><b>Total FG value</b></span><b>'+money(total)+'</b></div>':'');
 }
 function fillMaterialSelects(){
  ['bMaterial','pMaterial','iMaterial'].forEach(id=>{
@@ -1585,7 +1577,7 @@ function syncSaleStock(){
  if(!el||!hint)return;
  const f=db.fg.find(x=>x.product===el.value);
  const avail=f?Number(f.qty):0;
- hint.textContent=f?('Available: '+avail+' pcs @ cost '+money(f.unitCost||0)):'Nothing available to sell';
+ hint.textContent=f?('Available: '+avail+' pcs'+(admin()?' @ cost '+money(f.unitCost||0):'')):'Nothing available to sell';
  if(qty)qty.max=avail>0?String(avail):'';
 }
 function issueMaterial(e){
@@ -1633,8 +1625,8 @@ function deleteIssue(id){
 }
 function renderBranchStock(){
  const a=filtered(db.branchStock);
- $('branchStock').innerHTML=a.length?'<div class="tablewrap"><table><thead><tr><th>Branch</th><th>Material</th><th>Qty</th><th>Unit</th><th>Value</th></tr></thead><tbody>'+
-  a.map(x=>{const m=db.materials.find(y=>String(y.id)===String(x.materialId));return '<tr><td>'+esc(branchName(x.branch))+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+x.qty+'</td><td>'+(m?m.unit:'')+'</td><td>'+(m?money(x.qty*m.price):'0.00')+'</td></tr>';}).join('')+
+ $('branchStock').innerHTML=a.length?'<div class="tablewrap"><table><thead><tr><th>Branch</th><th>Material</th><th>Qty</th><th>Unit</th><th class="fin">Value</th></tr></thead><tbody>'+
+  a.map(x=>{const m=db.materials.find(y=>String(y.id)===String(x.materialId));return '<tr><td>'+esc(branchName(x.branch))+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+x.qty+'</td><td>'+(m?m.unit:'')+'</td><td class="fin">'+(m?money(x.qty*m.price):'0.00')+'</td></tr>';}).join('')+
   '</tbody></table></div>':'<div class="empty">No branch stock yet.</div>';
 }
 
@@ -1652,7 +1644,7 @@ function renderBOM(){
  const canDel=hasPerm('bom');
  $('bomTable').innerHTML=db.boms.length?db.boms.map(b=>{
   const m=db.materials.find(x=>String(x.id)===String(b.materialId)),mc=m?r2(m.price*b.qty):0,total=r2(mc+b.labour);
-  return '<tr><td>'+esc(b.product)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+b.qty+'</td><td>'+money(mc)+'</td><td>'+money(b.labour)+'</td><td>'+money(total)+'</td><td>'+(canDel?'<button class="danger" data-bid="'+b.id+'" onclick="deleteBOM(this.dataset.bid)">Delete</button>':'—')+'</td></tr>';
+  return '<tr><td>'+esc(b.product)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+b.qty+'</td><td class="fin">'+money(mc)+'</td><td class="fin">'+money(b.labour)+'</td><td class="fin">'+money(total)+'</td><td>'+(canDel?'<button class="danger" data-bid="'+b.id+'" onclick="deleteBOM(this.dataset.bid)">Delete</button>':'—')+'</td></tr>';
  }).join(''):'<tr><td colspan="7" class="empty">No BOM</td></tr>';
 }
 function deleteBOM(id){if(!hasPerm('bom'))return alert('You do not have permission.');id=String(id);if(confirm('Delete BOM?')){db.boms=db.boms.filter(x=>String(x.id)!==id);audit('BOM_DEL','id '+id);save();refresh();}}
@@ -1676,7 +1668,7 @@ function renderPurchases(){
   const m=db.materials.find(x=>String(x.id)===String(p.materialId));
   const gross=r2(p.qty*p.price),vat=r2(gross*Number(p.vat||0)/100),total=r2(gross+vat);
   const settle=!p.settled?'<button class="info" data-pid="'+p.id+'" onclick="settlePurchase(this.dataset.pid,\'Cash\')">Cash</button><button class="info" data-pid="'+p.id+'" onclick="settlePurchase(this.dataset.pid,\'Bank\')">Bank</button>':'';
-  return '<tr><td>'+p.date+'</td><td>'+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+p.qty+'</td><td>'+money(p.price)+'</td><td>'+money(vat)+'</td><td>'+money(total)+'</td><td>'+paidBadge(p,total,p.settleMethod||p.payMethod)+'</td><td class="actions">'+settle+(canDel?'<button class="danger" data-pid="'+p.id+'" onclick="deletePurchase(this.dataset.pid)">Delete</button>':'')+'</td></tr>';
+  return '<tr><td>'+p.date+'</td><td>'+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+p.qty+'</td><td class="fin">'+money(p.price)+'</td><td class="fin">'+money(vat)+'</td><td class="fin">'+money(total)+'</td><td>'+paidBadge(p,total,p.settleMethod||p.payMethod)+'</td><td class="actions">'+settle+(canDel?'<button class="danger" data-pid="'+p.id+'" onclick="deletePurchase(this.dataset.pid)">Delete</button>':'')+'</td></tr>';
  }).join(''):'<tr><td colspan="9" class="empty">No purchases</td></tr>';
 }
 function deletePurchase(id){
@@ -1710,7 +1702,7 @@ function saveSale(e){
  fg.qty=r2(fg.qty-q);db.sales.push(s);
  audit('SALE_ADD',customer+' '+product+' x'+q+' @ '+price+(vat?' +VAT '+vat+'%':''));
  save();e.target.reset();$('sDate').value=today();refresh();
- alert('Sale saved.\n\nCOGS posted: '+money(s.cogs));
+ alert('Sale saved.\n\nCOGS posted: '+(admin()?money(s.cogs):''));
 }
 function renderSales(){
  const a=filtered(db.sales);
@@ -1718,7 +1710,7 @@ function renderSales(){
   const sub=r2(s.qty*s.price),v=r2(sub*Number(s.vat||0)/100),total=r2(sub+v);
   const settle=!s.settled?'<button class="info" data-sid="'+s.id+'" onclick="settleSale(this.dataset.sid,\'Cash\')">Cash</button><button class="info" data-sid="'+s.id+'" onclick="settleSale(this.dataset.sid,\'Bank\')">Bank</button>':'';
   const del=(canPickBranch()||s.branch===session.branchId)?'<button class="danger" data-sid="'+s.id+'" onclick="deleteSale(this.dataset.sid)">Delete</button>':'';
-  return '<tr><td>'+s.date+'</td><td>'+esc(s.customer)+'</td><td>'+esc(s.product)+'</td><td>'+s.qty+'</td><td>'+money(sub)+'</td><td>'+money(v)+'</td><td>'+money(total)+'</td><td>'+money(s.cogs||0)+'</td><td>'+esc(branchName(s.branch))+'</td><td>'+paidBadge(s,total,s.settleMethod||s.payMethod)+'</td><td class="actions">'+settle+del+'</td></tr>';
+  return '<tr><td>'+s.date+'</td><td>'+esc(s.customer)+'</td><td>'+esc(s.product)+'</td><td>'+s.qty+'</td><td class="fin">'+money(sub)+'</td><td class="fin">'+money(v)+'</td><td class="fin">'+money(total)+'</td><td class="fin">'+money(s.cogs||0)+'</td><td>'+esc(branchName(s.branch))+'</td><td>'+paidBadge(s,total,s.settleMethod||s.payMethod)+'</td><td class="actions">'+settle+del+'</td></tr>';
  }).join(''):'<tr><td colspan="11" class="empty">No sales</td></tr>';
 }
 function deleteSale(id){
@@ -1767,6 +1759,7 @@ function deleteExpense(id){
 let acctTab='tb';
 function showAcct(t){acctTab=t;renderAccounting();}
 function renderAccounting(){
+ if(!admin())return;
  if(!$('acctOut'))return;
  const sel=$('acctBranch');
  if(sel){const prev=sel.value;sel.innerHTML='<option value="">All branches</option>'+db.branches.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');sel.value=prev;}
@@ -1855,6 +1848,7 @@ function renderAccounting(){
 
 function remainingOn(rec,total){return r2(total-Number(rec.paidAmount||0));}
 function renderARAP(){
+ if(!hasPerm('arap'))return;
  if(!$('arList'))return;
  const sales=filtered(db.sales).filter(s=>!s.settled);
  const purchases=hasPerm('purchases')?db.purchases.filter(p=>!p.settled):[];
@@ -1902,30 +1896,6 @@ function renderARAP(){
   '<div class="statline"><span>Output VAT (collected)</span><b>'+money(outputVat)+'</b></div>'+
   '<div class="statline"><span>Input VAT (recoverable)</span><b>'+money(-inputVat)+'</b></div>'+
   '<div class="statline bs-total"><span>Net VAT '+(netVat>=0?'payable':'refundable')+'</span><b>'+money(Math.abs(netVat))+'</b></div>';
-}
-
-function renderFinance(){
- const from=db.ledgerStartDate||'',to=today();
- const branchArg=canPickBranch()?null:session.branchId;
- const pl=plReport(from,to,branchArg);
- $('fSales').textContent=money(pl.totalIncome);
- $('fCogs').textContent=money(pl.totalCOGS);
- $('fExp').textContent=money(pl.totalOpex);
- $('fProfit').textContent=money(pl.netProfit);
- $('pl').innerHTML=
-  '<div class="statline"><span>Net Sales Revenue</span><b>'+money(pl.totalIncome)+'</b></div>'+
-  '<div class="statline"><span>Cost of Goods Sold</span><b>'+money(pl.totalCOGS)+'</b></div>'+
-  '<div class="statline"><span>Gross Profit</span><b class="'+(pl.grossProfit>=0?'green':'red')+'">'+money(pl.grossProfit)+'</b></div>'+
-  '<div class="statline"><span>Operating Expenses</span><b>'+money(pl.totalOpex)+'</b></div>'+
-  '<div class="statline bs-total"><span>Net Profit</span><b class="'+(pl.netProfit>=0?'green':'red')+'">'+money(pl.netProfit)+'</b></div>';
- if(!canPickBranch()){
-  $('branchPL').innerHTML='<div class="muted">Only your own branch figures are shown above.</div>';
- }else{
-  $('branchPL').innerHTML=db.branches.map(b=>{
-   const p=plReport(from,to,b.id);
-   return '<div class="statline"><span>'+esc(b.name)+'</span><b class="'+(p.netProfit>=0?'green':'red')+'">'+money(p.netProfit)+'</b></div>';
-  }).join('');
- }
 }
 
 function saveOpening(e){
@@ -2023,7 +1993,17 @@ async function saveBranch(e){
 function renderDashboard(){
  const orders=filtered(db.orders),prod=orders.filter(o=>o.status==='In Production').length,fg=db.fg.reduce((s,x)=>s+Number(x.qty),0);
  const pl=plReport(db.ledgerStartDate||'',today(),canPickBranch()?null:session.branchId);
- $('kOrders').textContent=orders.length;$('kProd').textContent=prod;$('kFG').textContent=fg;$('kProfit').textContent=money(pl.netProfit);
+ $('kOrders').textContent=orders.length;$('kProd').textContent=prod;$('kFG').textContent=fg;
+ if(admin()){
+  $('kProfitLabel').textContent='Net Profit';
+  $('kProfit').textContent=money(pl.netProfit);
+  $('kProfit').className='kpi '+(pl.netProfit>=0?'green':'red');
+ }else{
+  const pending=orders.filter(o=>o.status!=='Completed'&&o.status!=='Order Received').length;
+  $('kProfitLabel').textContent='Pending Orders';
+  $('kProfit').textContent=pending;
+  $('kProfit').className='kpi';
+ }
  const states=['Order Received','Sent to Branch','In Production','Assembly Complete','Completed'];
  const c={};orders.forEach(o=>c[o.status]=(c[o.status]||0)+1);
  $('flow').innerHTML=states.map(s=>'<div class="statline"><span>'+statusBadge(s)+'</span><b>'+((c[s]||0))+'</b></div>').join('');
@@ -2035,23 +2015,24 @@ function renderDashboard(){
   const pct=totalQty>0?Math.round(doneTotal/totalQty*100):0;
   return '<div style="margin:9px 0"><div style="display:flex;justify-content:space-between"><span>'+esc(b.name)+'</span><b>'+doneTotal+' / '+totalQty+' pcs ('+pct+'%)</b></div><div class="bar"><span style="width:'+pct+'%"></span></div></div>';
  }).join('');
- if($('bsCard'))$('bsCard').style.display=canPickBranch()?'':'none';
- if($('branchDashCard'))$('branchDashCard').style.display=canPickBranch()?'none':'';
- if(!canPickBranch()){
+ // Balance sheet snapshot: admin only
+ if($('bsCard'))$('bsCard').style.display=admin()?'':'none';
+ if($('branchDashCard'))$('branchDashCard').style.display=admin()?'none':'';
+ if(!admin()){
   const myBranch=session.branchId;
   const mySales=db.sales.filter(s=>Number(s.branch)===Number(myBranch));
   const myExp=db.expenses.filter(e=>Number(e.branch)===Number(myBranch));
   const myStock=db.branchStock.filter(x=>Number(x.branch)===Number(myBranch));
-  const stockVal=r2(myStock.reduce((s,x)=>{const m=db.materials.find(y=>String(y.id)===String(x.materialId));return s+r2(x.qty*(m?m.price:0))},0));
-  const outstanding=r2(mySales.filter(s=>!s.settled).reduce((s,sa)=>{const tot=r2(sa.qty*sa.price*(1+Number(sa.vat||0)/100));return s+(tot-Number(sa.paidAmount||0));},0));
+  const stockQty=r2(myStock.reduce((s,x)=>s+Number(x.qty||0),0));
+  const outstandingCount=mySales.filter(s=>!s.settled).length;
   $('branchDash').innerHTML=
    '<div class="statline"><span>My branch</span><b>'+esc(branchName(myBranch))+'</b></div>'+
    '<div class="statline"><span>My sales this period</span><b>'+mySales.length+'</b></div>'+
-   '<div class="statline"><span>Outstanding receivables (my sales)</span><b>'+money(outstanding)+'</b></div>'+
-   '<div class="statline"><span>My branch expenses logged</span><b>'+money(r2(myExp.reduce((s,e)=>s+Number(e.amount||0),0)))+'</b></div>'+
-   '<div class="statline"><span>Material stock value on hand</span><b>'+money(stockVal)+'</b></div>';
+   '<div class="statline"><span>Unpaid sales invoices</span><b>'+outstandingCount+'</b></div>'+
+   '<div class="statline"><span>Expenses logged</span><b>'+myExp.length+'</b></div>'+
+   '<div class="statline"><span>Material stock total qty</span><b>'+stockQty+'</b></div>';
  }
- if(canPickBranch()){
+ if(admin()){
   const bs=balanceSheet(today(),null);
   $('bsSnap').innerHTML=
    '<div class="statline"><span>Total Assets</span><b>'+money(bs.totalAssets)+'</b></div>'+
@@ -2067,8 +2048,12 @@ function runReport(){
  const type=$('reportType').value,from=$('rFrom').value,to=$('rTo').value;
  if(type==='sales'){
   const a=filtered(db.sales).filter(x=>dateOK(x.date,from,to));
-  let total=0;a.forEach(x=>total=r2(total+r2(x.qty*x.price*(1+Number(x.vat||0)/100))));
-  $('reportOut').innerHTML='<h4>Sales Report</h4><p>Total (incl VAT): <b>'+money(total)+'</b></p>'+table(['Date','Customer','Product','Qty','Total'],a.map(x=>[x.date,esc(x.customer),esc(x.product),x.qty,money(r2(x.qty*x.price*(1+Number(x.vat||0)/100)))]));
+  if(admin()){
+   let total=0;a.forEach(x=>total=r2(total+r2(x.qty*x.price*(1+Number(x.vat||0)/100))));
+   $('reportOut').innerHTML='<h4>Sales Report</h4><p>Total (incl VAT): <b>'+money(total)+'</b></p>'+table(['Date','Customer','Product','Qty','Total'],a.map(x=>[x.date,esc(x.customer),esc(x.product),x.qty,money(r2(x.qty*x.price*(1+Number(x.vat||0)/100)))]));
+  }else{
+   $('reportOut').innerHTML='<h4>Sales Report</h4>'+table(['Date','Customer','Product','Qty','Branch'],a.map(x=>[x.date,esc(x.customer),esc(x.product),x.qty,esc(branchName(x.branch))]));
+  }
  }else if(type==='orders'){
   const a=filtered(db.orders).filter(x=>dateOK(x.date,from,to));
   $('reportOut').innerHTML='<h4>Order Report</h4>'+table(['Date','Customer','Product','Branch','Qty','Done (pcs)','Status','Notes'],a.map(x=>[x.date,esc(x.customer),esc(x.product),esc(branchName(x.branch)),x.qty,doneQty(x)+' / '+x.qty,statusBadge(x.status),esc(x.notes||'')]));
@@ -2084,7 +2069,8 @@ function runReport(){
  }else if(type==='stock'){
   $('reportOut').innerHTML='<h4>Stock Report</h4>'+table(['Material','Unit','Qty','Value'],db.materials.map(x=>[esc(x.name),x.unit,x.qty,money(r2(x.qty*x.price))]));
  }else if(type==='profit'){
-  const pl=plReport(from||db.ledgerStartDate,to||today(),canPickBranch()?null:session.branchId);
+  if(!admin())return alert('Only Head Office.');
+  const pl=plReport(from||db.ledgerStartDate,to||today(),null);
   $('reportOut').innerHTML='<h4>Profit Report (ledger-based)</h4>'+
    '<div class="statline"><span>Net Sales</span><b>'+money(pl.totalIncome)+'</b></div>'+
    '<div class="statline"><span>COGS</span><b>'+money(pl.totalCOGS)+'</b></div>'+
@@ -2116,7 +2102,7 @@ function table(head,rows){
 function backup(){
  if(!hasPerm('backup'))return;
  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');
- a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V10.9_Backup_'+today()+'.json';a.click();
+ a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V11.0_Backup_'+today()+'.json';a.click();
  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
  localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();
 }
@@ -2161,7 +2147,7 @@ function renderSystem(){
  if(!$('sysInfo'))return;
  const tb=trialBalance(today(),null);
  $('sysInfo').innerHTML=
-  '<div class="statline"><span>ERP Version</span><b>V10.9 Live</b></div>'+
+  '<div class="statline"><span>ERP Version</span><b>V11.0 Live</b></div>'+
   '<div class="statline"><span>Storage</span><b>Firebase + localStorage cache</b></div>'+
   '<div class="statline"><span>Sync status</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Connected':'🔴 Offline')+'</b></div>'+
   '<div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div>'+
@@ -2187,7 +2173,7 @@ async function resetData(){
  location.reload();
 }
 
-window.addEventListener('load',()=>{attachSync();console.log('ERP V10.9 loaded — staff branch-agnostic (all branches)');});
+window.addEventListener('load',()=>{attachSync();console.log('ERP V11.0 loaded — financials admin-only');});
 </script>
 </body>
-                                               </html>
+  </html>
