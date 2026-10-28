@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#714B67">
-<title>Handmade Decor ERP V13.4.1 Live</title>
+<title>Handmade Decor ERP V13.4.2 Live</title>
 <style>
 *{box-sizing:border-box}
 :root{--p:#714B67;--p2:#8f6385;--bg:#f5f3f5;--card:#fff;--text:#29252b;--muted:#777;--green:#198754;--red:#c0392b;--orange:#e67e22;--blue:#2878c8;--line:#e7e2e7}
@@ -81,7 +81,7 @@ body.printing-invoice .page{display:none!important}
 <div id="loginScreen" class="login">
  <div class="loginbox">
   <h1>🧶 Handmade Decor ERP</h1>
-  <b>V13.4.1 — Finished Goods Stock + Delete</b>
+  <b>V13.4.2 — FG Stock + Smart Delete</b>
   <p class="muted"><span id="syncDot" class="sync-dot"></span><span id="syncLabel">Connecting…</span></p>
   <div class="field"><label>Username</label><input id="loginUser" value="admin" onkeydown="if(event.key==='Enter')$('loginPass').focus()"></div>
   <div class="field"><label>Password</label><input id="loginPass" type="password" value="admin" onkeydown="if(event.key==='Enter')login()"></div>
@@ -93,7 +93,7 @@ body.printing-invoice .page{display:none!important}
 <div id="app" style="display:none">
  <div class="layout">
   <aside class="side" id="side">
-   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.4.1 Live</small></div>
+   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.4.2 Live</small></div>
    <div class="nav" id="nav"></div>
   </aside>
   <main class="main">
@@ -658,7 +658,7 @@ function unionTombstones(a,b){const out={};Object.keys(a||{}).forEach(k=>{out[k]
 function localHasNewerTombstones(local,remote){for(const coll of Object.keys(local||{})){const l=(local[coll]||[]).map(String);const r=((remote||{})[coll]||[]).map(String);if(l.some(id=>!r.includes(id)))return true;}return false;}
 
 function voidJournal(id,reason){const j=db.journals.find(x=>x.id===id);if(!j||j.voided)return null;if(db.settings&&db.settings.lockedThrough&&j.date<=db.settings.lockedThrough)throw new Error('Locked period.');j.voided=true;j.voidedBy=(session?session.user:'system');j.voidReason=reason||'';j.voidedAt=new Date().toISOString();return j.id;}
-function cleanupLegacyVoidReversals(d){if(!d||!Array.isArray(d.journals))return 0;const voidedIds=new Set();d.journals.forEach(j=>{if(j.voided)voidedIds.add(String(j.id));});let changed=0;d.journals.forEach(j=>{if(j.refType==='VOID'&&!j.voided&&voidedIds.has(String(j.refId))){j.voided=true;j.voidReason='V13.4.1 auto-cleanup: redundant reversal';j.voidedBy='system';j.voidedAt=new Date().toISOString();changed++;}});return changed;}
+function cleanupLegacyVoidReversals(d){if(!d||!Array.isArray(d.journals))return 0;const voidedIds=new Set();d.journals.forEach(j=>{if(j.voided)voidedIds.add(String(j.id));});let changed=0;d.journals.forEach(j=>{if(j.refType==='VOID'&&!j.voided&&voidedIds.has(String(j.refId))){j.voided=true;j.voidReason='V13.4.2 auto-cleanup: redundant reversal';j.voidedBy='system';j.voidedAt=new Date().toISOString();changed++;}});return changed;}
 
 function processRemote(remote){
  const localDeleted=db.deleted||{};
@@ -707,7 +707,7 @@ function defaultCOA(){
  return [{code:'1000',name:'HO Cash on Hand',type:'Asset'},{code:'1001',name:'Branch 1 Cash',type:'Asset'},{code:'1002',name:'Branch 2 Cash',type:'Asset'},{code:'1003',name:'Branch 3 Cash',type:'Asset'},{code:'1004',name:'Branch 4 Cash',type:'Asset'},{code:'1005',name:'Branch 5 Cash',type:'Asset'},{code:'1010',name:'Bank',type:'Asset'},{code:'1100',name:'Accounts Receivable',type:'Asset'},{code:'1200',name:'Raw Materials Inventory',type:'Asset'},{code:'1210',name:'Work in Progress',type:'Asset'},{code:'1220',name:'Finished Goods Inventory',type:'Asset'},{code:'1300',name:'Input VAT (Recoverable)',type:'Asset'},{code:'1500',name:'Fixed Assets at Cost',type:'Asset'},{code:'1505',name:'Accumulated Depreciation',type:'Asset'},{code:'2000',name:'Accounts Payable',type:'Liability'},{code:'2100',name:'Output VAT (Payable)',type:'Liability'},{code:'2200',name:'Employee Security Deposits',type:'Liability'},{code:'2210',name:'Labour Payable',type:'Liability'},{code:'3000',name:"Owner's Capital",type:'Equity'},{code:'4000',name:'Sales Revenue',type:'Income'},{code:'5000',name:'Cost of Goods Sold',type:'Expense'},{code:'6000',name:'Rent',type:'Expense'},{code:'6010',name:'Electricity',type:'Expense'},{code:'6020',name:'Transport',type:'Expense'},{code:'6030',name:'Fixed Staff Salary',type:'Expense'},{code:'6040',name:'Water',type:'Expense'},{code:'6050',name:'Repairs & Maintenance',type:'Expense'},{code:'6090',name:'Other Expenses',type:'Expense'},{code:'6100',name:'Depreciation Expense',type:'Expense'},{code:'6210',name:'Overhead Absorbed',type:'Expense'}];
 }
 function defaultDB(){
- return {version:'13.4.1',admin:{user:'admin',pass:'admin'},branches:[{id:1,name:'Branch 1',user:'branch1',pass:'1234'},{id:2,name:'Branch 2',user:'branch2',pass:'1234'},{id:3,name:'Branch 3',user:'branch3',pass:'1234'},{id:4,name:'Branch 4',user:'branch4',pass:'1234'},{id:5,name:'Branch 5',user:'branch5',pass:'1234'}],orders:[],materials:[],issues:[],branchStock:[],boms:[],purchases:[],sales:[],expenses:[],employees:[],fg:[],audit:[],customers:[],suppliers:[],coa:defaultCOA(),journals:[],fixedAssets:[],staff:[],cashCounts:[],voucherSeq:0,deleted:{expenses:[],sales:[],purchases:[],orders:[],issues:[],materials:[],boms:[],customers:[],suppliers:[],staff:[],fixedAssets:[],employees:[],cashCounts:[],fg:[]},settings:{overheadRate:0,lockedThrough:'',cashLimits:{0:0,1:0,2:0,3:0,4:0,5:0},approvalThreshold:0,company:{name:'',phone:'',email:'',address:'',gst:'',prefix:'INV'}},ledgerStartDate:today(),opening:{cash:0,bank:0,receivable:0,payable:0,capital:0,date:today(),jeId:null}};
+ return {version:'13.4.2',admin:{user:'admin',pass:'admin'},branches:[{id:1,name:'Branch 1',user:'branch1',pass:'1234'},{id:2,name:'Branch 2',user:'branch2',pass:'1234'},{id:3,name:'Branch 3',user:'branch3',pass:'1234'},{id:4,name:'Branch 4',user:'branch4',pass:'1234'},{id:5,name:'Branch 5',user:'branch5',pass:'1234'}],orders:[],materials:[],issues:[],branchStock:[],boms:[],purchases:[],sales:[],expenses:[],employees:[],fg:[],audit:[],customers:[],suppliers:[],coa:defaultCOA(),journals:[],fixedAssets:[],staff:[],cashCounts:[],voucherSeq:0,deleted:{expenses:[],sales:[],purchases:[],orders:[],issues:[],materials:[],boms:[],customers:[],suppliers:[],staff:[],fixedAssets:[],employees:[],cashCounts:[],fg:[]},settings:{overheadRate:0,lockedThrough:'',cashLimits:{0:0,1:0,2:0,3:0,4:0,5:0},approvalThreshold:0,company:{name:'',phone:'',email:'',address:'',gst:'',prefix:'INV'}},ledgerStartDate:today(),opening:{cash:0,bank:0,receivable:0,payable:0,capital:0,date:today(),jeId:null}};
 }
 function loadDB(){
  try{const cached=localStorage.getItem(KEY+"_CACHE");if(cached){const x=JSON.parse(cached);if(x&&x.branches)return migrateDB(x);}}catch(e){}
@@ -827,7 +827,7 @@ function deleteFixedAsset(id){if(!hasPerm('fixedassets'))return alert('No permis
 function saveSettings(e){e.preventDefault();if(!hasPerm('settings'))return alert('No permission.');const rate=Number($('setOverheadRate').value||0);if(rate<0||rate>200)return alert('Rate 0-200.');const lock=$('setLockDate').value||'';db.settings.overheadRate=rate;db.settings.lockedThrough=lock;audit('SETTINGS','rate='+rate+'% lock='+(lock||'none'));save();refresh();alert('Saved.');}
 function renderSettings(){if(!$('setOverheadRate'))return;if(document.activeElement!==$('setOverheadRate'))$('setOverheadRate').value=(db.settings&&db.settings.overheadRate)||0;if(document.activeElement!==$('setLockDate'))$('setLockDate').value=(db.settings&&db.settings.lockedThrough)||'';if($('setApprovalThreshold')&&document.activeElement!==$('setApprovalThreshold'))$('setApprovalThreshold').value=(db.settings&&db.settings.approvalThreshold)||0;const lim=db.settings&&db.settings.cashLimits||{};if($('limHO')&&document.activeElement!==$('limHO'))$('limHO').value=lim[0]||0;for(let i=1;i<=5;i++){const el=$('lim'+i);if(el&&document.activeElement!==el)el.value=lim[i]||0;}const co=db.settings.company||{};['coName','coPhone','coEmail','coGst','coAddress','coPrefix'].forEach((id,i)=>{const el=$(id);if(el&&document.activeElement!==el)el.value=[co.name,co.phone,co.email,co.gst,co.address,co.prefix||'INV'][i]||'';});}
 function saveCompanyBranding(e){e.preventDefault();if(!admin())return alert('Only admin.');db.settings.company={name:$('coName').value.trim(),phone:$('coPhone').value.trim(),email:$('coEmail').value.trim(),gst:$('coGst').value.trim(),address:$('coAddress').value.trim(),prefix:$('coPrefix').value.trim()||'INV'};audit('COMPANY_BRANDING',db.settings.company.name);save();refresh();alert('Branding saved.');updateBrandHeader();}
-function updateBrandHeader(){const el=$('brandHeader');if(!el)return;const co=db.settings.company||{};const name=co.name||'Handmade Decor';el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.4.1 Live</small>';}
+function updateBrandHeader(){const el=$('brandHeader');if(!el)return;const co=db.settings.company||{};const name=co.name||'Handmade Decor';el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.4.2 Live</small>';}
 function saveCashSettings(e){e.preventDefault();if(!admin())return alert('Only admin.');const limits={0:Number($('limHO').value||0),1:Number($('lim1').value||0),2:Number($('lim2').value||0),3:Number($('lim3').value||0),4:Number($('lim4').value||0),5:Number($('lim5').value||0)};const th=Number($('setApprovalThreshold').value||0);db.settings.cashLimits=limits;db.settings.approvalThreshold=th;audit('CASH_SETTINGS','limits='+JSON.stringify(limits)+' threshold='+th);save();refresh();alert('Saved.');}
 async function changeAdminPass(e){e.preventDefault();if(!admin())return alert('Only admin.');const oldP=$('apOldPass').value,newP=$('apNewPass').value,conP=$('apConfirmPass').value;if(newP!==conP)return alert('New passwords do not match.');if(newP.length<6)return alert('Min 6 chars.');const adm=db.admin||{user:'admin',pass:'admin'};let ok=false;if(adm.passHash){const v=await verifyPassword(oldP,adm.passHash);ok=v.ok;}else if(adm.pass){ok=(adm.pass===oldP);}if(!ok)return alert('Current password incorrect.');adm.passHash=await hashPassword(newP,'hd_v10');delete adm.pass;db.admin=adm;audit('ADMIN_PASS_CHANGE','updated');save(true);e.target.reset();alert('Password updated.');}
 
@@ -973,11 +973,9 @@ function editFG(id){
  refresh();
  alert('Updated.');
 }
-/* ✅ Delete FG — always allowed.
-   - If qty > 0: post a write-off journal (Dr Other Expenses 6090 / Cr FG Inventory 1220)
-     so the books stay balanced, then remove the product.
-   - If qty = 0: just remove the product.
-   - Tombstone prevents resurrection on other devices. */
+/* ✅ V13.4.2 — Smart delete reconciles 1220 ledger:
+   - Non-last item: write off min(item value, current 1220 balance) — never goes negative
+   - Last item:     write off entire remaining 1220 balance — clears to exactly 0 */
 function deleteFG(id){
  id=String(id);
  if(!hasPerm('inventory'))return alert('No permission.');
@@ -985,35 +983,48 @@ function deleteFG(id){
  if(!f)return;
  const qty=Number(f.qty||0);
  const cost=Number(f.unitCost||0);
- const value=r2(qty*cost);
+ const itemValue=r2(qty*cost);
 
- if(qty>0.01){
+ const current1220=Math.max(0,accountBalance('1220',{to:today()}));
+ const remainingAfter=db.fg.filter(x=>String(x.id)!==id);
+ const isLastItem=remainingAfter.length===0;
+
+ let writeOffValue;
+ if(isLastItem){
+  writeOffValue=current1220;   // clear whatever is left in 1220
+ } else {
+  writeOffValue=Math.min(itemValue,current1220);   // never go negative
+ }
+
+ if(qty>0.01||writeOffValue>0){
   const msg='⚠ Delete "'+f.product+'"?\n\n'+
    'Stock on hand: '+qty+' pcs\n'+
    'Unit cost: '+money(cost)+'\n'+
-   'Total value: '+money(value)+'\n\n'+
-   'This will:\n'+
-   '  • Post a write-off journal (Other Expenses 6090 / FG Inventory 1220)\n'+
-   '  • Remove the product from FG stock\n\n'+
-   'This cannot be undone. Continue?';
+   'Item value: '+money(itemValue)+'\n\n'+
+   'FG Inventory (1220) ledger balance: '+money(current1220)+'\n'+
+   'Write-off amount: '+money(writeOffValue)+'\n'+
+   (isLastItem?'\n⚠ This is the LAST FG item — 1220 will be cleared to 0.\n':'')+
+   '\nThis will post a write-off journal\n(Dr Other Expenses 6090  /  Cr FG Inventory 1220).\n\nContinue?';
   if(!confirm(msg))return;
-  try{
-   if(value>0.005){
-    postJournal({
-     date:today(),
-     memo:'FG write-off: '+f.product+' x'+qty,
-     refType:'FG_WRITEOFF',
-     refId:f.id,
-     lines:[
-      {account:'6090',debit:value,memo:'Write-off: '+f.product+' x'+qty},
-      {account:'1220',credit:value,memo:f.product}
-     ]
-    });
-   }
-  }catch(err){return alert('Accounting error: '+err.message);}
-  audit('FG_DEL_WRITEOFF',f.product+' qty='+qty+' value='+money(value));
  } else {
-  if(!confirm('Remove "'+f.product+'" from FG stock?'))return;
+  if(!confirm('Remove "'+f.product+'" from FG stock?\n\nNothing to write off — 1220 is already 0.'))return;
+ }
+
+ if(writeOffValue>0.005){
+  try{
+   postJournal({
+    date:today(),
+    memo:'FG write-off: '+f.product+' x'+qty,
+    refType:'FG_WRITEOFF',
+    refId:f.id,
+    lines:[
+     {account:'6090',debit:writeOffValue,memo:'Write-off: '+f.product+' x'+qty},
+     {account:'1220',credit:writeOffValue,memo:f.product}
+    ]
+   });
+  }catch(err){return alert('Accounting error: '+err.message);}
+  audit('FG_DEL_WRITEOFF',f.product+' qty='+qty+' writeoff='+money(writeOffValue)+(isLastItem?' (last item — 1220 cleared)':''));
+ } else {
   audit('FG_DEL',f.product);
  }
 
@@ -1021,7 +1032,9 @@ function deleteFG(id){
  db.fg=db.fg.filter(x=>String(x.id)!==id);
  save(true);
  refresh();
- alert('Product removed from FG stock.');
+
+ const new1220=Math.max(0,accountBalance('1220',{to:today()}));
+ alert('Product removed.\n\nFG Inventory (1220) balance is now: '+money(new1220));
 }
 function renderFG(){
  if(!$('fgStock'))return;
@@ -1220,17 +1233,17 @@ function runReport(){
  else if(type==='fixedassets'){if(!admin())return alert('Only admin.');$('reportOut').innerHTML='<h4>Fixed Asset Register</h4>'+table(['Name','Category','Branch','Cost','Accum','NBV'],db.fixedAssets.map(f=>[esc(f.name),esc(f.category),esc(branchName(f.branch)),money(f.cost),money(f.accumulated||0),money(r2(f.cost-(f.accumulated||0)))]));}
 }
 
-function backup(){if(!admin())return alert('Only admin can download backups.');const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.4.1_Backup_'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();}
+function backup(){if(!admin())return alert('Only admin can download backups.');const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.4.2_Backup_'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();}
 function checkAutoBackup(){try{const askedToday=localStorage.getItem(AUTO_BACKUP_ASKED)===today();if(askedToday)return;const last=Number(localStorage.getItem(AUTO_BACKUP_KEY)||0);const days=last?(Date.now()-last)/(1000*60*60*24):999;if(admin()&&days>1){setTimeout(()=>{if(confirm('📥 Daily auto-backup reminder.\n\nLast backup was '+Math.round(days)+' day(s) ago. Download a fresh backup now?')){backup();localStorage.setItem(AUTO_BACKUP_KEY,String(Date.now()));}localStorage.setItem(AUTO_BACKUP_ASKED,today());},1500);}}catch(e){}}
 function restore(e){if(!admin())return alert('Only admin.');const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const x=JSON.parse(r.result);if(!x.branches||!Array.isArray(x.orders))throw new Error();db=migrateDB(x);db.lastModified=new Date().toISOString();db.lastModifiedBy=session?session.user:'system';if(fbRef)await fbRef.set(db).catch(err=>alert('Firebase: '+err.message));try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e2){}alert('Restored. Reloading.');location.reload();}catch(err){alert('Invalid backup.');}};r.readAsText(f);}
 function checkBackupReminder(){const btn=$('backupReminder');if(!btn)return;if(!admin()){btn.style.display='none';return;}const last=Number(localStorage.getItem(BACKUP_KEY)||0);const days=last?(Date.now()-last)/(1000*60*60*24):999;btn.style.display=days>7?'inline-block':'none';}
 function clearAudit(){if(!hasPerm('backup'))return;if(!confirm('Clear audit log?'))return;db.audit=[];save();renderAudit();renderSystem();}
 function renderAudit(){const el=$('auditLog');if(!el)return;const a=(db.audit||[]).slice(-50).reverse();el.innerHTML=a.length?'<div class="tablewrap"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th></tr></thead><tbody>'+a.map(x=>'<tr><td>'+esc(x.t.slice(0,19).replace('T',' '))+'</td><td>'+esc(x.user)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.detail)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">None</div>';}
 function clearTombstones(){if(!admin())return alert('Only admin.');if(!confirm('Clear all delete tombstones?'))return;db.deleted={};COLLS.forEach(c=>{db.deleted[c]=[];});audit('TOMB_CLEAR','all cleared');save(true);refresh();alert('Tombstones cleared.');}
-function renderSystem(){if(!$('sysInfo'))return;const tb=trialBalance(today(),null);const tombCount=COLLS.reduce((s,c)=>s+((db.deleted&&db.deleted[c])||[]).length,0);if($('tombCount'))$('tombCount').textContent=tombCount;$('sysInfo').innerHTML='<div class="statline"><span>ERP Version</span><b>V13.4.1</b></div><div class="statline"><span>Sync</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Live':'🔴 Offline')+'</b></div><div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div><div class="statline"><span>Staff</span><b>'+(db.staff||[]).length+'</b></div><div class="statline"><span>Customers</span><b>'+(db.customers||[]).length+'</b></div><div class="statline"><span>Suppliers</span><b>'+(db.suppliers||[]).length+'</b></div><div class="statline"><span>Orders</span><b>'+db.orders.length+'</b></div><div class="statline"><span>FG products</span><b>'+(db.fg||[]).length+'</b></div><div class="statline"><span>FG total units</span><b>'+(db.fg||[]).reduce((s,f)=>s+Number(f.qty||0),0)+' pcs</b></div><div class="statline"><span>Journal entries</span><b>'+db.journals.filter(j=>!j.voided).length+' active</b></div><div class="statline"><span>Delete tombstones</span><b>'+tombCount+'</b></div><div class="statline"><span>Trial balance</span><b class="'+(Math.abs(tb.diff)<0.05?'green':'red')+'">'+(Math.abs(tb.diff)<0.05?'✓ Balanced':'⚠ Out by '+money(tb.diff))+'</b></div><div class="statline"><span>Audit entries</span><b>'+((db.audit||[]).length)+'</b></div>';}
+function renderSystem(){if(!$('sysInfo'))return;const tb=trialBalance(today(),null);const tombCount=COLLS.reduce((s,c)=>s+((db.deleted&&db.deleted[c])||[]).length,0);if($('tombCount'))$('tombCount').textContent=tombCount;$('sysInfo').innerHTML='<div class="statline"><span>ERP Version</span><b>V13.4.2</b></div><div class="statline"><span>Sync</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Live':'🔴 Offline')+'</b></div><div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div><div class="statline"><span>Staff</span><b>'+(db.staff||[]).length+'</b></div><div class="statline"><span>Customers</span><b>'+(db.customers||[]).length+'</b></div><div class="statline"><span>Suppliers</span><b>'+(db.suppliers||[]).length+'</b></div><div class="statline"><span>Orders</span><b>'+db.orders.length+'</b></div><div class="statline"><span>FG products</span><b>'+(db.fg||[]).length+'</b></div><div class="statline"><span>FG total units</span><b>'+(db.fg||[]).reduce((s,f)=>s+Number(f.qty||0),0)+' pcs</b></div><div class="statline"><span>FG 1220 balance</span><b>'+money(accountBalance('1220',{to:today()}))+'</b></div><div class="statline"><span>Journal entries</span><b>'+db.journals.filter(j=>!j.voided).length+' active</b></div><div class="statline"><span>Delete tombstones</span><b>'+tombCount+'</b></div><div class="statline"><span>Trial balance</span><b class="'+(Math.abs(tb.diff)<0.05?'green':'red')+'">'+(Math.abs(tb.diff)<0.05?'✓ Balanced':'⚠ Out by '+money(tb.diff))+'</b></div><div class="statline"><span>Audit entries</span><b>'+((db.audit||[]).length)+'</b></div>';}
 async function resetData(){if(!admin())return;if(!confirm('Delete ALL ERP data?'))return;if(!confirm('FINAL WARNING — permanent.'))return;if(fbRef)await fbRef.set(null).catch(()=>{});localStorage.removeItem(KEY);localStorage.removeItem(KEY+"_CACHE");localStorage.removeItem(BACKUP_KEY);localStorage.removeItem(AUTO_BACKUP_KEY);localStorage.removeItem(AUTO_BACKUP_ASKED);location.reload();}
 
-window.addEventListener('load',()=>{attachSync();console.log('ERP V13.4.1 — FG Stock with full delete (write-off for qty>0)');});
+window.addEventListener('load',()=>{attachSync();console.log('ERP V13.4.2 — FG Stock with smart delete (reconciles 1220 to 0)');});
 </script>
 </body>
-                                                                                             </html>
+</html>
