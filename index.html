@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#714B67">
-<title>Handmade Decor ERP V13.3.3 Live</title>
+<title>Handmade Decor ERP V13.4.1 Live</title>
 <style>
 *{box-sizing:border-box}
 :root{--p:#714B67;--p2:#8f6385;--bg:#f5f3f5;--card:#fff;--text:#29252b;--muted:#777;--green:#198754;--red:#c0392b;--orange:#e67e22;--blue:#2878c8;--line:#e7e2e7}
@@ -81,7 +81,7 @@ body.printing-invoice .page{display:none!important}
 <div id="loginScreen" class="login">
  <div class="loginbox">
   <h1>🧶 Handmade Decor ERP</h1>
-  <b>V13.3.3 — Full Accounting Fix</b>
+  <b>V13.4.1 — Finished Goods Stock + Delete</b>
   <p class="muted"><span id="syncDot" class="sync-dot"></span><span id="syncLabel">Connecting…</span></p>
   <div class="field"><label>Username</label><input id="loginUser" value="admin" onkeydown="if(event.key==='Enter')$('loginPass').focus()"></div>
   <div class="field"><label>Password</label><input id="loginPass" type="password" value="admin" onkeydown="if(event.key==='Enter')login()"></div>
@@ -93,7 +93,7 @@ body.printing-invoice .page{display:none!important}
 <div id="app" style="display:none">
  <div class="layout">
   <aside class="side" id="side">
-   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.3.3 Live</small></div>
+   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.4.1 Live</small></div>
    <div class="nav" id="nav"></div>
   </aside>
   <main class="main">
@@ -130,7 +130,7 @@ body.printing-invoice .page{display:none!important}
     <div class="card"><h3>Add / Edit Customer</h3>
      <form onsubmit="saveCustomer(event)">
       <div class="row">
-       <div class="field"><label>Name</label><input id="cuName" required placeholder="e.g. Ram Kumar"></div>
+       <div class="field"><label>Name</label><input id="cuName" required></div>
        <div class="field"><label>Phone</label><input id="cuPhone"></div>
        <div class="field"><label>Email</label><input id="cuEmail" type="email"></div>
        <div class="field"><label>GST / PAN</label><input id="cuGst"></div>
@@ -156,7 +156,7 @@ body.printing-invoice .page{display:none!important}
     <div class="card"><h3>Add / Edit Supplier</h3>
      <form onsubmit="saveSupplier(event)">
       <div class="row">
-       <div class="field"><label>Name</label><input id="suName" required placeholder="e.g. Nepal Wood Co."></div>
+       <div class="field"><label>Name</label><input id="suName" required></div>
        <div class="field"><label>Phone</label><input id="suPhone"></div>
        <div class="field"><label>Email</label><input id="suEmail" type="email"></div>
        <div class="field"><label>GST / PAN</label><input id="suGst"></div>
@@ -255,9 +255,42 @@ body.printing-invoice .page{display:none!important}
       <div class="row"><div class="field"><label>Reorder Point</label><input id="mMinQty" type="number" step="0.001" min="0" value="0"></div></div>
       <button class="primary">Save / Add Stock</button></form>
      </div>
-     <div class="card"><h3>Finished Goods Stock (at cost)</h3><div id="fgStock"></div></div>
+     <div class="card"><h3>Finished Goods (quick view)</h3><div id="fgStock"></div></div>
     </div>
     <div class="card"><h3>Raw Materials</h3><div class="tablewrap"><table><thead><tr><th>Material</th><th>Unit</th><th>Qty</th><th class="fin">Avg Price</th><th class="fin">Value</th><th>Reorder</th><th>Actions</th></tr></thead><tbody id="matTable"></tbody></table></div></div>
+   </section>
+
+   <section id="finishedgoods" class="page">
+    <div class="grid2">
+     <div class="card"><h3>➕ Add / Restock Finished Goods</h3>
+      <div class="notice">Add opening stock or restock existing products. If the product already exists, the qty is added and the unit cost is blended (weighted average).</div>
+      <form onsubmit="saveFG(event)">
+       <div class="row">
+        <div class="field"><label>Product Name</label><input id="fgName" required placeholder="e.g. Wooden Chair"></div>
+        <div class="field"><label>Quantity</label><input id="fgQty" type="number" step="1" min="1" required></div>
+        <div class="field fin"><label>Unit Cost</label><input id="fgCost" type="number" step="0.01" min="0" value="0"></div>
+        <div class="field fin"><label>Sale Price / Unit</label><input id="fgSalePrice" type="number" step="0.01" min="0" value="0"></div>
+       </div>
+       <div class="row">
+        <div class="field"><label>Reorder Level (alert when below)</label><input id="fgMinQty" type="number" step="1" min="0" value="0"></div>
+       </div>
+       <button class="primary">Add / Restock FG</button>
+      </form>
+     </div>
+     <div class="card"><h3>📊 FG Summary</h3><div id="fgSummary"></div></div>
+    </div>
+    <div id="fgPending"></div>
+    <div class="card">
+     <h3>Finished Goods Inventory</h3>
+     <input id="fgSearch" class="searchbox" placeholder="🔎 Search product…" oninput="renderFGPage()">
+     <div class="tablewrap">
+      <table><thead><tr>
+       <th>Product</th><th>Qty</th><th class="fin">Unit Cost</th><th class="fin">Cost Value</th>
+       <th class="fin">Sale Price</th><th class="fin">Retail Value</th><th class="fin">Margin</th>
+       <th>Reorder</th><th>Status</th><th>Actions</th>
+      </tr></thead><tbody id="fgTable"></tbody></table>
+     </div>
+    </div>
    </section>
 
    <section id="issue" class="page">
@@ -276,7 +309,7 @@ body.printing-invoice .page{display:none!important}
 
    <section id="bom" class="page">
     <div class="card"><h3>BOM & Labour Cost</h3>
-     <div class="notice">Labour per unit is charged to FG at order completion. <b>Enter labour once per product</b>.</div>
+     <div class="notice">Labour per unit is charged to FG at order completion.</div>
      <form onsubmit="saveBOM(event)"><div class="row">
       <div class="field"><label>Finished Product</label><input id="bProduct" required></div>
       <div class="field"><label>Material</label><select id="bMaterial" required></select></div>
@@ -297,7 +330,7 @@ body.printing-invoice .page{display:none!important}
      </div><div class="row">
       <div class="field fin"><label>Input VAT %</label><input id="pVat" type="number" step="0.01" min="0" max="100" value="0"></div>
       <div class="field"><label>Payment Method</label><select id="pPay"><option value="Credit">Credit (AP)</option><option value="Cash">Cash</option><option value="Bank">Bank</option></select></div>
-      <div class="field"><label>Cash From (if Cash)</label><select id="pBranch"></select></div>
+      <div class="field"><label>Cash From</label><select id="pBranch"></select></div>
       <div class="field"><label>Date</label><input id="pDate" type="date"></div>
      </div><button class="primary">Save Purchase</button></form>
     </div>
@@ -524,7 +557,8 @@ body.printing-invoice .page{display:none!important}
        <option value="orders">Order Report</option>
        <option value="production">Production Report</option>
        <option value="expenses">Expense Report</option>
-       <option value="stock">Stock Report</option>
+       <option value="stock">Raw Materials Report</option>
+       <option value="fgstock">Finished Goods Stock</option>
        <option value="profit">Profit Report</option>
        <option value="araging">AR Aging</option>
        <option value="apaging">AP Aging</option>
@@ -599,7 +633,7 @@ const KEY='HANDMADE_DECOR_ERP_V10';
 const BACKUP_KEY='HANDMADE_DECOR_ERP_LASTBACKUP';
 const AUTO_BACKUP_KEY='HANDMADE_DECOR_ERP_AUTO_BACKUP_LAST';
 const AUTO_BACKUP_ASKED='HANDMADE_DECOR_ERP_AUTO_BACKUP_ASKED';
-const COLLS=['expenses','sales','purchases','orders','issues','materials','boms','customers','suppliers','staff','fixedAssets','employees','cashCounts'];
+const COLLS=['expenses','sales','purchases','orders','issues','materials','boms','customers','suppliers','staff','fixedAssets','employees','cashCounts','fg'];
 const STAFF_PERMS=[['inventory','Inventory'],['issue','Material Issue'],['bom','BOM & Labour'],['purchases','Purchases'],['fixedassets','Fixed Assets'],['accounting','Accounting'],['arap','Receivables & Payables'],['opening','Opening Balance'],['settings','Settings'],['backup','Backup & Restore'],['customers','Customers'],['suppliers','Suppliers']];
 const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);};
 const $=id=>document.getElementById(id);
@@ -618,46 +652,14 @@ try{firebase.initializeApp(firebaseConfig);fbRef=firebase.database().ref("erp/ma
 function setSyncStatus(state){fbConnected=(state==='live');const dot=fbConnected?'live':(state==='offline'?'offline':'');const label=state==='live'?'Live':(state==='offline'?'Offline':'Connecting');['syncDot','syncDotApp'].forEach(id=>{const el=$(id);if(el)el.className='sync-dot '+dot;});['syncLabel','syncLabelApp'].forEach(id=>{const el=$(id);if(el)el.textContent=label;});}
 function enableLogin(){const btn=$('loginBtn');if(btn){btn.disabled=false;btn.textContent='Login';}}
 
-/* ============ TOMBSTONES ============ */
 function tombstone(coll,id){if(!db.deleted)db.deleted={};if(!Array.isArray(db.deleted[coll]))db.deleted[coll]=[];const sid=String(id);if(!db.deleted[coll].map(String).includes(sid))db.deleted[coll].push(sid);}
 function applyTombstones(d){if(!d||!d.deleted)return d;COLLS.forEach(coll=>{const tombs=(d.deleted[coll]||[]).map(String);if(tombs.length&&Array.isArray(d[coll])){d[coll]=d[coll].filter(r=>!tombs.includes(String(r.id)));}});return d;}
 function unionTombstones(a,b){const out={};Object.keys(a||{}).forEach(k=>{out[k]=[...(a[k]||[])];});Object.keys(b||{}).forEach(coll=>{const list=out[coll]?[...out[coll]]:[];(b[coll]||[]).forEach(id=>{const sid=String(id);if(!list.map(String).includes(sid))list.push(sid);});out[coll]=list;});return out;}
 function localHasNewerTombstones(local,remote){for(const coll of Object.keys(local||{})){const l=(local[coll]||[]).map(String);const r=((remote||{})[coll]||[]).map(String);if(l.some(id=>!r.includes(id)))return true;}return false;}
 
-/* ============ ACCOUNTING CLEANUP ============ */
-/* ✅ V13.3.3 FIX: voided journals are excluded from journalLines.
-   Posting a reversal AND voiding the original double-counts the correction
-   and makes deleted expenses appear as negative amounts. Just mark voided. */
-function voidJournal(id,reason){
- const j=db.journals.find(x=>x.id===id);
- if(!j||j.voided)return null;
- if(db.settings&&db.settings.lockedThrough&&j.date<=db.settings.lockedThrough)throw new Error('Locked period.');
- j.voided=true;
- j.voidedBy=(session?session.user:'system');
- j.voidReason=reason||'';
- j.voidedAt=new Date().toISOString();
- return j.id;
-}
+function voidJournal(id,reason){const j=db.journals.find(x=>x.id===id);if(!j||j.voided)return null;if(db.settings&&db.settings.lockedThrough&&j.date<=db.settings.lockedThrough)throw new Error('Locked period.');j.voided=true;j.voidedBy=(session?session.user:'system');j.voidReason=reason||'';j.voidedAt=new Date().toISOString();return j.id;}
+function cleanupLegacyVoidReversals(d){if(!d||!Array.isArray(d.journals))return 0;const voidedIds=new Set();d.journals.forEach(j=>{if(j.voided)voidedIds.add(String(j.id));});let changed=0;d.journals.forEach(j=>{if(j.refType==='VOID'&&!j.voided&&voidedIds.has(String(j.refId))){j.voided=true;j.voidReason='V13.4.1 auto-cleanup: redundant reversal';j.voidedBy='system';j.voidedAt=new Date().toISOString();changed++;}});return changed;}
 
-/* ✅ V13.3.3 FIX: void any legacy 'VOID' reversal journals left by the old bug. */
-function cleanupLegacyVoidReversals(d){
- if(!d||!Array.isArray(d.journals))return 0;
- const voidedIds=new Set();
- d.journals.forEach(j=>{if(j.voided)voidedIds.add(String(j.id));});
- let changed=0;
- d.journals.forEach(j=>{
-  if(j.refType==='VOID'&&!j.voided&&voidedIds.has(String(j.refId))){
-   j.voided=true;
-   j.voidReason='V13.3.3 auto-cleanup: redundant reversal';
-   j.voidedBy='system';
-   j.voidedAt=new Date().toISOString();
-   changed++;
-  }
- });
- return changed;
-}
-
-/* ============ SYNC ============ */
 function processRemote(remote){
  const localDeleted=db.deleted||{};
  db=migrateDB(remote);
@@ -676,10 +678,6 @@ function attachSync(){
   const remote=snap.val();setSyncStatus('live');
   if(!remote){if(!firstSnapshotSeen){firstSnapshotSeen=true;save(true);}enableLogin();return;}
   firstSnapshotSeen=true;
-
-  /* ✅ V13.3.3: one-time cleanup of legacy reversal journals. Runs on first
-     snapshot even if cache already matches server, so Admin's P&L self-corrects
-     after any reload without needing a new transaction. */
   if(!cleanupAttempted && !pendingLocalSave){
    cleanupAttempted=true;
    try{
@@ -697,7 +695,6 @@ function attachSync(){
     }
    }catch(e){console.warn('legacy cleanup failed',e);}
   }
-
   if(remote.lastModified&&db.lastModified===remote.lastModified){enableLogin();return;}
   if(pendingLocalSave){pendingRemote=remote;enableLogin();return;}
   processRemote(remote);
@@ -710,7 +707,7 @@ function defaultCOA(){
  return [{code:'1000',name:'HO Cash on Hand',type:'Asset'},{code:'1001',name:'Branch 1 Cash',type:'Asset'},{code:'1002',name:'Branch 2 Cash',type:'Asset'},{code:'1003',name:'Branch 3 Cash',type:'Asset'},{code:'1004',name:'Branch 4 Cash',type:'Asset'},{code:'1005',name:'Branch 5 Cash',type:'Asset'},{code:'1010',name:'Bank',type:'Asset'},{code:'1100',name:'Accounts Receivable',type:'Asset'},{code:'1200',name:'Raw Materials Inventory',type:'Asset'},{code:'1210',name:'Work in Progress',type:'Asset'},{code:'1220',name:'Finished Goods Inventory',type:'Asset'},{code:'1300',name:'Input VAT (Recoverable)',type:'Asset'},{code:'1500',name:'Fixed Assets at Cost',type:'Asset'},{code:'1505',name:'Accumulated Depreciation',type:'Asset'},{code:'2000',name:'Accounts Payable',type:'Liability'},{code:'2100',name:'Output VAT (Payable)',type:'Liability'},{code:'2200',name:'Employee Security Deposits',type:'Liability'},{code:'2210',name:'Labour Payable',type:'Liability'},{code:'3000',name:"Owner's Capital",type:'Equity'},{code:'4000',name:'Sales Revenue',type:'Income'},{code:'5000',name:'Cost of Goods Sold',type:'Expense'},{code:'6000',name:'Rent',type:'Expense'},{code:'6010',name:'Electricity',type:'Expense'},{code:'6020',name:'Transport',type:'Expense'},{code:'6030',name:'Fixed Staff Salary',type:'Expense'},{code:'6040',name:'Water',type:'Expense'},{code:'6050',name:'Repairs & Maintenance',type:'Expense'},{code:'6090',name:'Other Expenses',type:'Expense'},{code:'6100',name:'Depreciation Expense',type:'Expense'},{code:'6210',name:'Overhead Absorbed',type:'Expense'}];
 }
 function defaultDB(){
- return {version:'13.3.3',admin:{user:'admin',pass:'admin'},branches:[{id:1,name:'Branch 1',user:'branch1',pass:'1234'},{id:2,name:'Branch 2',user:'branch2',pass:'1234'},{id:3,name:'Branch 3',user:'branch3',pass:'1234'},{id:4,name:'Branch 4',user:'branch4',pass:'1234'},{id:5,name:'Branch 5',user:'branch5',pass:'1234'}],orders:[],materials:[],issues:[],branchStock:[],boms:[],purchases:[],sales:[],expenses:[],employees:[],fg:[],audit:[],customers:[],suppliers:[],coa:defaultCOA(),journals:[],fixedAssets:[],staff:[],cashCounts:[],voucherSeq:0,deleted:{expenses:[],sales:[],purchases:[],orders:[],issues:[],materials:[],boms:[],customers:[],suppliers:[],staff:[],fixedAssets:[],employees:[],cashCounts:[]},settings:{overheadRate:0,lockedThrough:'',cashLimits:{0:0,1:0,2:0,3:0,4:0,5:0},approvalThreshold:0,company:{name:'',phone:'',email:'',address:'',gst:'',prefix:'INV'}},ledgerStartDate:today(),opening:{cash:0,bank:0,receivable:0,payable:0,capital:0,date:today(),jeId:null}};
+ return {version:'13.4.1',admin:{user:'admin',pass:'admin'},branches:[{id:1,name:'Branch 1',user:'branch1',pass:'1234'},{id:2,name:'Branch 2',user:'branch2',pass:'1234'},{id:3,name:'Branch 3',user:'branch3',pass:'1234'},{id:4,name:'Branch 4',user:'branch4',pass:'1234'},{id:5,name:'Branch 5',user:'branch5',pass:'1234'}],orders:[],materials:[],issues:[],branchStock:[],boms:[],purchases:[],sales:[],expenses:[],employees:[],fg:[],audit:[],customers:[],suppliers:[],coa:defaultCOA(),journals:[],fixedAssets:[],staff:[],cashCounts:[],voucherSeq:0,deleted:{expenses:[],sales:[],purchases:[],orders:[],issues:[],materials:[],boms:[],customers:[],suppliers:[],staff:[],fixedAssets:[],employees:[],cashCounts:[],fg:[]},settings:{overheadRate:0,lockedThrough:'',cashLimits:{0:0,1:0,2:0,3:0,4:0,5:0},approvalThreshold:0,company:{name:'',phone:'',email:'',address:'',gst:'',prefix:'INV'}},ledgerStartDate:today(),opening:{cash:0,bank:0,receivable:0,payable:0,capital:0,date:today(),jeId:null}};
 }
 function loadDB(){
  try{const cached=localStorage.getItem(KEY+"_CACHE");if(cached){const x=JSON.parse(cached);if(x&&x.branches)return migrateDB(x);}}catch(e){}
@@ -736,6 +733,7 @@ function migrateDB(x){
  (x.purchases||[]).forEach(p=>{if(p.paidAmount===undefined)p.paidAmount=p.settled?r2(p.qty*p.price*(1+Number(p.vat||0)/100)):0;});
  (x.expenses||[]).forEach(e=>{if(e.paidAmount===undefined)e.paidAmount=e.settled?Number(e.amount||0):0;});
  (x.materials||[]).forEach(m=>{if(!Array.isArray(m.openingLayers)){let hasP=(x.purchases||[]).some(p=>p.materialId===m.id);m.openingLayers=hasP?[]:[{qty:Number(m.qty)||0,price:Number(m.price)||0}];}if(m.minQty===undefined)m.minQty=0;});
+ (x.fg||[]).forEach(f=>{if(f.id===undefined)f.id=uid();if(f.minQty===undefined)f.minQty=0;if(f.salePrice===undefined)f.salePrice=0;});
  (x.orders||[]).forEach(o=>{if(o.completedQty===undefined)o.completedQty=Math.round(Number(o.qty||0)*(Number(o.progress||0)/100));o.completedQty=Number(o.completedQty)||0;if(o.completedQty>Number(o.qty||0))o.completedQty=Number(o.qty||0);if(o.notes===undefined)o.notes='';if(o.branchStockConsumed===undefined)o.branchStockConsumed=false;if(o.labourPaid===undefined)o.labourPaid=0;if(o.labourSettled===undefined)o.labourSettled=(Number(o.labourCost||0)<=0.01);delete o.progress;});
  return x;
 }
@@ -781,7 +779,7 @@ function cashAccountCode(locId){if(locId==='bank')return '1010';const b=Number(l
 function cashLocOptionsHTML(){let html='<option value="bank">Bank</option><option value="0">HO Cash</option>';for(let i=1;i<=5;i++){html+='<option value="'+i+'">'+esc(branchName(i))+' Cash</option>';}return html;}
 function branchCashOnlyOptionsHTML(){let html='<option value="0">HO Cash</option>';for(let i=1;i<=5;i++){html+='<option value="'+i+'">'+esc(branchName(i))+' Cash</option>';}return html;}
 function nextVoucher(){db.voucherSeq=(Number(db.voucherSeq)||0)+1;return 'PV-'+today().replace(/-/g,'').slice(2)+'-'+String(db.voucherSeq).padStart(4,'0');}
-function checkLiquidBalance(payMethod,amount,branchId,asOfDate){if(payMethod!=='Cash'&&payMethod!=='Bank')return true;let code=payMethod==='Bank'?'1010':branchCashCode(branchId!=null?branchId:0);const bal=accountBalance(code,{to:asOfDate||today()});const amt=r2(amount);if(bal+0.01<amt){const label=payMethod==='Bank'?'Bank':cashAccountName(branchId!=null?branchId:0);alert('❌ Insufficient '+label+' balance on '+(asOfDate||today())+'.\n\nAvailable: '+money(bal)+'\nRequired: '+money(amt)+'\n\nUse Credit or transfer money first.');return false;}return true;}
+function checkLiquidBalance(payMethod,amount,branchId,asOfDate){if(payMethod!=='Cash'&&payMethod!=='Bank')return true;let code=payMethod==='Bank'?'1010':branchCashCode(branchId!=null?branchId:0);const bal=accountBalance(code,{to:asOfDate||today()});const amt=r2(amount);if(bal+0.01<amt){const label=payMethod==='Bank'?'Bank':cashAccountName(branchId!=null?branchId:0);alert('❌ Insufficient '+label+' balance on '+(asOfDate||today())+'.\n\nAvailable: '+money(bal)+'\nRequired: '+money(amt));return false;}return true;}
 function checkApprovalLimit(amount){const th=Number((db.settings&&db.settings.approvalThreshold)||0);if(th>0&&Number(amount)>th&&!admin()){alert('⚠ Amount '+money(amount)+' exceeds approval threshold '+money(th)+'. Ask Admin.');return false;}return true;}
 
 function openPhoto(id){id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o||!o.photo)return alert('No photo.');$('photoModalImg').src=o.photo;const a=$('photoDownload');a.href=o.photo;a.download='Order_'+id+'.jpg';$('photoModal').classList.add('open');}
@@ -822,14 +820,14 @@ function settleLabour(id,method){id=String(id);if(!hasPerm('arap'))return alert(
 
 function saveFixedAsset(e){e.preventDefault();if(!hasPerm('fixedassets'))return alert('No permission.');const name=$('faName').value.trim(),category=$('faCategory').value;const cost=r2($('faCost').value),purchaseDate=$('faDate').value||today();const lifeMonths=Number($('faLife').value),salvage=r2($('faSalvage').value||0);const branchId=Number($('faBranch').value),payMethod=$('faPay').value;if(!name)return alert('Name required.');if(cost<=0)return alert('Cost must be positive.');if(lifeMonths<=0)return alert('Life must be positive.');if(salvage>cost)return alert('Salvage>cost.');if(!checkLiquidBalance(payMethod,cost,branchId,purchaseDate))return;if(!checkApprovalLimit(cost))return;const fa={id:uid(),name,category,cost,purchaseDate,lifeMonths,salvage,branch:branchId,accumulated:0,depMonths:[],disposed:false};const cashCode=payMethod==='Cash'?branchCashCode(branchId):'1010';const lines=[{account:'1500',debit:cost,memo:name}];if(payMethod==='Cash')lines.push({account:cashCode,credit:cost,branch:branchId});else if(payMethod==='Bank')lines.push({account:'1010',credit:cost});else lines.push({account:'2000',credit:cost,memo:'Supplier'});try{fa.jeId=postJournal({date:purchaseDate,memo:'Fixed asset: '+name,refType:'FA_ADD',refId:fa.id,lines});}catch(err){return alert('Error: '+err.message);}db.fixedAssets.push(fa);audit('FA_ADD',name+' '+money(cost));save();e.target.reset();$('faDate').value=today();refresh();}
 function renderFixedAssets(){if(!$('faTable'))return;if($('faDate')&&!$('faDate').value)$('faDate').value=today();const arr=filtered(db.fixedAssets);$('faTable').innerHTML=arr.length?arr.map(f=>{const monthly=r2((f.cost-f.salvage)/f.lifeMonths),nbv=r2(f.cost-(f.accumulated||0));const status=f.disposed?'<span class="badge br">Disposed</span>':'<span class="badge bg">Active</span>';const canManage=hasPerm('fixedassets');const actions=f.disposed?(canManage?'<button class="danger" data-fid="'+f.id+'" onclick="deleteFixedAsset(this.dataset.fid)">Delete</button>':'—'):((canManage?'<button class="info" data-fid="'+f.id+'" onclick="disposeFixedAsset(this.dataset.fid)">Dispose</button>':'')+(canManage?'<button class="danger" data-fid="'+f.id+'" onclick="deleteFixedAsset(this.dataset.fid)">Delete</button>':''));return '<tr><td>'+esc(f.name)+'</td><td>'+esc(f.category)+'</td><td>'+esc(branchName(f.branch))+'</td><td class="fin">'+money(f.cost)+'</td><td class="fin">'+money(monthly)+'</td><td class="fin">'+money(f.accumulated||0)+'</td><td class="fin">'+money(nbv)+'</td><td>'+status+'</td><td class="actions">'+actions+'</td></tr>';}).join(''):'<tr><td colspan="9" class="empty">No fixed assets</td></tr>';}
-function runDepreciation(){if(!hasPerm('fixedassets'))return alert('No permission.');const period=$('depPeriod').value;if(!/^\d{4}-\d{2}$/.test(period))return alert('Pick month.');const [yy,mm]=period.split('-').map(Number);const lastDay=new Date(yy,mm,0).getDate();const runDate=period+'-'+String(lastDay).padStart(2,'0');let count=0,total=0,skipped=0;db.fixedAssets.forEach(fa=>{if(fa.disposed)return;if(fa.purchaseDate>runDate)return;if((fa.depMonths||[]).includes(period))return;const monthlyExact=(fa.cost-fa.salvage)/fa.lifeMonths;if(monthlyExact<=0)return;const maxAccum=r2(fa.cost-fa.salvage);const accum=r2(fa.accumulated||0);const remaining=r2(maxAccum-accum);if(remaining<=0.01)return;const purchaseMonth=fa.purchaseDate.slice(0,7);let factor=1;if(purchaseMonth===period){const purchaseDay=Number(fa.purchaseDate.slice(-2));const daysUsed=lastDay-purchaseDay+1;factor=daysUsed/lastDay;}let amt=r2(monthlyExact*factor);if(monthlyExact>=remaining-0.01)amt=remaining;if(amt>remaining)amt=remaining;if(amt<=0)return;try{postJournal({date:runDate,memo:'Depreciation '+period+': '+fa.name,refType:'DEP',refId:fa.id,lines:[{account:'6100',debit:amt,branch:fa.branch,memo:fa.name},{account:'1505',credit:amt,memo:fa.name}]});}catch(err){skipped++;return;}fa.accumulated=r2((fa.accumulated||0)+amt);fa.depMonths=fa.depMonths||[];fa.depMonths.push(period);fa.lastDepDate=runDate;count++;total=r2(total+amt);});if(count===0&&skipped===0)return alert('Nothing to depreciate.');audit('DEP_RUN',period+' '+count+' assets '+money(total)+(skipped?' ('+skipped+' blocked)':''));save();refresh();alert('Depreciation posted for '+count+' asset(s), total '+money(total)+'.'+(skipped?'\n\n'+skipped+' blocked.':''));}
+function runDepreciation(){if(!hasPerm('fixedassets'))return alert('No permission.');const period=$('depPeriod').value;if(!/^\d{4}-\d{2}$/.test(period))return alert('Pick month.');const [yy,mm]=period.split('-').map(Number);const lastDay=new Date(yy,mm,0).getDate();const runDate=period+'-'+String(lastDay).padStart(2,'0');let count=0,total=0,skipped=0;db.fixedAssets.forEach(fa=>{if(fa.disposed)return;if(fa.purchaseDate>runDate)return;if((fa.depMonths||[]).includes(period))return;const monthlyExact=(fa.cost-fa.salvage)/fa.lifeMonths;if(monthlyExact<=0)return;const maxAccum=r2(fa.cost-fa.salvage);const accum=r2(fa.accumulated||0);const remaining=r2(maxAccum-accum);if(remaining<=0.01)return;const purchaseMonth=fa.purchaseDate.slice(0,7);let factor=1;if(purchaseMonth===period){const purchaseDay=Number(fa.purchaseDate.slice(-2));const daysUsed=lastDay-purchaseDay+1;factor=daysUsed/lastDay;}let amt=r2(monthlyExact*factor);if(monthlyExact>=remaining-0.01)amt=remaining;if(amt>remaining)amt=remaining;if(amt<=0)return;try{postJournal({date:runDate,memo:'Depreciation '+period+': '+fa.name,refType:'DEP',refId:fa.id,lines:[{account:'6100',debit:amt,branch:fa.branch,memo:fa.name},{account:'1505',credit:amt,memo:fa.name}]});}catch(err){skipped++;return;}fa.accumulated=r2((fa.accumulated||0)+amt);fa.depMonths=fa.depMonths||[];fa.depMonths.push(period);fa.lastDepDate=runDate;count++;total=r2(total+amt);});if(count===0&&skipped===0)return alert('Nothing to depreciate.');audit('DEP_RUN',period+' '+count+' assets '+money(total)+(skipped?' ('+skipped+' blocked)':''));save();refresh();alert('Depreciation posted for '+count+' asset(s), total '+money(total)+'.');}
 function disposeFixedAsset(id){if(!hasPerm('fixedassets'))return alert('No permission.');id=String(id);const fa=db.fixedAssets.find(x=>String(x.id)===id);if(!fa||fa.disposed)return;const input=prompt('Disposal proceeds (0 if scrapped):','0');if(input===null)return;const amt=r2(input),cost=Number(fa.cost),accum=Number(fa.accumulated||0);const nbv=r2(cost-accum),gain=r2(amt-nbv);const lines=[{account:'1505',debit:accum,memo:'Clear accum dep'},{account:'1500',credit:cost,memo:fa.name}];if(amt>0)lines.push({account:'1000',debit:amt,memo:'Proceeds'});if(gain>0)lines.push({account:'4000',credit:gain,memo:'Gain'});else if(gain<0)lines.push({account:'6090',debit:-gain,memo:'Loss'});try{postJournal({date:today(),memo:'Disposal: '+fa.name,refType:'FA_DISPOSE',refId:fa.id,lines});}catch(err){return alert('Error: '+err.message);}fa.disposed=true;fa.disposalDate=today();fa.disposalProceeds=amt;fa.disposalGain=gain;audit('FA_DISPOSE',fa.name+' proceeds '+money(amt));save(true);refresh();}
-function deleteFixedAsset(id){if(!hasPerm('fixedassets'))return alert('No permission.');id=String(id);const fa=db.fixedAssets.find(x=>String(x.id)===id);if(!fa)return;if((fa.accumulated||0)>0.01)return alert('Depreciation posted.');if(!confirm('Delete asset? Purchase journal will be voided.'))return;if(voidByRef('FA_ADD',id,'Asset deleted')>0)return alert('Locked period.');tombstone('fixedAssets',id);db.fixedAssets=db.fixedAssets.filter(x=>String(x.id)!==id);audit('FA_DEL',fa.name);save(true);refresh();}
+function deleteFixedAsset(id){if(!hasPerm('fixedassets'))return alert('No permission.');id=String(id);const fa=db.fixedAssets.find(x=>String(x.id)===id);if(!fa)return;if((fa.accumulated||0)>0.01)return alert('Depreciation posted.');if(!confirm('Delete asset?'))return;if(voidByRef('FA_ADD',id,'Asset deleted')>0)return alert('Locked period.');tombstone('fixedAssets',id);db.fixedAssets=db.fixedAssets.filter(x=>String(x.id)!==id);audit('FA_DEL',fa.name);save(true);refresh();}
 
 function saveSettings(e){e.preventDefault();if(!hasPerm('settings'))return alert('No permission.');const rate=Number($('setOverheadRate').value||0);if(rate<0||rate>200)return alert('Rate 0-200.');const lock=$('setLockDate').value||'';db.settings.overheadRate=rate;db.settings.lockedThrough=lock;audit('SETTINGS','rate='+rate+'% lock='+(lock||'none'));save();refresh();alert('Saved.');}
 function renderSettings(){if(!$('setOverheadRate'))return;if(document.activeElement!==$('setOverheadRate'))$('setOverheadRate').value=(db.settings&&db.settings.overheadRate)||0;if(document.activeElement!==$('setLockDate'))$('setLockDate').value=(db.settings&&db.settings.lockedThrough)||'';if($('setApprovalThreshold')&&document.activeElement!==$('setApprovalThreshold'))$('setApprovalThreshold').value=(db.settings&&db.settings.approvalThreshold)||0;const lim=db.settings&&db.settings.cashLimits||{};if($('limHO')&&document.activeElement!==$('limHO'))$('limHO').value=lim[0]||0;for(let i=1;i<=5;i++){const el=$('lim'+i);if(el&&document.activeElement!==el)el.value=lim[i]||0;}const co=db.settings.company||{};['coName','coPhone','coEmail','coGst','coAddress','coPrefix'].forEach((id,i)=>{const el=$(id);if(el&&document.activeElement!==el)el.value=[co.name,co.phone,co.email,co.gst,co.address,co.prefix||'INV'][i]||'';});}
 function saveCompanyBranding(e){e.preventDefault();if(!admin())return alert('Only admin.');db.settings.company={name:$('coName').value.trim(),phone:$('coPhone').value.trim(),email:$('coEmail').value.trim(),gst:$('coGst').value.trim(),address:$('coAddress').value.trim(),prefix:$('coPrefix').value.trim()||'INV'};audit('COMPANY_BRANDING',db.settings.company.name);save();refresh();alert('Branding saved.');updateBrandHeader();}
-function updateBrandHeader(){const el=$('brandHeader');if(!el)return;const co=db.settings.company||{};const name=co.name||'Handmade Decor';el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.3.3 Live</small>';}
+function updateBrandHeader(){const el=$('brandHeader');if(!el)return;const co=db.settings.company||{};const name=co.name||'Handmade Decor';el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.4.1 Live</small>';}
 function saveCashSettings(e){e.preventDefault();if(!admin())return alert('Only admin.');const limits={0:Number($('limHO').value||0),1:Number($('lim1').value||0),2:Number($('lim2').value||0),3:Number($('lim3').value||0),4:Number($('lim4').value||0),5:Number($('lim5').value||0)};const th=Number($('setApprovalThreshold').value||0);db.settings.cashLimits=limits;db.settings.approvalThreshold=th;audit('CASH_SETTINGS','limits='+JSON.stringify(limits)+' threshold='+th);save();refresh();alert('Saved.');}
 async function changeAdminPass(e){e.preventDefault();if(!admin())return alert('Only admin.');const oldP=$('apOldPass').value,newP=$('apNewPass').value,conP=$('apConfirmPass').value;if(newP!==conP)return alert('New passwords do not match.');if(newP.length<6)return alert('Min 6 chars.');const adm=db.admin||{user:'admin',pass:'admin'};let ok=false;if(adm.passHash){const v=await verifyPassword(oldP,adm.passHash);ok=v.ok;}else if(adm.pass){ok=(adm.pass===oldP);}if(!ok)return alert('Current password incorrect.');adm.passHash=await hashPassword(newP,'hd_v10');delete adm.pass;db.admin=adm;audit('ADMIN_PASS_CHANGE','updated');save(true);e.target.reset();alert('Password updated.');}
 
@@ -862,10 +860,10 @@ async function login(){const u=$('loginUser').value.trim(),p=$('loginPass').valu
 function openApp(){$('loginScreen').style.display='none';$('app').style.display='block';$('who').textContent=admin()?'HEAD OFFICE / ADMIN':(session.role==='staff'?session.name+' · All branches':branchName(session.branchId));if(!admin())document.body.classList.add('no-financials');else document.body.classList.remove('no-financials');updateBrandHeader();buildNav();showPage('dashboard');checkBackupReminder();checkAutoBackup();}
 function logout(){session=null;$('app').style.display='none';$('loginScreen').style.display='flex';$('loginPass').value='';document.body.classList.remove('no-financials');}
 function toggleSide(){$('side').classList.toggle('open');}
-function buildNav(){let a=[];if(admin()){a=[['dashboard','📊 Dashboard'],['cashmgt','💵 Cash Management'],['customers','👤 Customers'],['suppliers','🏭 Suppliers'],['orders','🧾 Customer Orders'],['production','🏭 Production'],['inventory','📦 Inventory'],['issue','🚚 Material Issue'],['branchstock','🏢 Branch Stock'],['bom','🧩 BOM & Labour'],['purchases','🛒 Purchases'],['sales','💰 Sales + VAT'],['expenses','🧾 Indirect Expenses'],['fixedassets','🏭 Fixed Assets'],['accounting','📒 Accounting'],['arap','💳 Receivables & Payables'],['opening','⚖️ Opening Balance'],['employees','👷 Employees'],['staff','👥 Staff Accounts'],['reports','📋 Reports'],['settings','⚙️ Settings'],['branches','🔐 Branch Settings'],['backup','💾 Backup']];}else if(session&&session.role==='staff'){const bf=[['dashboard','📊 Dashboard'],['orders','🧾 Customer Orders'],['production','🏭 Production'],['branchstock','🏢 Branch Stock'],['sales','💰 Sales + VAT'],['expenses','🧾 Expenses'],['employees','👷 Employees'],['reports','📋 Reports']];const af=[['inventory','📦 Inventory','inventory'],['issue','🚚 Material Issue','issue'],['bom','🧩 BOM & Labour','bom'],['purchases','🛒 Purchases','purchases'],['fixedassets','🏭 Fixed Assets','fixedassets'],['accounting','📒 Accounting','accounting'],['arap','💳 Receivables & Payables','arap'],['opening','⚖️ Opening Balance','opening'],['settings','⚙️ Settings','settings'],['backup','💾 Backup','backup'],['customers','👤 Customers','customers'],['suppliers','🏭 Suppliers','suppliers']];a=[...bf];af.forEach(x=>{if(session.perms&&session.perms[x[2]])a.push([x[0],x[1]]);});}else{a=[['dashboard','📊 Dashboard'],['orders','🧾 Customer Orders'],['production','🏭 Production'],['branchstock','🏢 My Branch Stock'],['sales','💰 Sales + VAT'],['expenses','🧾 Branch Expenses'],['employees','👷 Employees'],['reports','📋 Reports']];}$('nav').innerHTML=a.map(x=>'<button id="nav_'+x[0]+'" onclick="showPage(\''+x[0]+'\')">'+x[1]+'</button>').join('');}
+function buildNav(){let a=[];if(admin()){a=[['dashboard','📊 Dashboard'],['cashmgt','💵 Cash Management'],['customers','👤 Customers'],['suppliers','🏭 Suppliers'],['orders','🧾 Customer Orders'],['production','🏭 Production'],['inventory','📦 Raw Materials'],['finishedgoods','📦 Finished Goods Stock'],['issue','🚚 Material Issue'],['branchstock','🏢 Branch Stock'],['bom','🧩 BOM & Labour'],['purchases','🛒 Purchases'],['sales','💰 Sales + VAT'],['expenses','🧾 Indirect Expenses'],['fixedassets','🏭 Fixed Assets'],['accounting','📒 Accounting'],['arap','💳 Receivables & Payables'],['opening','⚖️ Opening Balance'],['employees','👷 Employees'],['staff','👥 Staff Accounts'],['reports','📋 Reports'],['settings','⚙️ Settings'],['branches','🔐 Branch Settings'],['backup','💾 Backup']];}else if(session&&session.role==='staff'){const bf=[['dashboard','📊 Dashboard'],['orders','🧾 Customer Orders'],['production','🏭 Production'],['branchstock','🏢 Branch Stock'],['sales','💰 Sales + VAT'],['expenses','🧾 Expenses'],['employees','👷 Employees'],['reports','📋 Reports']];const af=[['inventory','📦 Raw Materials','inventory'],['finishedgoods','📦 Finished Goods','inventory'],['issue','🚚 Material Issue','issue'],['bom','🧩 BOM & Labour','bom'],['purchases','🛒 Purchases','purchases'],['fixedassets','🏭 Fixed Assets','fixedassets'],['accounting','📒 Accounting','accounting'],['arap','💳 Receivables & Payables','arap'],['opening','⚖️ Opening Balance','opening'],['settings','⚙️ Settings','settings'],['backup','💾 Backup','backup'],['customers','👤 Customers','customers'],['suppliers','🏭 Suppliers','suppliers']];a=[...bf];af.forEach(x=>{if(session.perms&&session.perms[x[2]])a.push([x[0],x[1]]);});}else{a=[['dashboard','📊 Dashboard'],['orders','🧾 Customer Orders'],['production','🏭 Production'],['branchstock','🏢 My Branch Stock'],['sales','💰 Sales + VAT'],['expenses','🧾 Branch Expenses'],['employees','👷 Employees'],['reports','📋 Reports']];}$('nav').innerHTML=a.map(x=>'<button id="nav_'+x[0]+'" onclick="showPage(\''+x[0]+'\')">'+x[1]+'</button>').join('');}
 const BRANCH_ALLOWED=['dashboard','orders','production','branchstock','sales','expenses','employees','reports'];
-function canAccess(id){if(admin())return true;if(id==='staff'||id==='branches'||id==='finance'||id==='cashmgt')return false;if(session&&session.role==='staff'){if(BRANCH_ALLOWED.includes(id))return true;return !!(session.perms&&session.perms[id]===true);}return BRANCH_ALLOWED.includes(id);}
-function showPage(id){if(!canAccess(id))id='dashboard';document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));if($(id))$(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if($('nav_'+id))$('nav_'+id).classList.add('active');let names={dashboard:'Dashboard',cashmgt:'Cash Management',customers:'Customers',suppliers:'Suppliers',orders:'Customer Orders',production:'Production',inventory:'Inventory',issue:'Material Issue',branchstock:'Branch Stock',bom:'BOM & Labour Cost',purchases:'Purchases',sales:'Sales + VAT',expenses:'Indirect Expenses',fixedassets:'Fixed Assets',accounting:'Accounting',arap:'Receivables & Payables',finance:'Finance / P&L',settings:'Settings',opening:'Opening Balance',employees:'Employees / Labour',staff:'Staff Accounts',reports:'Reports',branches:'Branch Settings',backup:'Backup'};$('title').textContent=names[id]||id;refresh();if(innerWidth<851)$('side').classList.remove('open');}
+function canAccess(id){if(admin())return true;if(id==='staff'||id==='branches'||id==='finance'||id==='cashmgt')return false;if(session&&session.role==='staff'){if(BRANCH_ALLOWED.includes(id))return true;if(id==='finishedgoods')return !!(session.perms&&session.perms['inventory']===true);return !!(session.perms&&session.perms[id]===true);}return BRANCH_ALLOWED.includes(id);}
+function showPage(id){if(!canAccess(id))id='dashboard';document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));if($(id))$(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if($('nav_'+id))$('nav_'+id).classList.add('active');let names={dashboard:'Dashboard',cashmgt:'Cash Management',customers:'Customers',suppliers:'Suppliers',orders:'Customer Orders',production:'Production',inventory:'Raw Materials',finishedgoods:'Finished Goods Stock',issue:'Material Issue',branchstock:'Branch Stock',bom:'BOM & Labour Cost',purchases:'Purchases',sales:'Sales + VAT',expenses:'Indirect Expenses',fixedassets:'Fixed Assets',accounting:'Accounting',arap:'Receivables & Payables',finance:'Finance / P&L',settings:'Settings',opening:'Opening Balance',employees:'Employees / Labour',staff:'Staff Accounts',reports:'Reports',branches:'Branch Settings',backup:'Backup'};$('title').textContent=names[id]||id;refresh();if(innerWidth<851)$('side').classList.remove('open');}
 function setBranches(id){let el=$(id);if(!el)return;const prev=el.value;let arr=canPickBranch()?db.branches:db.branches.filter(b=>b.id===session.branchId);el.innerHTML=arr.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');el.disabled=!canPickBranch()&&arr.length===1;if(prev&&arr.some(b=>String(b.id)===String(prev)))el.value=prev;else if(arr[0])el.value=arr[0].id;}
 function setPurchaseBranchSelect(){const el=$('pBranch');if(!el)return;const prev=el.value;el.innerHTML=branchCashOnlyOptionsHTML();if(prev)el.value=prev;}
 function renderLiquid(){const el=$('liquidMoney');if(!el)return;if(!admin()){el.style.display='none';return;}el.style.display='inline-block';let cash=0,bank=0;for(let i=0;i<=5;i++)cash=r2(cash+accountBalance(branchCashCode(i),{to:today()}));bank=accountBalance('1010',{to:today()});const total=r2(cash+bank);const positive=total>=0;el.style.background=positive?'#f0fdf4':'#fde2df';el.style.color=positive?'#176b3d':'#9e281e';el.style.border='1px solid '+(positive?'#bbf7d0':'#fecaca');el.textContent='💵 Cash: '+money(cash)+' | Bank: '+money(bank)+' | Total: '+money(total);}
@@ -884,38 +882,270 @@ function openInvoice(saleId){const s=db.sales.find(x=>String(x.id)===String(sale
 function closeInvoiceModal(){$('invoiceModal').classList.remove('open');}
 function printInvoice(){document.body.classList.add('printing-invoice');setTimeout(()=>{window.print();setTimeout(()=>document.body.classList.remove('printing-invoice'),800);},300);}
 
-function renderLowStockAlert(){const el=$('lowStockAlert');if(!el)return;if(!admin()){el.innerHTML='';return;}const low=(db.materials||[]).filter(m=>Number(m.minQty)>0&&Number(m.qty)<Number(m.minQty));if(!low.length){el.innerHTML='';return;}let html='<div class="lowstock"><b>⚠ Low Stock Alerts</b><ul style="margin:8px 0 0 18px">';low.forEach(m=>{html+='<li>'+esc(m.name)+' — only '+m.qty+' '+m.unit+' (reorder at '+m.minQty+')</li>';});html+='</ul></div>';el.innerHTML=html;}
+function renderLowStockAlert(){
+ const el=$('lowStockAlert');if(!el)return;
+ if(!admin()){el.innerHTML='';return;}
+ const lowMats=(db.materials||[]).filter(m=>Number(m.minQty)>0&&Number(m.qty)<Number(m.minQty));
+ const lowFG=(db.fg||[]).filter(f=>Number(f.minQty)>0&&Number(f.qty)<Number(f.minQty));
+ if(!lowMats.length&&!lowFG.length){el.innerHTML='';return;}
+ let html='<div class="lowstock"><b>⚠ Low Stock Alerts</b><ul style="margin:8px 0 0 18px">';
+ lowMats.forEach(m=>{html+='<li><b>Raw:</b> '+esc(m.name)+' — only '+m.qty+' '+m.unit+' (reorder at '+m.minQty+')</li>';});
+ lowFG.forEach(f=>{html+='<li><b>FG:</b> '+esc(f.product)+' — only '+f.qty+' pcs (reorder at '+f.minQty+')</li>';});
+ html+='</ul></div>';
+ el.innerHTML=html;
+}
+
 function renderDashboard(){const orders=filtered(db.orders),prod=orders.filter(o=>o.status==='In Production').length,fg=db.fg.reduce((s,x)=>s+Number(x.qty),0);const pl=plReport(db.ledgerStartDate||'',today(),canPickBranch()?null:session.branchId);$('kOrders').textContent=orders.length;$('kProd').textContent=prod;$('kFG').textContent=fg;if(admin()){$('kProfitLabel').textContent='Net Profit';$('kProfit').textContent=money(pl.netProfit);$('kProfit').className='kpi '+(pl.netProfit>=0?'green':'red');}else{const pending=orders.filter(o=>o.status!=='Completed'&&o.status!=='Order Received').length;$('kProfitLabel').textContent='Pending Orders';$('kProfit').textContent=pending;$('kProfit').className='kpi';}const states=['Order Received','Sent to Branch','In Production','Assembly Complete','Completed'];const c={};orders.forEach(o=>c[o.status]=(c[o.status]||0)+1);$('flow').innerHTML=states.map(s=>'<div class="statline"><span>'+statusBadge(s)+'</span><b>'+((c[s]||0))+'</b></div>').join('');const branchesToShow=canPickBranch()?db.branches:db.branches.filter(b=>b.id===session.branchId);$('branchChart').innerHTML=branchesToShow.map(b=>{const a=db.orders.filter(o=>o.branch===b.id);const totalQty=a.reduce((s,o)=>s+Number(o.qty||0),0);const doneTotal=a.reduce((s,o)=>s+doneQty(o),0);const pct=totalQty>0?Math.round(doneTotal/totalQty*100):0;return '<div style="margin:9px 0"><div style="display:flex;justify-content:space-between"><span>'+esc(b.name)+'</span><b>'+doneTotal+' / '+totalQty+' pcs ('+pct+'%)</b></div><div class="bar"><span style="width:'+pct+'%"></span></div></div>';}).join('');if($('bsCard'))$('bsCard').style.display=admin()?'':'none';if($('branchDashCard'))$('branchDashCard').style.display=admin()?'none':'';if(!admin()){const myBranch=session.branchId;const mySales=db.sales.filter(s=>Number(s.branch)===Number(myBranch));const myExp=db.expenses.filter(e=>Number(e.branch)===Number(myBranch));const myStock=db.branchStock.filter(x=>Number(x.branch)===Number(myBranch));const stockQty=r2(myStock.reduce((s,x)=>s+Number(x.qty||0),0));const outstandingCount=mySales.filter(s=>!s.settled).length;$('branchDash').innerHTML='<div class="statline"><span>My branch</span><b>'+esc(branchName(myBranch))+'</b></div><div class="statline"><span>My sales this period</span><b>'+mySales.length+'</b></div><div class="statline"><span>Unpaid sales invoices</span><b>'+outstandingCount+'</b></div><div class="statline"><span>Expenses logged</span><b>'+myExp.length+'</b></div><div class="statline"><span>Material stock total qty</span><b>'+stockQty+'</b></div>';}if(admin()){const bs=balanceSheet(today(),null);$('bsSnap').innerHTML='<div class="statline"><span>Total Assets</span><b>'+money(bs.totalAssets)+'</b></div><div class="statline"><span>Total Liabilities</span><b>'+money(bs.totalLiab)+'</b></div><div class="statline"><span>Total Equity</span><b>'+money(bs.totalEquity)+'</b></div><div class="statline"><span>Cash + Bank</span><b>'+money(accountBalance('1000',{to:today()})+accountBalance('1010',{to:today()}))+'</b></div>'+(Math.abs(bs.diff)>0.05?'<p class="red">Out by '+money(bs.diff)+'</p>':'<p class="green">✓ Balanced</p>');}renderLowStockAlert();}
 
-function refresh(){if(!session)return;['oBranch','sBranch','eBranch','empBranch','iBranch','faBranch'].forEach(setBranches);setPurchaseBranchSelect();if($('oDate')&&!$('oDate').value)$('oDate').value=today();if($('eDate')&&!$('eDate').value)$('eDate').value=today();if($('empJoin')&&!$('empJoin').value)$('empJoin').value=today();if($('pDate')&&!$('pDate').value)$('pDate').value=today();if($('sDate')&&!$('sDate').value)$('sDate').value=today();fillMaterialSelects();fillOrdersSelect();fillSaleProducts();fillCustomerSelects();fillSupplierSelects();filterReportOptions();renderLiquid();renderDashboard();renderOrders();renderProduction();renderMaterials();renderFG();renderIssues();renderBranchStock();renderBOM();renderPurchases();renderSales();renderExpenses();renderFixedAssets();renderSettings();renderAccounting();renderARAP();renderOpening();renderEmployees();renderStaff();renderBranches();renderSystem();renderAudit();renderCustomers();renderSuppliers();if(admin())refreshCashPage();}
-function filterReportOptions(){const sel=$('reportType');if(!sel)return;const adminOnly=['trialbalance','balancesheet','fixedassets','profit','araging','apaging','profitability','branchcompare','deadstock','gstreturn'];[...sel.options].forEach(o=>{const hide=adminOnly.includes(o.value)&&!admin();o.hidden=hide;o.disabled=hide;});if(sel.selectedOptions[0]&&sel.selectedOptions[0].disabled)sel.value='sales';}
+function refresh(){if(!session)return;['oBranch','sBranch','eBranch','empBranch','iBranch','faBranch'].forEach(setBranches);setPurchaseBranchSelect();if($('oDate')&&!$('oDate').value)$('oDate').value=today();if($('eDate')&&!$('eDate').value)$('eDate').value=today();if($('empJoin')&&!$('empJoin').value)$('empJoin').value=today();if($('pDate')&&!$('pDate').value)$('pDate').value=today();if($('sDate')&&!$('sDate').value)$('sDate').value=today();fillMaterialSelects();fillOrdersSelect();fillSaleProducts();fillCustomerSelects();fillSupplierSelects();filterReportOptions();renderLiquid();renderDashboard();renderOrders();renderProduction();renderMaterials();renderFG();renderFGPage();renderIssues();renderBranchStock();renderBOM();renderPurchases();renderSales();renderExpenses();renderFixedAssets();renderSettings();renderAccounting();renderARAP();renderOpening();renderEmployees();renderStaff();renderBranches();renderSystem();renderAudit();renderCustomers();renderSuppliers();if(admin())refreshCashPage();}
+function filterReportOptions(){const sel=$('reportType');if(!sel)return;const adminOnly=['trialbalance','balancesheet','fixedassets','profit','araging','apaging','profitability','branchcompare','deadstock','gstreturn'];[...sel.options].forEach(o=>{let hide=adminOnly.includes(o.value)&&!admin();if(o.value==='fgstock'&&session&&session.role==='branch')hide=true;o.hidden=hide;o.disabled=hide;});if(sel.selectedOptions[0]&&sel.selectedOptions[0].disabled)sel.value='sales';}
+
+function saveFG(e){
+ e.preventDefault();
+ if(!hasPerm('inventory'))return alert('No permission.');
+ const name=$('fgName').value.trim();
+ const qty=Number($('fgQty').value);
+ const cost=r2($('fgCost').value||0);
+ const salePrice=r2($('fgSalePrice').value||0);
+ const minQty=Number($('fgMinQty').value||0);
+ if(!name)return alert('Product name required.');
+ if(!(qty>0))return alert('Quantity must be positive.');
+ if(!Number.isInteger(qty))return alert('Whole pieces only.');
+ const existing=db.fg.find(x=>x.product.toLowerCase()===name.toLowerCase());
+ if(existing){
+  const oldQty=Number(existing.qty||0),oldCost=Number(existing.unitCost||0);
+  const newQty=oldQty+qty;
+  existing.qty=newQty;
+  existing.unitCost=newQty>0?r2((oldQty*oldCost+qty*cost)/newQty):cost;
+  if(salePrice>0)existing.salePrice=salePrice;
+  if(minQty>0)existing.minQty=minQty;
+  if(!existing.id)existing.id=uid();
+  audit('FG_RESTOCK',name+' +'+qty+' (blended cost '+money(existing.unitCost)+')');
+ } else {
+  db.fg.push({id:uid(),product:name,qty,unitCost:cost,salePrice,minQty,createdAt:new Date().toISOString()});
+  audit('FG_ADD',name+' '+qty+' @ '+money(cost));
+ }
+ save(true);
+ e.target.reset();
+ refresh();
+ alert('FG stock updated.');
+}
+function adjustFG(id){
+ id=String(id);
+ if(!hasPerm('inventory'))return alert('No permission.');
+ const f=db.fg.find(x=>String(x.id)===id);
+ if(!f)return alert('Not found.');
+ const input=prompt('Adjust quantity for "'+f.product+'"\nCurrent: '+f.qty+'\n\nEnter NEW quantity:',String(f.qty));
+ if(input===null)return;
+ const n=Number(input);
+ if(!Number.isFinite(n)||n<0)return alert('Invalid number.');
+ if(!Number.isInteger(n))return alert('Whole pieces only.');
+ const diff=n-Number(f.qty||0);
+ if(diff===0)return;
+ f.qty=n;
+ audit('FG_ADJUST',f.product+' '+(diff>0?'+':'')+diff+' → '+n);
+ save(true);
+ refresh();
+ alert('Quantity adjusted to '+n);
+}
+function editFG(id){
+ id=String(id);
+ if(!hasPerm('inventory'))return alert('No permission.');
+ const f=db.fg.find(x=>String(x.id)===id);
+ if(!f)return;
+ const costIn=prompt('Unit cost for "'+f.product+'":',String(f.unitCost||0));
+ if(costIn===null)return;
+ const cost=r2(costIn);
+ if(cost<0)return alert('Cost cannot be negative.');
+ const priceIn=prompt('Sale price for "'+f.product+'":',String(f.salePrice||0));
+ if(priceIn===null)return;
+ const price=r2(priceIn);
+ if(price<0)return alert('Sale price cannot be negative.');
+ const minIn=prompt('Reorder level for "'+f.product+'":',String(f.minQty||0));
+ if(minIn===null)return;
+ const minQty=Number(minIn)||0;
+ if(minQty<0)return alert('Reorder level cannot be negative.');
+ f.unitCost=cost;
+ f.salePrice=price;
+ f.minQty=minQty;
+ audit('FG_EDIT',f.product+' cost='+money(cost)+' price='+money(price)+' reorder='+minQty);
+ save(true);
+ refresh();
+ alert('Updated.');
+}
+/* ✅ Delete FG — always allowed.
+   - If qty > 0: post a write-off journal (Dr Other Expenses 6090 / Cr FG Inventory 1220)
+     so the books stay balanced, then remove the product.
+   - If qty = 0: just remove the product.
+   - Tombstone prevents resurrection on other devices. */
+function deleteFG(id){
+ id=String(id);
+ if(!hasPerm('inventory'))return alert('No permission.');
+ const f=db.fg.find(x=>String(x.id)===id);
+ if(!f)return;
+ const qty=Number(f.qty||0);
+ const cost=Number(f.unitCost||0);
+ const value=r2(qty*cost);
+
+ if(qty>0.01){
+  const msg='⚠ Delete "'+f.product+'"?\n\n'+
+   'Stock on hand: '+qty+' pcs\n'+
+   'Unit cost: '+money(cost)+'\n'+
+   'Total value: '+money(value)+'\n\n'+
+   'This will:\n'+
+   '  • Post a write-off journal (Other Expenses 6090 / FG Inventory 1220)\n'+
+   '  • Remove the product from FG stock\n\n'+
+   'This cannot be undone. Continue?';
+  if(!confirm(msg))return;
+  try{
+   if(value>0.005){
+    postJournal({
+     date:today(),
+     memo:'FG write-off: '+f.product+' x'+qty,
+     refType:'FG_WRITEOFF',
+     refId:f.id,
+     lines:[
+      {account:'6090',debit:value,memo:'Write-off: '+f.product+' x'+qty},
+      {account:'1220',credit:value,memo:f.product}
+     ]
+    });
+   }
+  }catch(err){return alert('Accounting error: '+err.message);}
+  audit('FG_DEL_WRITEOFF',f.product+' qty='+qty+' value='+money(value));
+ } else {
+  if(!confirm('Remove "'+f.product+'" from FG stock?'))return;
+  audit('FG_DEL',f.product);
+ }
+
+ tombstone('fg',id);
+ db.fg=db.fg.filter(x=>String(x.id)!==id);
+ save(true);
+ refresh();
+ alert('Product removed from FG stock.');
+}
+function renderFG(){
+ if(!$('fgStock'))return;
+ if(!db.fg.length){
+  $('fgStock').innerHTML='<div class="empty">No FG stock yet.<br>Add via <b>Finished Goods</b> page.</div>';
+  return;
+ }
+ let total=0;
+ const items=db.fg.slice(0,8);
+ let html=items.map(f=>{
+  const val=r2(f.qty*(f.unitCost||0));total=r2(total+val);
+  const low=Number(f.minQty)>0&&Number(f.qty)<Number(f.minQty);
+  if(admin())return '<div class="statline"><span>'+esc(f.product)+(low?' <span class="badge br">Low</span>':'')+'<div class="muted">'+f.qty+' pcs @ '+money(f.unitCost||0)+'</div></span><b>'+money(val)+'</b></div>';
+  return '<div class="statline"><span>'+esc(f.product)+'</span><b>'+f.qty+' pcs</b></div>';
+ }).join('');
+ html+='<div style="margin-top:8px"><button class="primary" onclick="showPage(\'finishedgoods\')" style="width:100%">Manage FG Stock →</button></div>';
+ $('fgStock').innerHTML=html;
+}
+function renderFGPage(){
+ if(!$('fgTable'))return;
+ const canEdit=hasPerm('inventory');
+ const q=($('fgSearch')&&$('fgSearch').value||'').trim().toLowerCase();
+ const all=db.fg||[];
+ const list=all.filter(f=>!q||f.product.toLowerCase().includes(q));
+
+ let totalQty=0,totalCost=0,totalRetail=0,lowCount=0;
+ all.forEach(f=>{
+  totalQty+=Number(f.qty||0);
+  totalCost=r2(totalCost+Number(f.qty||0)*Number(f.unitCost||0));
+  totalRetail=r2(totalRetail+Number(f.qty||0)*Number(f.salePrice||0));
+  if(Number(f.minQty)>0&&Number(f.qty)<Number(f.minQty))lowCount++;
+ });
+ if($('fgSummary')){
+  let s='';
+  s+='<div class="statline"><span>Products</span><b>'+all.length+'</b></div>';
+  s+='<div class="statline"><span>Total units on hand</span><b>'+totalQty+' pcs</b></div>';
+  s+='<div class="statline"><span>Total cost value</span><b>'+money(totalCost)+'</b></div>';
+  if(totalRetail>0)s+='<div class="statline"><span>Total retail value</span><b>'+money(totalRetail)+'</b></div>';
+  if(totalCost>0&&totalRetail>0){
+   const margin=r2((totalRetail-totalCost)/totalRetail*100);
+   s+='<div class="statline"><span>Avg margin</span><b class="'+(margin>=0?'green':'red')+'">'+margin+'%</b></div>';
+  }
+  if(lowCount>0)s+='<div class="statline"><span>Below reorder</span><b class="red">'+lowCount+' product(s)</b></div>';
+  $('fgSummary').innerHTML=s;
+ }
+
+ if(!list.length){
+  $('fgTable').innerHTML='<tr><td colspan="10" class="empty">'+(all.length?'No matching product':'No FG stock — add above')+'</td></tr>';
+ } else {
+  $('fgTable').innerHTML=list.map(f=>{
+   const qty=Number(f.qty||0);
+   const cost=Number(f.unitCost||0);
+   const price=Number(f.salePrice||0);
+   const costVal=r2(qty*cost);
+   const retailVal=r2(qty*price);
+   const margin=retailVal>0?r2((retailVal-costVal)/retailVal*100):0;
+   const low=Number(f.minQty)>0&&qty<Number(f.minQty);
+   const status=low?'<span class="badge br">Low</span>':(qty>0?'<span class="badge bg">In Stock</span>':'<span class="badge">Out</span>');
+   const actions=canEdit?
+    '<button class="secondary" data-fid="'+f.id+'" onclick="adjustFG(this.dataset.fid)">Adjust</button>'+
+    '<button class="info" data-fid="'+f.id+'" onclick="editFG(this.dataset.fid)">Edit</button>'+
+    '<button class="danger" data-fid="'+f.id+'" onclick="deleteFG(this.dataset.fid)">Delete</button>'
+    :'<span class="muted">—</span>';
+   return '<tr><td>'+esc(f.product)+'</td><td><b>'+qty+'</b></td>'+
+    '<td class="fin">'+money(cost)+'</td><td class="fin">'+money(costVal)+'</td>'+
+    '<td class="fin">'+(price>0?money(price):'—')+'</td><td class="fin">'+(price>0?money(retailVal):'—')+'</td>'+
+    '<td class="fin '+(price>0?(margin>=0?'green':'red'):'')+'">'+(price>0?margin+'%':'—')+'</td>'+
+    '<td>'+(Number(f.minQty)||0)+'</td>'+
+    '<td>'+status+'</td>'+
+    '<td class="actions">'+actions+'</td></tr>';
+  }).join('');
+ }
+
+ const pending=(db.orders||[]).filter(o=>o.status==='Assembly Complete'&&!o.fgReturned);
+ if($('fgPending')){
+  if(!pending.length||!admin()){
+   $('fgPending').innerHTML='';
+  } else {
+   let s='<div class="card" style="border-left:4px solid #e67e22"><h3>⚠ Pending FG Receipt ('+pending.length+' orders)</h3>';
+   s+='<div class="notice">These orders are <b>Assembly Complete</b>. Go to <b>Production</b> page and click <b>FG</b> to receive into finished goods stock.</div>';
+   s+='<div class="tablewrap"><table><thead><tr><th>Order</th><th>Product</th><th>Branch</th><th>Qty</th><th>Status</th></tr></thead><tbody>';
+   pending.forEach(o=>{
+    s+='<tr><td>#'+o.id+'</td><td>'+esc(o.product)+'</td><td>'+esc(branchName(o.branch))+'</td><td>'+o.qty+' pcs</td><td>'+statusBadge(o.status)+'</td></tr>';
+   });
+   s+='</tbody></table></div></div>';
+   $('fgPending').innerHTML=s;
+  }
+ }
+}
 
 function compressImage(file,maxDim,quality){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=e=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(w>maxDim||h>maxDim){if(w>=h){h=Math.round(h*maxDim/w);w=maxDim;}else{w=Math.round(w*maxDim/h);h=maxDim;}}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);try{resolve(c.toDataURL('image/jpeg',quality));}catch(err){resolve(e.target.result);}};img.onerror=()=>reject(new Error('Invalid image'));img.src=e.target.result;};reader.onerror=()=>reject(new Error('Read error'));reader.readAsDataURL(file);});}
 
 async function saveOrder(e){e.preventDefault();let data='';const f=$('oPhoto').files[0];if(f){try{data=await compressImage(f,600,0.7);}catch(err){data='';}}if(data&&!/^data:image\//.test(data))data='';const br=canPickBranch()?Number($('oBranch').value):session.branchId;const cname=$('oCustomer').value.trim();if(!cname)return alert('Customer required.');autoLinkCustomer(cname);const id=uid();db.orders.push({id,customer:cname,product:$('oProduct').value.trim(),qty:Number($('oQty').value),price:r2($('oPrice').value||0),branch:br,date:$('oDate').value||today(),notes:$('oNotes').value,photo:data,status:'Order Received',completedQty:0,assembly:false,materialComplete:false,branchStockConsumed:false,labourPaid:0,labourSettled:true});audit('ORDER_ADD','#'+id+' '+cname+' '+$('oProduct').value.trim()+' x'+$('oQty').value);save();e.target.reset();$('oDate').value=today();refresh();alert('Order saved.');}
 function renderOrders(){let a=filtered(db.orders);const q=($('orderSearch')&&$('orderSearch').value||'').trim().toLowerCase();if(q)a=a.filter(o=>(o.customer+' '+o.product+' '+branchName(o.branch)+' '+(o.notes||'')).toLowerCase().includes(q));$('ordersTable').innerHTML=a.length?a.map(o=>{const oid=String(o.id);const send=(admin()||(session&&session.role==='staff')||(session&&session.role==='branch'&&Number(o.branch)===Number(session.branchId)))&&o.status==='Order Received'?'<button class="info" data-oid="'+oid+'" onclick="sendOrder(this.dataset.oid)">Send</button>':'';const del=(canPickBranch()||o.branch===session.branchId)?'<button class="danger" data-oid="'+oid+'" onclick="deleteOrder(this.dataset.oid)">Delete</button>':'';const dl=o.photo?'<button class="secondary" data-oid="'+oid+'" onclick="downloadPhoto(this.dataset.oid)" title="Download">⬇</button>':'';const photo=o.photo?'<img class="photo" src="'+o.photo+'" data-oid="'+oid+'" onclick="openPhoto(this.dataset.oid)">':'—';const noteText=o.notes?esc(o.notes):'<span class="muted">—</span>';return '<tr><td>'+photo+'</td><td>'+esc(o.customer)+'</td><td>'+esc(o.product)+'</td><td>'+o.qty+'</td><td>'+esc(branchName(o.branch))+'</td><td>'+statusBadge(o.status)+'</td><td>'+doneQty(o)+' / '+o.qty+'</td><td class="notes-cell">'+noteText+'</td><td class="actions"><button class="info" data-oid="'+oid+'" onclick="viewOrder(this.dataset.oid)">View</button>'+dl+send+del+'</td></tr>';}).join(''):'<tr><td colspan="9" class="empty">No orders</td></tr>';}
 function sendOrder(id){if(!admin()&&!(session&&session.role==='staff')){if(!session||session.role!=='branch')return;id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o||Number(o.branch)!==Number(session.branchId))return;}id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o)return;if(o.status!=='Order Received')return alert('Only new orders can be sent.');if(!o.branch)return alert('No branch.');o.status='Sent to Branch';o.completedQty=0;o.assembly=false;o.materialComplete=false;o.fgReturned=false;o.branchStockConsumed=false;audit('ORDER_SEND','#'+id);save();refresh();alert('Sent.');}
-function deleteOrder(id){id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o)return;if(!canPickBranch()&&o.branch!==session.branchId)return alert('Not allowed');if(o.status==='Completed'||o.fgReturned){return alert('Cannot delete a completed order.');}if(!confirm('Delete order? Related journals will be voided.'))return;const issueIds=db.issues.filter(i=>i.orderId===o.id).map(i=>i.id);for(const iid of issueIds){if(voidByRef('ISSUE',iid,'Order deleted')>0)return alert('Locked period.');}if(Number(o.labourPaid||0)>0.01){if(!confirm('⚠ Labour already paid. Void will restore Cash but worker has the cash. Continue?'))return;if(voidByRef('LABOURPAY',id,'Order deleted')>0)return alert('Locked.');}db.issues.filter(i=>i.orderId===id).forEach(i=>{const m=db.materials.find(x=>x.id===i.materialId);if(m)m.qty=r2(m.qty+i.qty);});if(!o.branchStockConsumed){db.issues.filter(i=>i.orderId===id).forEach(i=>{const bs=db.branchStock.find(x=>Number(x.branch)===Number(i.branch)&&Number(x.materialId)===Number(i.materialId));if(bs){bs.qty=r2(bs.qty-i.qty);if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);}});}db.issues=db.issues.filter(i=>i.orderId!==id);tombstone('orders',id);db.orders=db.orders.filter(x=>String(x.id)!==id);audit('ORDER_DEL','#'+id);save(true);refresh();}
+function deleteOrder(id){id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o)return;if(!canPickBranch()&&o.branch!==session.branchId)return alert('Not allowed');if(o.status==='Completed'||o.fgReturned){return alert('Cannot delete a completed order.');}if(!confirm('Delete order?'))return;const issueIds=db.issues.filter(i=>i.orderId===o.id).map(i=>i.id);for(const iid of issueIds){if(voidByRef('ISSUE',iid,'Order deleted')>0)return alert('Locked period.');}if(Number(o.labourPaid||0)>0.01){if(!confirm('⚠ Labour already paid. Continue?'))return;if(voidByRef('LABOURPAY',id,'Order deleted')>0)return alert('Locked.');}db.issues.filter(i=>i.orderId===id).forEach(i=>{const m=db.materials.find(x=>x.id===i.materialId);if(m)m.qty=r2(m.qty+i.qty);});if(!o.branchStockConsumed){db.issues.filter(i=>i.orderId===id).forEach(i=>{const bs=db.branchStock.find(x=>Number(x.branch)===Number(i.branch)&&Number(x.materialId)===Number(i.materialId));if(bs){bs.qty=r2(bs.qty-i.qty);if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);}});}db.issues=db.issues.filter(i=>i.orderId!==id);tombstone('orders',id);db.orders=db.orders.filter(x=>String(x.id)!==id);audit('ORDER_DEL','#'+id);save(true);refresh();}
 
 function getOrderBOMRequirement(o){const bom=db.boms.filter(b=>b.product.toLowerCase()===o.product.toLowerCase());const req={};bom.forEach(b=>req[b.materialId]=(req[b.materialId]||0)+b.qty*o.qty);return {bom,req};}
 function orderMaterialReady(o){const x=getOrderBOMRequirement(o);if(!x.bom.length)return {ok:false,reason:'No BOM'};for(let mid in x.req){const issued=db.issues.filter(i=>i.orderId===o.id&&i.materialId===Number(mid)).reduce((s,i)=>s+i.qty,0);if(issued+0.000001<x.req[mid])return {ok:false,reason:'Incomplete'};}return {ok:true,reason:'Ready'};}
 function renderProduction(){const a=filtered(db.orders).filter(o=>o.status!=='Order Received');$('prodTable').innerHTML=a.length?a.map(o=>{const ready=orderMaterialReady(o);let actions='';const state=o.status||'Order Received',done=doneQty(o),pct=orderPct(o);if(session&&!admin()&&canActOnOrder(o)&&(state==='Sent to Branch'||state==='In Production')){actions+='<button class="secondary" data-oid="'+o.id+'" onclick="updateCompleted(this.dataset.oid)">Pieces</button>';if(orderDone(o))actions+='<button class="success" data-oid="'+o.id+'" onclick="assemblyComplete(this.dataset.oid)">Assembly</button>';}else if(session&&!admin()&&canActOnOrder(o)&&state==='Assembly Complete'){actions+='<span class="badge bb">Waiting FG</span>';}else if(session&&!admin()&&canActOnOrder(o)&&state==='Completed'){actions+='<span class="badge bg">Done</span>';}if(admin()&&state==='Assembly Complete')actions+='<button class="info" data-oid="'+o.id+'" onclick="returnFG(this.dataset.oid)">FG</button>';const issued=db.issues.filter(i=>i.orderId===o.id).reduce((s,i)=>s+i.qty,0);const reqTotal=Object.values(getOrderBOMRequirement(o).req).reduce((s,x)=>s+x,0);const notesHtml=o.notes?'<div class="muted" style="white-space:normal;max-width:220px">'+esc(o.notes)+'</div>':'';return '<tr><td>#'+o.id+'</td><td>'+esc(o.product)+notesHtml+'</td><td>'+esc(branchName(o.branch))+'</td><td>'+o.qty+'</td><td><div class="bar"><span style="width:'+pct+'%"></span></div><b>'+done+'</b>/'+o.qty+' ('+pct+'%)</td><td>'+statusBadge(state)+'</td><td>'+(reqTotal?issued.toFixed(2)+'/'+reqTotal.toFixed(2):'—')+'</td><td class="actions">'+actions+'</td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No production orders</td></tr>';}
 function updateCompleted(id){id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o||!isBranchRole())return alert('Only branch/staff.');if(session.role==='branch'&&o.branch!==session.branchId)return alert('Wrong branch.');if(!['Sent to Branch','In Production'].includes(o.status))return alert('Not in production.');const done=doneQty(o);const input=prompt('Pieces done?\nTotal: '+o.qty+' pcs\nAlready: '+done,String(done));if(input===null)return;const n=Number(input);if(!Number.isFinite(n)||n<0)return alert('Invalid.');if(!Number.isInteger(n))return alert('Whole numbers.');if(n>Number(o.qty))return alert('Exceeds qty.');o.completedQty=n;o.status=n>0?'In Production':'Sent to Branch';audit('PROD_UPDATE','#'+id+' → '+n+'/'+o.qty);save();refresh();alert(n===Number(o.qty)?'All done. Click Assembly.':'Saved '+n+'/'+o.qty);}
-function assemblyComplete(id){id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o||!isBranchRole())return alert('Only branch/staff.');if(session.role==='branch'&&o.branch!==session.branchId)return alert('Wrong branch.');if(o.status!=='In Production')return alert('In Production only.');if(!orderDone(o))return alert('All pieces required.');const ready=orderMaterialReady(o);if(!ready.ok)return alert(ready.reason==='No BOM'?'No BOM. Ask Admin.':'Material not fully issued.');let consumed=0,total=0;db.issues.filter(i=>i.orderId===o.id).forEach(i=>{const bs=db.branchStock.find(x=>Number(x.branch)===Number(i.branch)&&Number(x.materialId)===Number(i.materialId));if(bs){bs.qty=r2(bs.qty-i.qty);consumed++;total=r2(total+i.qty);if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);}});o.branchStockConsumed=true;o.assembly=true;o.materialComplete=true;o.status='Assembly Complete';audit('ASSY_DONE','#'+id+' consumed '+consumed+' lines');save();refresh();alert('Assembly complete. Branch stock consumed: '+consumed+' line(s), '+total+' total qty.');}
-function returnFG(id){id=String(id);if(!admin())return alert('Only admin.');const o=db.orders.find(x=>String(x.id)===id);if(!o)return;if(o.status!=='Assembly Complete')return alert('Only after Assembly.');if(!orderDone(o))return alert('All pieces required.');if(!o.assembly)return alert('Assembly incomplete.');const ready=orderMaterialReady(o);if(!ready.ok)return alert('Material incomplete.');try{postCompletionJE(o);}catch(err){return alert('Error: '+err.message);}const f=db.fg.find(x=>x.product.toLowerCase()===o.product.toLowerCase());const qty=Number(o.qty);if(f){const oldQty=Number(f.qty),oldCost=Number(f.unitCost||0),newQty=oldQty+qty;const newCost=newQty>0?((oldQty*oldCost+qty*Number(o.unitCost||0))/newQty):0;f.qty=newQty;f.unitCost=newCost;}else db.fg.push({product:o.product,qty,unitCost:Number(o.unitCost||0)});o.status='Completed';o.fgReturned=true;audit('FG_RECEIVE','#'+id+' '+o.product+' +'+o.qty);save();refresh();alert('FG: '+o.qty+' pcs @ '+money(o.unitCost)+' each.\nLabour accrued: '+money(o.labourCost||0));}
+function assemblyComplete(id){id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o||!isBranchRole())return alert('Only branch/staff.');if(session.role==='branch'&&o.branch!==session.branchId)return alert('Wrong branch.');if(o.status!=='In Production')return alert('In Production only.');if(!orderDone(o))return alert('All pieces required.');const ready=orderMaterialReady(o);if(!ready.ok)return alert(ready.reason==='No BOM'?'No BOM. Ask Admin.':'Material not fully issued.');let consumed=0,total=0;db.issues.filter(i=>i.orderId===o.id).forEach(i=>{const bs=db.branchStock.find(x=>Number(x.branch)===Number(i.branch)&&Number(x.materialId)===Number(i.materialId));if(bs){bs.qty=r2(bs.qty-i.qty);consumed++;total=r2(total+i.qty);if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);}});o.branchStockConsumed=true;o.assembly=true;o.materialComplete=true;o.status='Assembly Complete';audit('ASSY_DONE','#'+id+' consumed '+consumed+' lines');save();refresh();alert('Assembly complete.');}
+function returnFG(id){id=String(id);if(!admin())return alert('Only admin.');const o=db.orders.find(x=>String(x.id)===id);if(!o)return;if(o.status!=='Assembly Complete')return alert('Only after Assembly.');if(!orderDone(o))return alert('All pieces required.');if(!o.assembly)return alert('Assembly incomplete.');const ready=orderMaterialReady(o);if(!ready.ok)return alert('Material incomplete.');try{postCompletionJE(o);}catch(err){return alert('Error: '+err.message);}const f=db.fg.find(x=>x.product.toLowerCase()===o.product.toLowerCase());const qty=Number(o.qty);if(f){const oldQty=Number(f.qty),oldCost=Number(f.unitCost||0),newQty=oldQty+qty;const newCost=newQty>0?((oldQty*oldCost+qty*Number(o.unitCost||0))/newQty):0;f.qty=newQty;f.unitCost=newCost;if(!f.id)f.id=uid();if(f.salePrice===undefined)f.salePrice=0;if(f.minQty===undefined)f.minQty=0;}else db.fg.push({id:uid(),product:o.product,qty,unitCost:Number(o.unitCost||0),salePrice:0,minQty:0});o.status='Completed';o.fgReturned=true;audit('FG_RECEIVE','#'+id+' '+o.product+' +'+o.qty);save();refresh();alert('FG received: '+o.qty+' pcs @ '+money(o.unitCost)+' each.');}
 
 function recomputeMaterialPrice(mid){const m=db.materials.find(x=>x.id===mid);if(!m)return;const layers=[];(m.openingLayers||[]).forEach(l=>layers.push(l));db.purchases.filter(p=>p.materialId===mid).forEach(p=>layers.push({qty:p.qty,price:p.price}));const qty=layers.reduce((s,l)=>s+Number(l.qty||0),0);const val=layers.reduce((s,l)=>s+Number(l.qty||0)*Number(l.price||0),0);m.price=qty>0?val/qty:Number(m.price)||0;}
 function saveMaterial(e){e.preventDefault();if(!hasPerm('inventory'))return alert('No permission.');const name=$('mName').value.trim(),unit=$('mUnit').value,q=Number($('mQty').value),price=r2($('mPrice').value||0);const minQty=Number($('mMinQty').value||0);if(q<0)return alert('Qty must be ≥0.');if(!name)return alert('Name required.');const m=db.materials.find(x=>x.name.toLowerCase()===name.toLowerCase()&&x.unit===unit);if(m){m.qty=r2(m.qty+q);m.minQty=minQty;m.openingLayers=m.openingLayers||[];m.openingLayers.push({qty:q,price});recomputeMaterialPrice(m.id);}else{const id=uid();db.materials.push({id,name,unit,qty:q,price,minQty,openingLayers:[{qty:q,price}]});recomputeMaterialPrice(id);}audit('MAT_ADD',name+' +'+q+' '+unit);save();e.target.reset();refresh();alert('Material saved.');}
 function renderMaterials(){const canDel=hasPerm('inventory');$('matTable').innerHTML=db.materials.length?db.materials.map(m=>{const low=Number(m.minQty)>0&&Number(m.qty)<Number(m.minQty);return '<tr><td>'+esc(m.name)+(low?' <span class="badge br">Low</span>':'')+'</td><td>'+m.unit+'</td><td>'+m.qty+'</td><td class="fin">'+money(m.price)+'</td><td class="fin">'+money(m.qty*m.price)+'</td><td>'+money(m.minQty||0)+'</td><td>'+(canDel?'<button class="danger" data-mid="'+m.id+'" onclick="deleteMaterial(this.dataset.mid)">Delete</button>':'—')+'</td></tr>';}).join(''):'<tr><td colspan="7" class="empty">No materials</td></tr>';}
-function deleteMaterial(id){if(!hasPerm('inventory'))return alert('No permission.');id=String(id);const m=db.materials.find(x=>String(x.id)===id);if(!m)return;if(Number(m.qty)>0.01){return alert('Cannot delete.\n\nThis material still has '+m.qty+' '+m.unit+' in stock worth '+money(m.qty*m.price)+'.\n\nDelete is only allowed when stock is fully consumed (qty = 0).');}if(db.issues.some(i=>String(i.materialId)===id))return alert('Material has issue history. Cannot delete.');if(db.boms.some(b=>String(b.materialId)===id))return alert('Material is used in a BOM. Cannot delete.');if(confirm('Delete this material?')){tombstone('materials',id);db.materials=db.materials.filter(x=>String(x.id)!==id);audit('MAT_DEL',m.name);save(true);refresh();}}
-function renderFG(){if(!db.fg.length){$('fgStock').innerHTML='<div class="empty">No FG</div>';return;}let total=0;$('fgStock').innerHTML=db.fg.map(f=>{const val=r2(f.qty*(f.unitCost||0));total=r2(total+val);if(admin())return '<div class="statline"><span>'+esc(f.product)+'<div class="muted">'+f.qty+' @ '+money(f.unitCost||0)+'</div></span><b>'+money(val)+'</b></div>';return '<div class="statline"><span>'+esc(f.product)+'</span><b>'+f.qty+' pcs</b></div>';}).join('')+(admin()?'<div class="statline"><span><b>Total</b></span><b>'+money(total)+'</b></div>':'');}
+function deleteMaterial(id){if(!hasPerm('inventory'))return alert('No permission.');id=String(id);const m=db.materials.find(x=>String(x.id)===id);if(!m)return;if(Number(m.qty)>0.01){return alert('Cannot delete.\n\nThis material still has '+m.qty+' '+m.unit+' in stock worth '+money(m.qty*m.price)+'.');}if(db.issues.some(i=>String(i.materialId)===id))return alert('Material has issue history.');if(db.boms.some(b=>String(b.materialId)===id))return alert('Material is used in a BOM.');if(confirm('Delete this material?')){tombstone('materials',id);db.materials=db.materials.filter(x=>String(x.id)!==id);audit('MAT_DEL',m.name);save(true);refresh();}}
 function fillMaterialSelects(){['bMaterial','pMaterial','iMaterial'].forEach(id=>{if($(id))$(id).innerHTML=db.materials.map(m=>'<option value="'+m.id+'">'+esc(m.name)+' ('+m.unit+')</option>').join('')||'<option value="">No material</option>';});}
 function fillOrdersSelect(){const a=filtered(db.orders).filter(o=>o.status!=='Completed'&&o.status!=='Order Received');$('iOrder').innerHTML=a.map(o=>'<option value="'+o.id+'">#'+o.id+' '+esc(o.product)+' — '+esc(branchName(o.branch))+'</option>').join('')||'<option value="">No eligible order</option>';syncIssueBranch();}
 function syncIssueBranch(){const o=db.orders.find(x=>String(x.id)===String($('iOrder').value));if(o)$('iBranch').value=o.branch;}
 $('iOrder').addEventListener('change',syncIssueBranch);
 function fillSaleProducts(){const el=$('sProduct');if(!el)return;const prev=el.value;const items=db.fg.filter(f=>Number(f.qty)>0.000001);el.innerHTML=items.length?items.map(f=>'<option value="'+esc(f.product)+'">'+esc(f.product)+'</option>').join(''):'<option value="">No FG</option>';if(prev&&items.some(f=>f.product===prev))el.value=prev;syncSaleStock();}
-function syncSaleStock(){const el=$('sProduct'),hint=$('sStockHint'),qty=$('sQty');if(!el||!hint)return;const f=db.fg.find(x=>x.product===el.value);const avail=f?Number(f.qty):0;hint.textContent=f?('Available: '+avail+' pcs'+(admin()?' @ '+money(f.unitCost||0):'')):'Nothing available';if(qty)qty.max=avail>0?String(avail):'';}
-function issueMaterial(e){e.preventDefault();if(!hasPerm('issue'))return alert('No permission.');const o=db.orders.find(x=>String(x.id)===String($('iOrder').value)),m=db.materials.find(x=>String(x.id)===String($('iMaterial').value)),q=Number($('iQty').value);if(!o||!m)return alert('Select order and material.');if(!['Sent to Branch','In Production'].includes(o.status))return alert('Order not yet at branch.');if(q<=0)return alert('Qty positive.');if(m.qty<q)return alert('Insufficient HO stock.');const bom=db.boms.find(b=>b.product.toLowerCase()===o.product.toLowerCase()&&String(b.materialId)===String(m.id));if(!bom)return alert('No BOM.');const already=db.issues.filter(i=>String(i.orderId)===String(o.id)&&String(i.materialId)===String(m.id)).reduce((s,i)=>s+i.qty,0),need=bom.qty*o.qty;if(already+q>need+0.000001)return alert('Exceeds BOM. Need '+need+' '+m.unit+'. Issued '+already+'.');const issue={id:uid(),date:today(),orderId:o.id,materialId:m.id,qty:q,branch:o.branch,user:session.user,cost:m.price};try{postIssueJE(issue,m);}catch(err){return alert('Error: '+err.message);}m.qty=r2(m.qty-q);db.issues.push(issue);const bs=db.branchStock.find(x=>Number(x.branch)===Number(o.branch)&&String(x.materialId)===String(m.id));if(bs)bs.qty=r2(bs.qty+q);else db.branchStock.push({branch:o.branch,materialId:m.id,qty:q});audit('ISSUE_ADD','#'+o.id+' '+m.name+' '+q);save();e.target.reset();refresh();alert('Issued.');}
+function syncSaleStock(){
+ const el=$('sProduct'),hint=$('sStockHint'),qty=$('sQty');
+ if(!el||!hint)return;
+ const f=db.fg.find(x=>x.product===el.value);
+ const avail=f?Number(f.qty):0;
+ hint.textContent=f?('Available: '+avail+' pcs'+(admin()?' @ cost '+money(f.unitCost||0):'')+(f.salePrice>0?' • Sale price '+money(f.salePrice):'')):'Nothing available';
+ if(qty)qty.max=avail>0?String(avail):'';
+ const priceEl=$('sPrice');
+ if(priceEl&&f&&f.salePrice>0&&(!priceEl.value||Number(priceEl.value)===0))priceEl.value=f.salePrice;
+}
+function issueMaterial(e){e.preventDefault();if(!hasPerm('issue'))return alert('No permission.');const o=db.orders.find(x=>String(x.id)===String($('iOrder').value)),m=db.materials.find(x=>String(x.id)===String($('iMaterial').value)),q=Number($('iQty').value);if(!o||!m)return alert('Select order and material.');if(!['Sent to Branch','In Production'].includes(o.status))return alert('Order not yet at branch.');if(q<=0)return alert('Qty positive.');if(m.qty<q)return alert('Insufficient HO stock.');const bom=db.boms.find(b=>b.product.toLowerCase()===o.product.toLowerCase()&&String(b.materialId)===String(m.id));if(!bom)return alert('No BOM.');const already=db.issues.filter(i=>String(i.orderId)===String(o.id)&&String(i.materialId)===String(m.id)).reduce((s,i)=>s+i.qty,0),need=bom.qty*o.qty;if(already+q>need+0.000001)return alert('Exceeds BOM. Need '+need+' '+m.unit+'.');const issue={id:uid(),date:today(),orderId:o.id,materialId:m.id,qty:q,branch:o.branch,user:session.user,cost:m.price};try{postIssueJE(issue,m);}catch(err){return alert('Error: '+err.message);}m.qty=r2(m.qty-q);db.issues.push(issue);const bs=db.branchStock.find(x=>Number(x.branch)===Number(o.branch)&&String(x.materialId)===String(m.id));if(bs)bs.qty=r2(bs.qty+q);else db.branchStock.push({branch:o.branch,materialId:m.id,qty:q});audit('ISSUE_ADD','#'+o.id+' '+m.name+' '+q);save();e.target.reset();refresh();alert('Issued.');}
 function renderIssues(){const a=filtered(db.issues);const canDel=hasPerm('issue');$('issueTable').innerHTML=a.length?a.map(i=>{const o=db.orders.find(x=>String(x.id)===String(i.orderId)),m=db.materials.find(x=>String(x.id)===String(i.materialId));const del=canDel?'<button class="danger" data-iid="'+i.id+'" onclick="deleteIssue(this.dataset.iid)">Delete</button>':'';return '<tr><td>'+i.date+'</td><td>#'+i.orderId+' '+(o?esc(o.product):'')+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+i.qty+'</td><td>'+esc(branchName(i.branch))+'</td><td>'+esc(i.user)+'</td><td>'+del+'</td></tr>';}).join(''):'<tr><td colspan="7" class="empty">No issues</td></tr>';}
 function deleteIssue(id){if(!hasPerm('issue'))return alert('No permission.');id=String(id);const i=db.issues.find(x=>String(x.id)===id);if(!i)return;const ord=db.orders.find(o=>String(o.id)===String(i.orderId));if(ord&&(ord.status==='Completed'||ord.status==='Assembly Complete'))return alert('Cannot delete: order '+ord.status);if(!confirm('Delete and return stock?'))return;if(voidByRef('ISSUE',id,'deleted')>0)return alert('Locked.');const m=db.materials.find(x=>String(x.id)===String(i.materialId));if(m)m.qty=r2(m.qty+i.qty);const bs=db.branchStock.find(x=>Number(x.branch)===Number(i.branch)&&String(x.materialId)===String(i.materialId));if(bs){bs.qty=r2(bs.qty-i.qty);if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);}tombstone('issues',id);db.issues=db.issues.filter(x=>String(x.id)!==id);audit('ISSUE_DEL','#'+i.orderId);save(true);refresh();}
 function renderBranchStock(){const a=filtered(db.branchStock);$('branchStock').innerHTML=a.length?'<div class="tablewrap"><table><thead><tr><th>Branch</th><th>Material</th><th>Qty</th><th>Unit</th><th class="fin">Value</th></tr></thead><tbody>'+a.map(x=>{const m=db.materials.find(y=>String(y.id)===String(x.materialId));return '<tr><td>'+esc(branchName(x.branch))+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+x.qty+'</td><td>'+(m?m.unit:'')+'</td><td class="fin">'+(m?money(x.qty*m.price):'0')+'</td></tr>';}).join('')+'</tbody></table></div>':'<div class="empty">No branch stock.</div>';}
@@ -926,28 +1156,16 @@ function deleteBOM(id){if(!hasPerm('bom'))return alert('No perm.');id=String(id)
 
 function savePurchase(e){e.preventDefault();if(!hasPerm('purchases'))return alert('No permission.');const supplier=$('pSupplier').value.trim(),mid=$('pMaterial').value,q=Number($('pQty').value),price=r2($('pPrice').value);const vat=Number($('pVat').value||0);if(!supplier)return alert('Supplier required.');if(isNaN(vat)||vat<0||vat>100)return alert('VAT % must be between 0 and 100.');if(price<=0)return alert('Price / Unit must be positive.');autoLinkSupplier(supplier);const m=db.materials.find(x=>String(x.id)===String(mid));if(!m)return alert('Add material first.');if(q<=0)return alert('Qty positive.');const payMethod=$('pPay').value;const cashFrom=Number($('pBranch').value||0);const pDate=$('pDate').value||today();const gross=r2(q*price),vatAmt=r2(gross*vat/100),total=r2(gross+vatAmt);if(payMethod==='Cash'&&!checkLiquidBalance('Cash',total,cashFrom,pDate))return;if(payMethod==='Bank'&&!checkLiquidBalance('Bank',total,0,pDate))return;if(!checkApprovalLimit(total))return;const p={id:uid(),date:pDate,supplier,materialId:mid,qty:q,price,vat,payMethod,cashFrom,paidAmount:0};try{postPurchaseJE(p);}catch(err){return alert('Error: '+err.message);}m.qty=r2(m.qty+q);db.purchases.push(p);recomputeMaterialPrice(mid);audit('PURCH_ADD',supplier+' '+m.name+' '+q);save();e.target.reset();$('pDate').value=today();refresh();alert('Purchase saved.');}
 function renderPurchases(){const canDel=hasPerm('purchases');$('purchaseTable').innerHTML=db.purchases.length?db.purchases.map(p=>{const m=db.materials.find(x=>String(x.id)===String(p.materialId));const gross=r2(p.qty*p.price),vat=r2(gross*Number(p.vat||0)/100),total=r2(gross+vat);const settle=!p.settled?'<button class="info" data-pid="'+p.id+'" onclick="settlePurchase(this.dataset.pid,\'Cash\')">Cash</button><button class="info" data-pid="'+p.id+'" onclick="settlePurchase(this.dataset.pid,\'Bank\')">Bank</button>':'';return '<tr><td>'+p.date+'</td><td>'+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+p.qty+'</td><td class="fin">'+money(p.price)+'</td><td class="fin">'+money(vat)+'</td><td class="fin">'+money(total)+'</td><td>'+paidBadge(p,total,p.settleMethod||p.payMethod)+'</td><td class="actions">'+settle+(canDel?'<button class="danger" data-pid="'+p.id+'" onclick="deletePurchase(this.dataset.pid)">Del</button>':'')+'</td></tr>';}).join(''):'<tr><td colspan="9" class="empty">No purchases</td></tr>';}
-function deletePurchase(id){if(!hasPerm('purchases'))return alert('No perm.');id=String(id);const p=db.purchases.find(x=>String(x.id)===id);if(!p)return;if(db.issues.some(i=>String(i.materialId)===String(p.materialId))){return alert('Cannot delete this purchase.\n\nThis material has already been issued to production.');}const m=db.materials.find(x=>String(x.id)===String(p.materialId));if(m&&m.qty+0.000001<p.qty)return alert('Stock used. Cannot delete.');if(!confirm('Delete purchase?'))return;if(voidByRef('PURCHASE',id,'deleted')>0)return alert('Locked.');if(voidByRef('PAYMENT',id,'deleted')>0)return alert('Locked.');if(m)m.qty=r2(m.qty-p.qty);tombstone('purchases',id);db.purchases=db.purchases.filter(x=>String(x.id)!==id);recomputeMaterialPrice(p.materialId);audit('PURCH_DEL','id');save(true);refresh();}
+function deletePurchase(id){if(!hasPerm('purchases'))return alert('No perm.');id=String(id);const p=db.purchases.find(x=>String(x.id)===id);if(!p)return;if(db.issues.some(i=>String(i.materialId)===String(p.materialId))){return alert('Cannot delete this purchase. Material already issued.');}const m=db.materials.find(x=>String(x.id)===String(p.materialId));if(m&&m.qty+0.000001<p.qty)return alert('Stock used. Cannot delete.');if(!confirm('Delete purchase?'))return;if(voidByRef('PURCHASE',id,'deleted')>0)return alert('Locked.');if(voidByRef('PAYMENT',id,'deleted')>0)return alert('Locked.');if(m)m.qty=r2(m.qty-p.qty);tombstone('purchases',id);db.purchases=db.purchases.filter(x=>String(x.id)!==id);recomputeMaterialPrice(p.materialId);audit('PURCH_DEL','id');save(true);refresh();}
 
-function saveSale(e){e.preventDefault();const branchId=canPickBranch()?Number($('sBranch').value):session.branchId;const q=Number($('sQty').value),price=r2($('sPrice').value),vat=Number($('sVat').value||0);const product=$('sProduct').value.trim(),customer=$('sCustomer').value.trim();if(!product)return alert('No FG.');if(!customer)return alert('Customer required.');if(!(q>0))return alert('Qty positive.');if(!Number.isInteger(q))return alert('Whole numbers.');if(isNaN(vat)||vat<0||vat>100)return alert('VAT % must be between 0 and 100.');if(price<=0)return alert('Price / Unit must be positive.');autoLinkCustomer(customer);const fg=db.fg.find(f=>f.product.toLowerCase()===product.toLowerCase());const available=fg?Number(fg.qty):0;if(q>available+0.000001)return alert('Not enough stock. Available: '+available+', Requested: '+q);const s={id:uid(),date:$('sDate').value||today(),customer,product,qty:q,price,vat,branch:branchId,payMethod:$('sPay').value,paidAmount:0};try{postSaleJE(s,fg.unitCost||0);}catch(err){return alert('Error: '+err.message);}fg.qty=r2(fg.qty-q);db.sales.push(s);audit('SALE_ADD',customer+' '+product+' x'+q);save();e.target.reset();$('sDate').value=today();refresh();alert('Sale saved.\nCOGS: '+(admin()?money(s.cogs):'—'));}
+function saveSale(e){e.preventDefault();const branchId=canPickBranch()?Number($('sBranch').value):session.branchId;const q=Number($('sQty').value),price=r2($('sPrice').value),vat=Number($('sVat').value||0);const product=$('sProduct').value.trim(),customer=$('sCustomer').value.trim();if(!product)return alert('No FG.');if(!customer)return alert('Customer required.');if(!(q>0))return alert('Qty positive.');if(!Number.isInteger(q))return alert('Whole numbers.');if(isNaN(vat)||vat<0||vat>100)return alert('VAT % must be between 0 and 100.');if(price<=0)return alert('Price / Unit must be positive.');autoLinkCustomer(customer);const fg=db.fg.find(f=>f.product.toLowerCase()===product.toLowerCase());const available=fg?Number(fg.qty):0;if(q>available+0.000001)return alert('Not enough stock. Available: '+available+', Requested: '+q);const s={id:uid(),date:$('sDate').value||today(),customer,product,qty:q,price,vat,branch:branchId,payMethod:$('sPay').value,paidAmount:0};try{postSaleJE(s,fg.unitCost||0);}catch(err){return alert('Error: '+err.message);}fg.qty=r2(fg.qty-q);db.sales.push(s);audit('SALE_ADD',customer+' '+product+' x'+q);save();e.target.reset();$('sDate').value=today();refresh();alert('Sale saved.');}
 function renderSales(){const a=filtered(db.sales);$('salesTable').innerHTML=a.length?a.map(s=>{const sub=r2(s.qty*s.price),v=r2(sub*Number(s.vat||0)/100),total=r2(sub+v);const settle=!s.settled?'<button class="info" data-sid="'+s.id+'" onclick="settleSale(this.dataset.sid,\'Cash\')">Cash</button><button class="info" data-sid="'+s.id+'" onclick="settleSale(this.dataset.sid,\'Bank\')">Bank</button>':'';const del=(canPickBranch()||s.branch===session.branchId)?'<button class="danger" data-sid="'+s.id+'" onclick="deleteSale(this.dataset.sid)">Del</button>':'';const inv='<button class="secondary" data-sid="'+s.id+'" onclick="openInvoice(this.dataset.sid)" title="Print invoice">🖨</button>';return '<tr><td>'+s.date+'</td><td>'+esc(s.customer)+'</td><td>'+esc(s.product)+'</td><td>'+s.qty+'</td><td class="fin">'+money(sub)+'</td><td class="fin">'+money(v)+'</td><td class="fin">'+money(total)+'</td><td class="fin">'+money(s.cogs||0)+'</td><td>'+esc(branchName(s.branch))+'</td><td>'+paidBadge(s,total,s.settleMethod||s.payMethod)+'</td><td class="actions">'+inv+settle+del+'</td></tr>';}).join(''):'<tr><td colspan="11" class="empty">No sales</td></tr>';}
-function deleteSale(id){id=String(id);const s=db.sales.find(x=>String(x.id)===id);if(!s)return;if(!canPickBranch()&&s.branch!==session.branchId)return alert('Not allowed.');if(!confirm('Delete sale?'))return;if(voidByRef('SALE',id,'deleted')>0)return alert('Locked.');if(voidByRef('COGS',id,'deleted')>0)return alert('Locked.');if(voidByRef('RECEIPT',id,'deleted')>0)return alert('Locked.');const fg=db.fg.find(f=>f.product.toLowerCase()===s.product.toLowerCase());if(fg)fg.qty=r2(fg.qty+s.qty);else db.fg.push({product:s.product,qty:s.qty,unitCost:0});tombstone('sales',id);db.sales=db.sales.filter(x=>String(x.id)!==id);audit('SALE_DEL',s.product);save(true);refresh();}
+function deleteSale(id){id=String(id);const s=db.sales.find(x=>String(x.id)===id);if(!s)return;if(!canPickBranch()&&s.branch!==session.branchId)return alert('Not allowed.');if(!confirm('Delete sale?'))return;if(voidByRef('SALE',id,'deleted')>0)return alert('Locked.');if(voidByRef('COGS',id,'deleted')>0)return alert('Locked.');if(voidByRef('RECEIPT',id,'deleted')>0)return alert('Locked.');const fg=db.fg.find(f=>f.product.toLowerCase()===s.product.toLowerCase());if(fg)fg.qty=r2(fg.qty+s.qty);else db.fg.push({id:uid(),product:s.product,qty:s.qty,unitCost:0,salePrice:0,minQty:0});tombstone('sales',id);db.sales=db.sales.filter(x=>String(x.id)!==id);audit('SALE_DEL',s.product);save(true);refresh();}
 
 function saveExpense(e){e.preventDefault();const br=canPickBranch()?Number($('eBranch').value):session.branchId;const eDate=$('eDate').value||today();const exp={id:uid(),date:eDate,type:$('eType').value,amount:r2($('eAmount').value),branch:br,user:session.user,note:$('eNote').value,payMethod:$('ePay').value,paidAmount:0};if(!checkLiquidBalance(exp.payMethod,exp.amount,exp.branch,eDate))return;if(!checkApprovalLimit(exp.amount))return;try{postExpenseJE(exp);}catch(err){return alert('Error: '+err.message);}db.expenses.push(exp);audit('EXP_ADD',exp.type+' '+exp.amount);save();e.target.reset();$('eDate').value=today();refresh();alert('Saved.');}
 function canDeleteExpense(x){return canPickBranch()||x.branch===session.branchId;}
 function renderExpenses(){const a=filtered(db.expenses);$('expenseTable').innerHTML=a.length?a.map(x=>{const canDel=canDeleteExpense(x);const settle=(!x.settled&&x.payMethod==='Credit')?'<button class="info" data-eid="'+x.id+'" onclick="settleExpense(this.dataset.eid,\'Cash\')">Cash</button><button class="info" data-eid="'+x.id+'" onclick="settleExpense(this.dataset.eid,\'Bank\')">Bank</button>':'';return '<tr><td>'+x.date+'</td><td>'+esc(x.type)+'</td><td>'+esc(branchName(x.branch))+'</td><td class="fin">'+money(x.amount)+'</td><td>'+esc(x.payMethod||'—')+'</td><td>'+paidBadge(x,x.amount,x.settleMethod)+'</td><td>'+esc(x.user)+'</td><td>'+esc(x.note||'')+'</td><td class="actions">'+settle+(canDel?'<button class="danger" data-eid="'+x.id+'" onclick="deleteExpense(this.dataset.eid)">Del</button>':'<span class="muted">—</span>')+'</td></tr>';}).join(''):'<tr><td colspan="9" class="empty">No expenses</td></tr>';}
-/* ✅ V13.3.3: tombstone + voided journals → branch delete → admin list empty + P&L net 0 + Cash restored. */
-function deleteExpense(id){
- id=String(id);const x=db.expenses.find(y=>String(y.id)===id);if(!x)return;
- if(!canDeleteExpense(x))return alert('Not allowed.');
- if(!confirm('Delete expense?'))return;
- if(voidByRef('EXPENSE',id,'deleted')>0)return alert('Locked.');
- if(voidByRef('EXPPAY',id,'deleted')>0)return alert('Locked.');
- tombstone('expenses',id);
- db.expenses=db.expenses.filter(y=>String(y.id)!==id);
- audit('EXP_DEL',x.type);
- save(true);
- refresh();
-}
+function deleteExpense(id){id=String(id);const x=db.expenses.find(y=>String(y.id)===id);if(!x)return;if(!canDeleteExpense(x))return alert('Not allowed.');if(!confirm('Delete expense?'))return;if(voidByRef('EXPENSE',id,'deleted')>0)return alert('Locked.');if(voidByRef('EXPPAY',id,'deleted')>0)return alert('Locked.');tombstone('expenses',id);db.expenses=db.expenses.filter(y=>String(y.id)!==id);audit('EXP_DEL',x.type);save(true);refresh();}
 
 let acctTab='tb';
 function showAcct(t){acctTab=t;renderAccounting();}
@@ -956,7 +1174,7 @@ function renderAccounting(){if(!admin())return;if(!$('acctOut'))return;const sel
 function remainingOn(rec,total){return r2(total-Number(rec.paidAmount||0));}
 function renderARAP(){if(!hasPerm('arap'))return;if(!$('arList'))return;const sales=filtered(db.sales).filter(s=>!s.settled);const purchases=hasPerm('purchases')?db.purchases.filter(p=>!p.settled):[];const expenses=filtered(db.expenses).filter(e=>!e.settled&&e.payMethod==='Credit');let arTotal=0,apTotal=0;$('arList').innerHTML=sales.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Product</th><th>Qty</th><th>Total/Due</th><th>Branch</th><th>Actions</th></tr></thead><tbody>'+sales.map(s=>{const sub=r2(s.qty*s.price),v=r2(sub*Number(s.vat||0)/100),total=r2(sub+v);const remaining=remainingOn(s,total);arTotal=r2(arTotal+remaining);return '<tr><td>'+s.date+'</td><td>'+esc(s.customer)+'</td><td>'+esc(s.product)+'</td><td>'+s.qty+'</td><td class="fin">'+money(total)+'<div class="muted">Due '+money(remaining)+'</div></td><td>'+esc(branchName(s.branch))+'</td><td class="actions"><button class="info" data-sid="'+s.id+'" onclick="settleSale(this.dataset.sid,\'Cash\')">Cash</button><button class="info" data-sid="'+s.id+'" onclick="settleSale(this.dataset.sid,\'Bank\')">Bank</button></td></tr>';}).join('')+'</tbody></table></div>':'<div class="empty">No receivables</div>';const apRows=purchases.map(p=>{const m=db.materials.find(x=>String(x.id)===String(p.materialId));const gross=r2(p.qty*p.price),v=r2(gross*Number(p.vat||0)/100),total=r2(gross+v);const remaining=remainingOn(p,total);apTotal=r2(apTotal+remaining);return '<tr><td>'+p.date+'</td><td>'+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'—')+'</td><td>'+p.qty+'</td><td class="fin">'+money(total)+'<div class="muted">Due '+money(remaining)+'</div></td><td class="actions"><button class="info" data-pid="'+p.id+'" onclick="settlePurchase(this.dataset.pid,\'Cash\')">Cash</button><button class="info" data-pid="'+p.id+'" onclick="settlePurchase(this.dataset.pid,\'Bank\')">Bank</button></td></tr>';}).concat(expenses.map(e=>{const total=Number(e.amount||0);const remaining=remainingOn(e,total);apTotal=r2(apTotal+remaining);return '<tr><td>'+e.date+'</td><td>Exp: '+esc(e.type)+'</td><td>—</td><td>—</td><td class="fin">'+money(total)+'<div class="muted">Due '+money(remaining)+'</div></td><td class="actions"><button class="info" data-eid="'+e.id+'" onclick="settleExpense(this.dataset.eid,\'Cash\')">Cash</button><button class="info" data-eid="'+e.id+'" onclick="settleExpense(this.dataset.eid,\'Bank\')">Bank</button></td></tr>';}));$('apList').innerHTML=apRows.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Party</th><th>Item</th><th>Qty</th><th>Total/Due</th><th>Actions</th></tr></thead><tbody>'+apRows.join('')+'</tbody></table></div>':'<div class="empty">No payables</div>';const labourOrders=filtered(db.orders).filter(o=>Number(o.labourCost||0)>0.01&&!o.labourSettled);let labourTotal=0;const labourRows=labourOrders.map(o=>{const total=r2(Number(o.labourCost||0));const paid=r2(Number(o.labourPaid||0));const remaining=r2(total-paid);labourTotal=r2(labourTotal+remaining);return '<tr><td>'+esc(o.date)+'</td><td>#'+o.id+' '+esc(o.product)+'</td><td>'+esc(branchName(o.branch))+'</td><td class="fin">'+money(total)+'<div class="muted">Due '+money(remaining)+'</div></td><td class="actions"><button class="info" data-oid="'+o.id+'" onclick="settleLabour(this.dataset.oid,\'Cash\')">Cash</button><button class="info" data-oid="'+o.id+'" onclick="settleLabour(this.dataset.oid,\'Bank\')">Bank</button></td></tr>';}).join('');if($('labourList'))$('labourList').innerHTML=labourRows?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Order</th><th>Branch</th><th>Total/Due</th><th>Actions</th></tr></thead><tbody>'+labourRows+'</tbody></table></div>':'<div class="empty">No labour payable</div>';const inputVat=accountBalance('1300',{to:today()});const outputVat=r2(-accountBalance('2100',{to:today()}));const netVat=r2(outputVat-Math.max(0,inputVat));let cash=0;for(let i=0;i<=5;i++)cash=r2(cash+accountBalance(branchCashCode(i),{to:today()}));const bank=accountBalance('1010',{to:today()});$('kAR').textContent=money(arTotal);$('kAP').textContent=money(apTotal);if($('kLabour'))$('kLabour').textContent=money(labourTotal);$('kCB').textContent=money(r2(cash+bank));$('vatSummary').innerHTML='<div class="statline"><span>Output VAT</span><b>'+money(outputVat)+'</b></div><div class="statline"><span>Input VAT</span><b>'+money(-inputVat)+'</b></div><div class="statline bs-total"><span>Net VAT</span><b>'+money(Math.abs(netVat))+'</b></div>';}
 
-function saveOpening(e){e.preventDefault();if(!hasPerm('opening'))return alert('No perm.');const cash=r2($('obCash').value||0),bank=r2($('obBank').value||0),rec=r2($('obRec').value||0),pay=r2($('obPay').value||0),capIn=r2($('obCap').value||0);const date=$('obDate').value||today();if(db.opening&&db.opening.jeId){if(voidByRef('OPENING','OPENING','re-posted')>0)return alert('Locked.');}const rmVal=r2(db.materials.reduce((s,m)=>s+r2(m.qty*(m.price||0)),0));const fgVal=r2(db.fg.reduce((s,f)=>s+r2(Number(f.qty||0)*Number(f.unitCost||0)),0));const securityVal=r2((db.employees||[]).reduce((s,e)=>s+Number(e.security||0),0));const debits=r2(cash+bank+rec+rmVal+fgVal);const credits=r2(pay+securityVal+capIn);const diff=r2(debits-credits);let cap;if(capIn>0.005){if(Math.abs(diff)>0.05)return alert('Does not balance. Diff '+money(diff));cap=capIn;}else{cap=r2(capIn+diff);if(cap<0)return alert('Capital would be negative.');}const lines=[{account:'1000',debit:cash},{account:'1010',debit:bank},{account:'1100',debit:rec},{account:'1200',debit:rmVal},{account:'1220',debit:fgVal},{account:'2000',credit:pay},{account:'2200',credit:securityVal},{account:'3000',credit:cap}].filter(l=>Number(l.debit||0)>0||Number(l.credit||0)>0);if(!lines.length)return alert('Nothing to post.');let jeId;try{jeId=postJournal({date,memo:'Opening balances',refType:'OPENING',refId:'OPENING',lines});}catch(err){return alert('Error: '+err.message);}db.opening={cash,bank,receivable:rec,payable:pay,capital:cap,date,jeId};db.ledgerStartDate=date;audit('OPENING_SAVE','cash='+cash+' bank='+bank+' cap='+cap);save();$('obStatus').textContent='Posted '+date+' Capital '+money(cap);refresh();alert('Opening posted.\nCapital (balancing): '+money(cap));}
+function saveOpening(e){e.preventDefault();if(!hasPerm('opening'))return alert('No perm.');const cash=r2($('obCash').value||0),bank=r2($('obBank').value||0),rec=r2($('obRec').value||0),pay=r2($('obPay').value||0),capIn=r2($('obCap').value||0);const date=$('obDate').value||today();if(db.opening&&db.opening.jeId){if(voidByRef('OPENING','OPENING','re-posted')>0)return alert('Locked.');}const rmVal=r2(db.materials.reduce((s,m)=>s+r2(m.qty*(m.price||0)),0));const fgVal=r2(db.fg.reduce((s,f)=>s+r2(Number(f.qty||0)*Number(f.unitCost||0)),0));const securityVal=r2((db.employees||[]).reduce((s,e)=>s+Number(e.security||0),0));const debits=r2(cash+bank+rec+rmVal+fgVal);const credits=r2(pay+securityVal+capIn);const diff=r2(debits-credits);let cap;if(capIn>0.005){if(Math.abs(diff)>0.05)return alert('Does not balance. Diff '+money(diff));cap=capIn;}else{cap=r2(capIn+diff);if(cap<0)return alert('Capital would be negative.');}const lines=[{account:'1000',debit:cash},{account:'1010',debit:bank},{account:'1100',debit:rec},{account:'1200',debit:rmVal},{account:'1220',debit:fgVal},{account:'2000',credit:pay},{account:'2200',credit:securityVal},{account:'3000',credit:cap}].filter(l=>Number(l.debit||0)>0||Number(l.credit||0)>0);if(!lines.length)return alert('Nothing to post.');let jeId;try{jeId=postJournal({date,memo:'Opening balances',refType:'OPENING',refId:'OPENING',lines});}catch(err){return alert('Error: '+err.message);}db.opening={cash,bank,receivable:rec,payable:pay,capital:cap,date,jeId};db.ledgerStartDate=date;audit('OPENING_SAVE','cash='+cash+' bank='+bank+' cap='+cap);save();$('obStatus').textContent='Posted '+date+' Capital '+money(cap);refresh();alert('Opening posted.');}
 function renderOpening(){const map={obCash:db.opening.cash||0,obBank:db.opening.bank||0,obRec:db.opening.receivable||0,obPay:db.opening.payable||0,obCap:db.opening.capital||0};Object.keys(map).forEach(id=>{if($(id)&&document.activeElement!==$(id))$(id).value=map[id];});if($('obDate')&&!$('obDate').value)$('obDate').value=db.opening.date||today();const on=hasPerm('opening');['obCash','obBank','obRec','obPay','obCap','obDate'].forEach(id=>{if($(id))$(id).disabled=!on;});}
 
 function saveEmployee(e){e.preventDefault();const br=canPickBranch()?Number($('empBranch').value):session.branchId;const emp={id:uid(),name:$('empName').value.trim(),branch:br,join:$('empJoin').value||today(),security:r2($('empSec').value||0)};db.employees.push(emp);audit('EMP_ADD',emp.name);save();e.target.reset();$('empJoin').value=today();refresh();alert('Saved.');}
@@ -974,35 +1192,45 @@ function runReport(){
  const type=$('reportType').value,from=$('rFrom').value,to=$('rTo').value;
  if(type==='sales'){const a=filtered(db.sales).filter(x=>dateOK(x.date,from,to));if(admin()){let total=0;a.forEach(x=>total=r2(total+r2(x.qty*x.price*(1+Number(x.vat||0)/100))));$('reportOut').innerHTML='<h4>Sales Report</h4><p>Total incl VAT: <b>'+money(total)+'</b></p>'+table(['Date','Customer','Product','Qty','Total'],a.map(x=>[x.date,esc(x.customer),esc(x.product),x.qty,money(r2(x.qty*x.price*(1+Number(x.vat||0)/100)))]));}else $('reportOut').innerHTML='<h4>Sales Report</h4>'+table(['Date','Customer','Product','Qty','Branch'],a.map(x=>[x.date,esc(x.customer),esc(x.product),x.qty,esc(branchName(x.branch))]));}
  else if(type==='orders'){const a=filtered(db.orders).filter(x=>dateOK(x.date,from,to));$('reportOut').innerHTML='<h4>Order Report</h4>'+table(['Date','Customer','Product','Branch','Qty','Done','Status','Notes'],a.map(x=>[x.date,esc(x.customer),esc(x.product),esc(branchName(x.branch)),x.qty,doneQty(x)+'/'+x.qty,statusBadge(x.status),esc(x.notes||'')]));}
- else if(type==='production'){const a=filtered(db.orders).filter(x=>x.status!=='Order Received').filter(x=>dateOK(x.date,from,to));const totQty=a.reduce((s,o)=>s+Number(o.qty||0),0),totDone=a.reduce((s,o)=>s+doneQty(o),0);$('reportOut').innerHTML='<h4>Production Report</h4><p>Ordered: <b>'+totQty+'</b> · Completed: <b>'+totDone+'</b> · Remaining: <b>'+Math.max(0,totQty-totDone)+'</b></p>'+table(['Date','Order','Product','Branch','Qty','Done','Status'],a.map(x=>[x.date,'#'+x.id,esc(x.product),esc(branchName(x.branch)),x.qty,doneQty(x)+'/'+x.qty,statusBadge(x.status)]));}
+ else if(type==='production'){const a=filtered(db.orders).filter(x=>x.status!=='Order Received').filter(x=>dateOK(x.date,from,to));const totQty=a.reduce((s,o)=>s+Number(o.qty||0),0),totDone=a.reduce((s,o)=>s+doneQty(o),0);$('reportOut').innerHTML='<h4>Production Report</h4><p>Ordered: <b>'+totQty+'</b> · Completed: <b>'+totDone+'</b></p>'+table(['Date','Order','Product','Branch','Qty','Done','Status'],a.map(x=>[x.date,'#'+x.id,esc(x.product),esc(branchName(x.branch)),x.qty,doneQty(x)+'/'+x.qty,statusBadge(x.status)]));}
  else if(type==='expenses'){const a=filtered(db.expenses).filter(x=>dateOK(x.date,from,to));const tot=r2(a.reduce((s,x)=>s+Number(x.amount||0),0));$('reportOut').innerHTML='<h4>Expense Report</h4><p>Total: <b>'+money(tot)+'</b></p>'+table(['Date','Type','Branch','Amount'],a.map(x=>[x.date,esc(x.type),esc(branchName(x.branch)),money(x.amount)]));}
- else if(type==='stock'){$('reportOut').innerHTML='<h4>Stock Report</h4>'+table(['Material','Unit','Qty','Value','Reorder'],db.materials.map(x=>[esc(x.name),x.unit,x.qty,money(r2(x.qty*x.price)),x.minQty||0]));}
+ else if(type==='stock'){$('reportOut').innerHTML='<h4>Raw Materials Report</h4>'+table(['Material','Unit','Qty','Value','Reorder'],db.materials.map(x=>[esc(x.name),x.unit,x.qty,money(r2(x.qty*x.price)),x.minQty||0]));}
+ else if(type==='fgstock'){
+  const a=db.fg||[];
+  const totalQty=a.reduce((s,f)=>s+Number(f.qty||0),0);
+  const totalCost=r2(a.reduce((s,f)=>s+Number(f.qty||0)*Number(f.unitCost||0),0));
+  const totalRetail=r2(a.reduce((s,f)=>s+Number(f.qty||0)*Number(f.salePrice||0),0));
+  let html='<h4>Finished Goods Stock</h4>';
+  html+='<div class="statline"><span>Total units</span><b>'+totalQty+' pcs</b></div>';
+  html+='<div class="statline"><span>Total cost value</span><b>'+money(totalCost)+'</b></div>';
+  if(totalRetail>0)html+='<div class="statline"><span>Total retail value</span><b>'+money(totalRetail)+'</b></div>';
+  if(totalCost>0&&totalRetail>0){const margin=r2((totalRetail-totalCost)/totalRetail*100);html+='<div class="statline"><span>Avg margin</span><b>'+margin+'%</b></div>';}
+  html+=table(['Product','Qty','Unit Cost','Cost Value','Sale Price','Retail Value','Reorder'],a.map(f=>[esc(f.product),f.qty,money(f.unitCost||0),money(Number(f.qty||0)*Number(f.unitCost||0)),money(f.salePrice||0),money(Number(f.qty||0)*Number(f.salePrice||0)),f.minQty||0]));
+  $('reportOut').innerHTML=html;
+ }
  else if(type==='profit'){if(!admin())return alert('Only admin.');const pl=plReport(from||db.ledgerStartDate,to||today(),null);$('reportOut').innerHTML='<h4>Profit Report</h4><div class="statline"><span>Net Sales</span><b>'+money(pl.totalIncome)+'</b></div><div class="statline"><span>COGS</span><b>'+money(pl.totalCOGS)+'</b></div><div class="statline"><span>Gross Profit</span><b>'+money(pl.grossProfit)+'</b></div><div class="statline"><span>OPEX</span><b>'+money(pl.totalOpex)+'</b></div><div class="statline bs-total"><span>Net Profit</span><b>'+money(pl.netProfit)+'</b></div>';}
  else if(type==='araging'){if(!admin())return alert('Only admin.');const sales=(db.sales||[]).filter(s=>!s.settled);const buckets={current:[],b30:[],b60:[],b90:[]};const tdy=new Date();sales.forEach(s=>{const sub=r2(s.qty*s.price),v=r2(sub*Number(s.vat||0)/100),total=r2(sub+v);const paid=Number(s.paidAmount||0);const due=r2(total-paid);if(due<0.01)return;const age=Math.floor((tdy-new Date(s.date))/(1000*60*60*24));if(age<=30)buckets.current.push({s,due,age});else if(age<=60)buckets.b30.push({s,due,age});else if(age<=90)buckets.b60.push({s,due,age});else buckets.b90.push({s,due,age});});const rows=[];const addB=(name,arr)=>{const tot=r2(arr.reduce((s,x)=>s+x.due,0));rows.push([name,arr.length,money(tot)]);};addB('0-30 days',buckets.current);addB('31-60 days',buckets.b30);addB('61-90 days',buckets.b60);addB('90+ days',buckets.b90);const grand=r2(sales.reduce((s,x)=>{const sub=r2(x.qty*x.price),v=r2(sub*Number(x.vat||0)/100),t=r2(sub+v);return s+(t-Number(x.paidAmount||0));},0));$('reportOut').innerHTML='<h4>AR Aging</h4>'+table(['Bucket','Count','Amount'],rows.concat([['<b>Total</b>','','<b>'+money(grand)+'</b>']]));}
  else if(type==='apaging'){if(!admin())return alert('Only admin.');const purchases=(db.purchases||[]).filter(p=>!p.settled);const expenses=(db.expenses||[]).filter(e=>!e.settled&&e.payMethod==='Credit');const buckets={current:[],b30:[],b60:[],b90:[]};const tdy=new Date();purchases.forEach(p=>{const gross=r2(p.qty*p.price),v=r2(gross*Number(p.vat||0)/100),total=r2(gross+v);const paid=Number(p.paidAmount||0);const due=r2(total-paid);if(due<0.01)return;const age=Math.floor((tdy-new Date(p.date))/(1000*60*60*24));if(age<=30)buckets.current.push({due});else if(age<=60)buckets.b30.push({due});else if(age<=90)buckets.b60.push({due});else buckets.b90.push({due});});expenses.forEach(e=>{const total=Number(e.amount||0);const paid=Number(e.paidAmount||0);const due=r2(total-paid);if(due<0.01)return;const age=Math.floor((tdy-new Date(e.date))/(1000*60*60*24));if(age<=30)buckets.current.push({due});else if(age<=60)buckets.b30.push({due});else if(age<=90)buckets.b60.push({due});else buckets.b90.push({due});});const rows=[];const addB=(name,arr)=>{const tot=r2(arr.reduce((s,x)=>s+x.due,0));rows.push([name,arr.length,money(tot)]);};addB('0-30 days',buckets.current);addB('31-60 days',buckets.b30);addB('61-90 days',buckets.b60);addB('90+ days',buckets.b90);$('reportOut').innerHTML='<h4>AP Aging</h4>'+table(['Bucket','Count','Amount'],rows);}
  else if(type==='profitability'){if(!admin())return alert('Only admin.');const sales=(db.sales||[]).filter(x=>dateOK(x.date,from,to));const byProd={};sales.forEach(s=>{const sub=r2(s.qty*s.price);if(!byProd[s.product])byProd[s.product]={rev:0,cogs:0,qty:0};byProd[s.product].rev=r2(byProd[s.product].rev+sub);byProd[s.product].cogs=r2(byProd[s.product].cogs+Number(s.cogs||0));byProd[s.product].qty+=Number(s.qty||0);});const rows=Object.entries(byProd).map(([p,d])=>{const margin=d.rev>0?r2((d.rev-d.cogs)/d.rev*100):0;return [esc(p),d.qty,money(d.rev),money(d.cogs),money(r2(d.rev-d.cogs)),margin+'%'];}).sort((a,b)=>parseFloat(b[4].replace(/,/g,''))-parseFloat(a[4].replace(/,/g,'')));$('reportOut').innerHTML='<h4>Product Profitability</h4>'+table(['Product','Qty Sold','Revenue','COGS','Profit','Margin %'],rows);}
  else if(type==='branchcompare'){if(!admin())return alert('Only admin.');const rows=db.branches.map(b=>{const bsales=(db.sales||[]).filter(s=>Number(s.branch)===Number(b.id)&&dateOK(s.date,from,to));const bexp=(db.expenses||[]).filter(e=>Number(e.branch)===Number(b.id)&&dateOK(e.date,from,to));const rev=r2(bsales.reduce((s,x)=>s+r2(x.qty*x.price),0));const cogs=r2(bsales.reduce((s,x)=>s+Number(x.cogs||0),0));const exp=r2(bexp.reduce((s,x)=>s+Number(x.amount||0),0));const profit=r2(rev-cogs-exp);let cash=accountBalance(branchCashCode(b.id),{to:today()});return [esc(b.name),money(rev),money(cogs),money(exp),money(profit),money(cash)];});$('reportOut').innerHTML='<h4>Branch Comparison</h4>'+table(['Branch','Revenue','COGS','Expenses','Profit','Cash on Hand'],rows);}
  else if(type==='deadstock'){if(!admin())return alert('Only admin.');const cutoff=new Date();cutoff.setDate(cutoff.getDate()-90);const cutoffStr=cutoff.toISOString().slice(0,10);const deadMats=(db.materials||[]).filter(m=>{const purchases=(db.purchases||[]).filter(p=>p.materialId===m.id&&p.date>=cutoffStr);const issues=(db.issues||[]).filter(i=>i.materialId===m.id&&i.date>=cutoffStr);return purchases.length===0&&issues.length===0&&Number(m.qty)>0;});const deadFGs=(db.fg||[]).filter(f=>{const sales=(db.sales||[]).filter(s=>s.product.toLowerCase()===f.product.toLowerCase()&&s.date>=cutoffStr);return sales.length===0&&Number(f.qty)>0;});let html='<h4>Dead Stock / Slow Moving (no movement in 90 days)</h4><h5>Raw Materials</h5>';html+=deadMats.length?table(['Material','Unit','Qty','Value'],deadMats.map(m=>[esc(m.name),m.unit,m.qty,money(r2(m.qty*m.price))])):'<p class="green">✓ None</p>';html+='<h5>Finished Goods</h5>';html+=deadFGs.length?table(['Product','Qty','Unit Cost','Value'],deadFGs.map(f=>[esc(f.product),f.qty,money(f.unitCost||0),money(r2(f.qty*(f.unitCost||0)))])):'<p class="green">✓ None</p>';$('reportOut').innerHTML=html;}
- else if(type==='gstreturn'){if(!admin())return alert('Only admin.');const sales=(db.sales||[]).filter(x=>dateOK(x.date,from,to));const purchases=(db.purchases||[]).filter(x=>dateOK(x.date,from,to));let outSub=0,outVat=0,inSub=0,inVat=0;sales.forEach(s=>{const sub=r2(s.qty*s.price);const v=r2(sub*Number(s.vat||0)/100);outSub=r2(outSub+sub);outVat=r2(outVat+v);});purchases.forEach(p=>{const sub=r2(p.qty*p.price);const v=r2(sub*Number(p.vat||0)/100);inSub=r2(inSub+sub);inVat=r2(inVat+v);});const net=r2(outVat-inVat);let html='<h4>GST / VAT Return</h4><p>Period: <b>'+(from||'start')+'</b> to <b>'+(to||today())+'</b></p><div class="statline"><span>Outward Supplies (Sales ex VAT)</span><b>'+money(outSub)+'</b></div><div class="statline"><span>Output VAT collected</span><b>'+money(outVat)+'</b></div><div class="statline"><span>Inward Supplies (Purchases ex VAT)</span><b>'+money(inSub)+'</b></div><div class="statline"><span>Input VAT paid</span><b>'+money(inVat)+'</b></div><div class="statline bs-total"><span>'+(net>=0?'Net VAT Payable':'Net VAT Refundable')+'</span><b>'+money(Math.abs(net))+'</b></div>';$('reportOut').innerHTML=html;}
+ else if(type==='gstreturn'){if(!admin())return alert('Only admin.');const sales=(db.sales||[]).filter(x=>dateOK(x.date,from,to));const purchases=(db.purchases||[]).filter(x=>dateOK(x.date,from,to));let outSub=0,outVat=0,inSub=0,inVat=0;sales.forEach(s=>{const sub=r2(s.qty*s.price);const v=r2(sub*Number(s.vat||0)/100);outSub=r2(outSub+sub);outVat=r2(outVat+v);});purchases.forEach(p=>{const sub=r2(p.qty*p.price);const v=r2(sub*Number(p.vat||0)/100);inSub=r2(inSub+sub);inVat=r2(inVat+v);});const net=r2(outVat-inVat);let html='<h4>GST / VAT Return</h4><p>Period: <b>'+(from||'start')+'</b> to <b>'+(to||today())+'</b></p><div class="statline"><span>Outward Supplies</span><b>'+money(outSub)+'</b></div><div class="statline"><span>Output VAT collected</span><b>'+money(outVat)+'</b></div><div class="statline"><span>Inward Supplies</span><b>'+money(inSub)+'</b></div><div class="statline"><span>Input VAT paid</span><b>'+money(inVat)+'</b></div><div class="statline bs-total"><span>'+(net>=0?'Net VAT Payable':'Net VAT Refundable')+'</span><b>'+money(Math.abs(net))+'</b></div>';$('reportOut').innerHTML=html;}
  else if(type==='trialbalance'){if(!admin())return alert('Only admin.');const tb=trialBalance(to||today(),null);const rows=tb.rows.filter(r=>Math.abs(r.balance)>0.005);$('reportOut').innerHTML='<h4>Trial Balance — '+(to||today())+'</h4>'+table(['Code','Account','Type','Debit','Credit'],rows.map(r=>[r.code,esc(r.name),r.type,r.balance>0?money(r.balance):'',r.balance<0?money(-r.balance):'']).concat([['','<b>Totals</b>','',money(tb.totalDr),money(tb.totalCr)]]));}
  else if(type==='balancesheet'){if(!admin())return alert('Only admin.');const bs=balanceSheet(to||today(),null);$('reportOut').innerHTML='<h4>Balance Sheet</h4><div class="statline"><span>Assets</span><b>'+money(bs.totalAssets)+'</b></div><div class="statline"><span>Liabilities</span><b>'+money(bs.totalLiab)+'</b></div><div class="statline"><span>Equity (incl. retained)</span><b>'+money(bs.totalEquity)+'</b></div><div class="statline bs-total"><span>L + E</span><b>'+money(r2(bs.totalLiab+bs.totalEquity))+'</b></div>';}
  else if(type==='fixedassets'){if(!admin())return alert('Only admin.');$('reportOut').innerHTML='<h4>Fixed Asset Register</h4>'+table(['Name','Category','Branch','Cost','Accum','NBV'],db.fixedAssets.map(f=>[esc(f.name),esc(f.category),esc(branchName(f.branch)),money(f.cost),money(f.accumulated||0),money(r2(f.cost-(f.accumulated||0)))]));}
 }
 
-function backup(){if(!admin())return alert('Only admin can download backups.');const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.3.3_Backup_'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();}
+function backup(){if(!admin())return alert('Only admin can download backups.');const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.4.1_Backup_'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();}
 function checkAutoBackup(){try{const askedToday=localStorage.getItem(AUTO_BACKUP_ASKED)===today();if(askedToday)return;const last=Number(localStorage.getItem(AUTO_BACKUP_KEY)||0);const days=last?(Date.now()-last)/(1000*60*60*24):999;if(admin()&&days>1){setTimeout(()=>{if(confirm('📥 Daily auto-backup reminder.\n\nLast backup was '+Math.round(days)+' day(s) ago. Download a fresh backup now?')){backup();localStorage.setItem(AUTO_BACKUP_KEY,String(Date.now()));}localStorage.setItem(AUTO_BACKUP_ASKED,today());},1500);}}catch(e){}}
 function restore(e){if(!admin())return alert('Only admin.');const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const x=JSON.parse(r.result);if(!x.branches||!Array.isArray(x.orders))throw new Error();db=migrateDB(x);db.lastModified=new Date().toISOString();db.lastModifiedBy=session?session.user:'system';if(fbRef)await fbRef.set(db).catch(err=>alert('Firebase: '+err.message));try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e2){}alert('Restored. Reloading.');location.reload();}catch(err){alert('Invalid backup.');}};r.readAsText(f);}
 function checkBackupReminder(){const btn=$('backupReminder');if(!btn)return;if(!admin()){btn.style.display='none';return;}const last=Number(localStorage.getItem(BACKUP_KEY)||0);const days=last?(Date.now()-last)/(1000*60*60*24):999;btn.style.display=days>7?'inline-block':'none';}
 function clearAudit(){if(!hasPerm('backup'))return;if(!confirm('Clear audit log?'))return;db.audit=[];save();renderAudit();renderSystem();}
 function renderAudit(){const el=$('auditLog');if(!el)return;const a=(db.audit||[]).slice(-50).reverse();el.innerHTML=a.length?'<div class="tablewrap"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th></tr></thead><tbody>'+a.map(x=>'<tr><td>'+esc(x.t.slice(0,19).replace('T',' '))+'</td><td>'+esc(x.user)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.detail)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">None</div>';}
-
-function clearTombstones(){if(!admin())return alert('Only admin.');if(!confirm('Clear all delete tombstones?\n\n⚠ If any device still has old data cached, previously deleted records could reappear. Only do this if all devices are in sync.'))return;db.deleted={};COLLS.forEach(c=>{db.deleted[c]=[];});audit('TOMB_CLEAR','all cleared');save(true);refresh();alert('Tombstones cleared.');}
-
-function renderSystem(){if(!$('sysInfo'))return;const tb=trialBalance(today(),null);const tombCount=COLLS.reduce((s,c)=>s+((db.deleted&&db.deleted[c])||[]).length,0);if($('tombCount'))$('tombCount').textContent=tombCount;$('sysInfo').innerHTML='<div class="statline"><span>ERP Version</span><b>V13.3.3</b></div><div class="statline"><span>Sync</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Live':'🔴 Offline')+'</b></div><div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div><div class="statline"><span>Staff</span><b>'+(db.staff||[]).length+'</b></div><div class="statline"><span>Customers</span><b>'+(db.customers||[]).length+'</b></div><div class="statline"><span>Suppliers</span><b>'+(db.suppliers||[]).length+'</b></div><div class="statline"><span>Orders</span><b>'+db.orders.length+'</b></div><div class="statline"><span>Journal entries</span><b>'+db.journals.filter(j=>!j.voided).length+' active</b></div><div class="statline"><span>Delete tombstones</span><b>'+tombCount+'</b></div><div class="statline"><span>Trial balance</span><b class="'+(Math.abs(tb.diff)<0.05?'green':'red')+'">'+(Math.abs(tb.diff)<0.05?'✓ Balanced':'⚠ Out by '+money(tb.diff))+'</b></div><div class="statline"><span>Audit entries</span><b>'+((db.audit||[]).length)+'</b></div>';}
-
+function clearTombstones(){if(!admin())return alert('Only admin.');if(!confirm('Clear all delete tombstones?'))return;db.deleted={};COLLS.forEach(c=>{db.deleted[c]=[];});audit('TOMB_CLEAR','all cleared');save(true);refresh();alert('Tombstones cleared.');}
+function renderSystem(){if(!$('sysInfo'))return;const tb=trialBalance(today(),null);const tombCount=COLLS.reduce((s,c)=>s+((db.deleted&&db.deleted[c])||[]).length,0);if($('tombCount'))$('tombCount').textContent=tombCount;$('sysInfo').innerHTML='<div class="statline"><span>ERP Version</span><b>V13.4.1</b></div><div class="statline"><span>Sync</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Live':'🔴 Offline')+'</b></div><div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div><div class="statline"><span>Staff</span><b>'+(db.staff||[]).length+'</b></div><div class="statline"><span>Customers</span><b>'+(db.customers||[]).length+'</b></div><div class="statline"><span>Suppliers</span><b>'+(db.suppliers||[]).length+'</b></div><div class="statline"><span>Orders</span><b>'+db.orders.length+'</b></div><div class="statline"><span>FG products</span><b>'+(db.fg||[]).length+'</b></div><div class="statline"><span>FG total units</span><b>'+(db.fg||[]).reduce((s,f)=>s+Number(f.qty||0),0)+' pcs</b></div><div class="statline"><span>Journal entries</span><b>'+db.journals.filter(j=>!j.voided).length+' active</b></div><div class="statline"><span>Delete tombstones</span><b>'+tombCount+'</b></div><div class="statline"><span>Trial balance</span><b class="'+(Math.abs(tb.diff)<0.05?'green':'red')+'">'+(Math.abs(tb.diff)<0.05?'✓ Balanced':'⚠ Out by '+money(tb.diff))+'</b></div><div class="statline"><span>Audit entries</span><b>'+((db.audit||[]).length)+'</b></div>';}
 async function resetData(){if(!admin())return;if(!confirm('Delete ALL ERP data?'))return;if(!confirm('FINAL WARNING — permanent.'))return;if(fbRef)await fbRef.set(null).catch(()=>{});localStorage.removeItem(KEY);localStorage.removeItem(KEY+"_CACHE");localStorage.removeItem(BACKUP_KEY);localStorage.removeItem(AUTO_BACKUP_KEY);localStorage.removeItem(AUTO_BACKUP_ASKED);location.reload();}
 
-window.addEventListener('load',()=>{attachSync();console.log('ERP V13.3.3 — tombstone sync + void-without-reversal + legacy cleanup');});
+window.addEventListener('load',()=>{attachSync();console.log('ERP V13.4.1 — FG Stock with full delete (write-off for qty>0)');});
 </script>
 </body>
-</html>
+                                                                                             </html>
