@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#714B67">
-<title>Handmade Decor ERP V13.3 Live</title>
+<title>Handmade Decor ERP V13.3.1 Live</title>
 <style>
 *{box-sizing:border-box}
 :root{--p:#714B67;--p2:#8f6385;--bg:#f5f3f5;--card:#fff;--text:#29252b;--muted:#777;--green:#198754;--red:#c0392b;--orange:#e67e22;--blue:#2878c8;--line:#e7e2e7}
@@ -86,7 +86,7 @@ body.printing-invoice .page{display:none!important}
 <div id="loginScreen" class="login">
  <div class="loginbox">
   <h1>🧶 Handmade Decor ERP</h1>
-  <b>V13.3 — All Fixes Applied</b>
+  <b>V13.3.1 — Sync & Void Fixed</b>
   <p class="muted"><span id="syncDot" class="sync-dot"></span><span id="syncLabel">Connecting…</span></p>
   <div class="field"><label>Username</label><input id="loginUser" value="admin" onkeydown="if(event.key==='Enter')$('loginPass').focus()"></div>
   <div class="field"><label>Password</label><input id="loginPass" type="password" value="admin" onkeydown="if(event.key==='Enter')login()"></div>
@@ -98,7 +98,7 @@ body.printing-invoice .page{display:none!important}
 <div id="app" style="display:none">
  <div class="layout">
   <aside class="side" id="side">
-   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.3 Live</small></div>
+   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.3.1 Live</small></div>
    <div class="nav" id="nav"></div>
   </aside>
   <main class="main">
@@ -635,6 +635,7 @@ const firebaseConfig={
  appId:"1:358722495480:web:a9052a2329200331342c0d"
 };
 let fbRef=null,fbConnected=false,firstSnapshotSeen=false;
+let pendingLocalSave=false;   // ✅ FIX: our own change has not reached the server yet
 try{firebase.initializeApp(firebaseConfig);fbRef=firebase.database().ref("erp/main");}catch(e){console.warn("Firebase init failed:",e);}
 
 function setSyncStatus(state){
@@ -645,14 +646,25 @@ function setSyncStatus(state){
  ['syncLabel','syncLabelApp'].forEach(id=>{const el=$(id);if(el)el.textContent=label;});
 }
 function enableLogin(){const btn=$('loginBtn');if(btn){btn.disabled=false;btn.textContent='Login';}}
+
+/* ✅ FIX 1: attachSync no longer resurrects deleted records.
+   - If we have an unsent local change (pendingLocalSave), ignore incoming snapshots.
+   - No more "local clock > remote clock → push back" rule (that was the resurrection bug). */
 function attachSync(){
  if(!fbRef){setSyncStatus('offline');enableLogin();return;}
  fbRef.on('value',snap=>{
   const remote=snap.val();setSyncStatus('live');
   if(!remote){if(!firstSnapshotSeen){firstSnapshotSeen=true;save(true);}enableLogin();return;}
   firstSnapshotSeen=true;
+
+  /* 1. Echo of our own write — nothing to do. */
   if(remote.lastModified&&db.lastModified===remote.lastModified){enableLogin();return;}
-  if(db.lastModified&&remote.lastModified&&db.lastModified>remote.lastModified){save(true);enableLogin();return;}
+
+  /* 2. We have a local change that has not been pushed yet.
+        Do NOT let the server copy overwrite it. */
+  if(pendingLocalSave){enableLogin();return;}
+
+  /* 3. Server is the source of truth. */
   db=migrateDB(remote);
   try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e){}
   if(session)refresh();enableLogin();
@@ -681,7 +693,7 @@ function defaultCOA(){
 }
 function defaultDB(){
  return {
-  version:'13.3',
+  version:'13.3.1',
   admin:{user:'admin',pass:'admin'},
   branches:[
    {id:1,name:'Branch 1',user:'branch1',pass:'1234'},{id:2,name:'Branch 2',user:'branch2',pass:'1234'},
@@ -742,19 +754,27 @@ function migrateDB(x){
  });
  return x;
 }
+
 let saveTimer=null;
+/* ✅ FIX 1 (part 2): mark pendingLocalSave so the incoming snapshot handler
+   cannot overwrite a change we haven't finished pushing yet.
+   Also clears the flag once the write confirms. */
 function save(immediate){
  try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e){}
+ pendingLocalSave=true;
  const push=()=>{
   if(!fbRef)return;
   db.lastModified=new Date().toISOString();
   db.lastModifiedBy=session?session.user:'system';
   try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e){}
-  fbRef.set(db).catch(err=>console.error("Firebase save failed:",err));
+  fbRef.set(db)
+    .then(()=>{pendingLocalSave=false;})
+    .catch(err=>{console.error("Firebase save failed:",err);pendingLocalSave=false;});
  };
- if(immediate){push();return true;}
+ if(immediate){clearTimeout(saveTimer);push();return true;}
  clearTimeout(saveTimer);saveTimer=setTimeout(push,250);return true;
 }
+
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function money(n){return Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
 function branch(id){return db.branches.find(b=>Number(b.id)===Number(id))}
@@ -822,7 +842,6 @@ function nextVoucher(){
  db.voucherSeq=(Number(db.voucherSeq)||0)+1;
  return 'PV-'+today().replace(/-/g,'').slice(2)+'-'+String(db.voucherSeq).padStart(4,'0');
 }
-// ✅ FIX 3: Accept asOfDate parameter so backdated transactions validate against that day's balance
 function checkLiquidBalance(payMethod,amount,branchId,asOfDate){
  if(payMethod!=='Cash'&&payMethod!=='Bank')return true;
  let code;if(payMethod==='Bank')code='1010';else code=branchCashCode(branchId!=null?branchId:0);
@@ -902,11 +921,15 @@ function voidJournal(id,reason){
  j.voided=true;j.voidedBy=(session?session.user:'system');j.voidReason=reason||'';
  return rev;
 }
+/* ✅ FIX 2: compare refId as strings so numeric uids actually match.
+   Before this, voidByRef never found any journal → deletes never reversed accounting. */
 function voidByRef(refType,refId,reason){
  let blocked=0;
- db.journals.filter(j=>!j.voided&&j.refType===refType&&j.refId===refId).forEach(j=>{
-  try{voidJournal(j.id,reason||'');}catch(e){blocked++;}
- });
+ db.journals
+  .filter(j=>!j.voided&&j.refType===refType&&String(j.refId)===String(refId))
+  .forEach(j=>{
+   try{voidJournal(j.id,reason||'');}catch(e){blocked++;}
+  });
  return blocked;
 }
 function journalLines(filter){
@@ -1182,7 +1205,7 @@ function disposeFixedAsset(id){
  else if(gain<0)lines.push({account:'6090',debit:-gain,memo:'Loss'});
  try{postJournal({date:today(),memo:'Disposal: '+fa.name,refType:'FA_DISPOSE',refId:fa.id,lines});}catch(err){return alert('Error: '+err.message);}
  fa.disposed=true;fa.disposalDate=today();fa.disposalProceeds=amt;fa.disposalGain=gain;
- audit('FA_DISPOSE',fa.name+' proceeds '+money(amt));save();refresh();
+ audit('FA_DISPOSE',fa.name+' proceeds '+money(amt));save(true);refresh();
 }
 function deleteFixedAsset(id){
  if(!hasPerm('fixedassets'))return alert('No permission.');
@@ -1190,7 +1213,7 @@ function deleteFixedAsset(id){
  if((fa.accumulated||0)>0.01)return alert('Depreciation posted.');
  if(!confirm('Delete asset? Purchase journal will be voided.'))return;
  if(voidByRef('FA_ADD',id,'Asset deleted')>0)return alert('Locked period.');
- db.fixedAssets=db.fixedAssets.filter(x=>String(x.id)!==id);audit('FA_DEL',fa.name);save();refresh();
+ db.fixedAssets=db.fixedAssets.filter(x=>String(x.id)!==id);audit('FA_DEL',fa.name);save(true);refresh();
 }
 
 function saveSettings(e){
@@ -1235,7 +1258,7 @@ function updateBrandHeader(){
  const el=$('brandHeader');if(!el)return;
  const co=db.settings.company||{};
  const name=co.name||'Handmade Decor';
- el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.3 Live</small>';
+ el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.3.1 Live</small>';
 }
 function saveCashSettings(e){
  e.preventDefault();if(!admin())return alert('Only admin.');
@@ -1309,7 +1332,7 @@ function deleteCustomer(id){
  const c=db.customers.find(x=>x.id===id);if(!c)return;
  if(!confirm('Delete customer "'+c.name+'"? Existing orders unchanged.'))return;
  db.customers=db.customers.filter(x=>x.id!==id);
- audit('CUSTOMER_DEL',c.name);save();refresh();
+ audit('CUSTOMER_DEL',c.name);save(true);refresh();
 }
 function resetCustomerForm(){
  $('cuId').value='';$('cuName').value='';$('cuPhone').value='';$('cuEmail').value='';
@@ -1360,7 +1383,7 @@ function deleteSupplier(id){
  const s=db.suppliers.find(x=>x.id===id);if(!s)return;
  if(!confirm('Delete supplier "'+s.name+'"? Existing purchases unchanged.'))return;
  db.suppliers=db.suppliers.filter(x=>x.id!==id);
- audit('SUPPLIER_DEL',s.name);save();refresh();
+ audit('SUPPLIER_DEL',s.name);save(true);refresh();
 }
 function resetSupplierForm(){
  $('suId').value='';$('suName').value='';$('suPhone').value='';$('suEmail').value='';
@@ -1439,7 +1462,7 @@ function deleteStaff(id){
  if(!admin())return;id=Number(id);
  const s=db.staff.find(x=>x.id===id);if(!s)return;
  if(!confirm('Delete staff "'+s.name+'"?'))return;
- db.staff=db.staff.filter(x=>x.id!==id);audit('STAFF_DEL',s.name);save();refresh();
+ db.staff=db.staff.filter(x=>x.id!==id);audit('STAFF_DEL',s.name);save(true);refresh();
 }
 function renderStaff(){
  if(!admin())return;if(!$('staffTable'))return;
@@ -1956,7 +1979,7 @@ function deleteOrder(id){
   });
  }
  db.issues=db.issues.filter(i=>i.orderId!==id);
- db.orders=db.orders.filter(x=>String(x.id)!==id);audit('ORDER_DEL','#'+id);save();refresh();
+ db.orders=db.orders.filter(x=>String(x.id)!==id);audit('ORDER_DEL','#'+id);save(true);refresh();
 }
 
 function getOrderBOMRequirement(o){
@@ -2077,7 +2100,6 @@ function renderMaterials(){
   return '<tr><td>'+esc(m.name)+(low?' <span class="badge br">Low</span>':'')+'</td><td>'+m.unit+'</td><td>'+m.qty+'</td><td class="fin">'+money(m.price)+'</td><td class="fin">'+money(m.qty*m.price)+'</td><td>'+money(m.minQty||0)+'</td><td>'+(canDel?'<button class="danger" data-mid="'+m.id+'" onclick="deleteMaterial(this.dataset.mid)">Delete</button>':'—')+'</td></tr>';
  }).join(''):'<tr><td colspan="7" class="empty">No materials</td></tr>';
 }
-// ✅ FIX 2: Block material deletion if any stock is remaining
 function deleteMaterial(id){
  if(!hasPerm('inventory'))return alert('No permission.');
  id=String(id);
@@ -2090,7 +2112,7 @@ function deleteMaterial(id){
  if(db.boms.some(b=>String(b.materialId)===id))return alert('Material is used in a BOM. Cannot delete.');
  if(confirm('Delete this material? It has no stock and no history.')){
   db.materials=db.materials.filter(x=>String(x.id)!==id);
-  audit('MAT_DEL',m.name);save();refresh();
+  audit('MAT_DEL',m.name);save(true);refresh();
  }
 }
 function renderFG(){
@@ -2167,7 +2189,7 @@ function deleteIssue(id){
  const m=db.materials.find(x=>String(x.id)===String(i.materialId));if(m)m.qty=r2(m.qty+i.qty);
  const bs=db.branchStock.find(x=>Number(x.branch)===Number(i.branch)&&String(x.materialId)===String(i.materialId));
  if(bs){bs.qty=r2(bs.qty-i.qty);if(bs.qty<=0.000001)db.branchStock=db.branchStock.filter(x=>x!==bs);}
- db.issues=db.issues.filter(x=>String(x.id)!==id);audit('ISSUE_DEL','#'+i.orderId);save();refresh();
+ db.issues=db.issues.filter(x=>String(x.id)!==id);audit('ISSUE_DEL','#'+i.orderId);save(true);refresh();
 }
 function renderBranchStock(){
  const a=filtered(db.branchStock);
@@ -2192,14 +2214,13 @@ function renderBOM(){
   return '<tr><td>'+esc(b.product)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+b.qty+'</td><td class="fin">'+money(mc)+'</td><td class="fin">'+money(b.labour)+'</td><td class="fin">'+money(total)+'</td><td>'+(canDel?'<button class="danger" data-bid="'+b.id+'" onclick="deleteBOM(this.dataset.bid)">Del</button>':'—')+'</td></tr>';
  }).join(''):'<tr><td colspan="7" class="empty">No BOM</td></tr>';
 }
-function deleteBOM(id){if(!hasPerm('bom'))return alert('No perm.');id=String(id);if(confirm('Delete BOM?')){db.boms=db.boms.filter(x=>String(x.id)!==id);audit('BOM_DEL','id');save();refresh();}}
+function deleteBOM(id){if(!hasPerm('bom'))return alert('No perm.');id=String(id);if(confirm('Delete BOM?')){db.boms=db.boms.filter(x=>String(x.id)!==id);audit('BOM_DEL','id');save(true);refresh();}}
 
 function savePurchase(e){
  e.preventDefault();if(!hasPerm('purchases'))return alert('No permission.');
  const supplier=$('pSupplier').value.trim(),mid=$('pMaterial').value,q=Number($('pQty').value),price=r2($('pPrice').value);
  const vat=Number($('pVat').value||0);
  if(!supplier)return alert('Supplier required.');
- // ✅ FIX 4: Validate VAT %
  if(isNaN(vat)||vat<0||vat>100)return alert('VAT % must be between 0 and 100.');
  if(price<=0)return alert('Price / Unit must be positive.');
  autoLinkSupplier(supplier);
@@ -2209,7 +2230,6 @@ function savePurchase(e){
  const cashFrom=Number($('pBranch').value||0);
  const pDate=$('pDate').value||today();
  const gross=r2(q*price),vatAmt=r2(gross*vat/100),total=r2(gross+vatAmt);
- // ✅ FIX 3: Use the transaction date for balance check
  if(payMethod==='Cash' && !checkLiquidBalance('Cash', total, cashFrom, pDate)) return;
  if(payMethod==='Bank' && !checkLiquidBalance('Bank', total, 0, pDate)) return;
  if(!checkApprovalLimit(total))return;
@@ -2227,7 +2247,6 @@ function renderPurchases(){
   return '<tr><td>'+p.date+'</td><td>'+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+p.qty+'</td><td class="fin">'+money(p.price)+'</td><td class="fin">'+money(vat)+'</td><td class="fin">'+money(total)+'</td><td>'+paidBadge(p,total,p.settleMethod||p.payMethod)+'</td><td class="actions">'+settle+(canDel?'<button class="danger" data-pid="'+p.id+'" onclick="deletePurchase(this.dataset.pid)">Del</button>':'')+'</td></tr>';
  }).join(''):'<tr><td colspan="9" class="empty">No purchases</td></tr>';
 }
-// ✅ FIX 1: Block purchase deletion if material has been issued (prevents negative on 1200)
 function deletePurchase(id){
  if(!hasPerm('purchases'))return alert('No perm.');id=String(id);
  const p=db.purchases.find(x=>String(x.id)===id);if(!p)return;
@@ -2241,7 +2260,7 @@ function deletePurchase(id){
  if(voidByRef('PAYMENT',id,'deleted')>0)return alert('Locked.');
  if(m)m.qty=r2(m.qty-p.qty);
  db.purchases=db.purchases.filter(x=>String(x.id)!==id);recomputeMaterialPrice(p.materialId);
- audit('PURCH_DEL','id');save();refresh();
+ audit('PURCH_DEL','id');save(true);refresh();
 }
 
 function saveSale(e){
@@ -2253,7 +2272,6 @@ function saveSale(e){
  if(!customer)return alert('Customer required.');
  if(!(q>0))return alert('Qty positive.');
  if(!Number.isInteger(q))return alert('Whole numbers.');
- // ✅ FIX 4 & 5: Validate VAT % and price > 0
  if(isNaN(vat)||vat<0||vat>100)return alert('VAT % must be between 0 and 100.');
  if(price<=0)return alert('Price / Unit must be positive.');
  autoLinkCustomer(customer);
@@ -2285,7 +2303,7 @@ function deleteSale(id){
  if(voidByRef('RECEIPT',id,'deleted')>0)return alert('Locked.');
  const fg=db.fg.find(f=>f.product.toLowerCase()===s.product.toLowerCase());
  if(fg)fg.qty=r2(fg.qty+s.qty);else db.fg.push({product:s.product,qty:s.qty,unitCost:0});
- db.sales=db.sales.filter(x=>String(x.id)!==id);audit('SALE_DEL',s.product);save();refresh();
+ db.sales=db.sales.filter(x=>String(x.id)!==id);audit('SALE_DEL',s.product);save(true);refresh();
 }
 
 function saveExpense(e){
@@ -2307,13 +2325,16 @@ function renderExpenses(){
   return '<tr><td>'+x.date+'</td><td>'+esc(x.type)+'</td><td>'+esc(branchName(x.branch))+'</td><td class="fin">'+money(x.amount)+'</td><td>'+esc(x.payMethod||'—')+'</td><td>'+paidBadge(x,x.amount,x.settleMethod)+'</td><td>'+esc(x.user)+'</td><td>'+esc(x.note||'')+'</td><td class="actions">'+settle+(canDel?'<button class="danger" data-eid="'+x.id+'" onclick="deleteExpense(this.dataset.eid)">Del</button>':'<span class="muted">—</span>')+'</td></tr>';
  }).join(''):'<tr><td colspan="9" class="empty">No expenses</td></tr>';
 }
+/* ✅ FIX 3: deleteExpense now voids journals (via fixed voidByRef) AND
+   saves with save(true) so the change is pushed to Firebase immediately
+   before any incoming snapshot can resurrect the record. */
 function deleteExpense(id){
  id=String(id);const x=db.expenses.find(y=>String(y.id)===id);if(!x)return;
  if(!canDeleteExpense(x))return alert('Not allowed.');
  if(!confirm('Delete expense?'))return;
  if(voidByRef('EXPENSE',id,'deleted')>0)return alert('Locked.');
  if(voidByRef('EXPPAY',id,'deleted')>0)return alert('Locked.');
- db.expenses=db.expenses.filter(y=>String(y.id)!==id);audit('EXP_DEL',x.type);save();refresh();
+ db.expenses=db.expenses.filter(y=>String(y.id)!==id);audit('EXP_DEL',x.type);save(true);refresh();
 }
 
 let acctTab='tb';
@@ -2485,7 +2506,7 @@ function renderEmployees(){
 function deleteEmployee(id){
  id=String(id);const x=db.employees.find(y=>String(y.id)===id);if(!x)return;
  if(!canPickBranch()&&x.branch!==session.branchId)return alert('Not allowed.');
- if(confirm('Delete?')){db.employees=db.employees.filter(y=>String(y.id)!==id);audit('EMP_DEL',x.name);save();refresh();}
+ if(confirm('Delete?')){db.employees=db.employees.filter(y=>String(y.id)!==id);audit('EMP_DEL',x.name);save(true);refresh();}
 }
 
 function renderBranches(){
@@ -2682,11 +2703,10 @@ function table(head,rows){
  return '<div class="tablewrap"><table><thead><tr>'+head.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+(rows.length?rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+head.length+'" class="empty">No data</td></tr>')+'</tbody></table></div>';
 }
 
-// ✅ FIX 7: Backup restricted to admin only
 function backup(){
  if(!admin())return alert('Only admin can download backups.\n\nIf you need a backup, please ask Head Office.');
  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');
- a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.3_Backup_'+today()+'.json';a.click();
+ a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.3.1_Backup_'+today()+'.json';a.click();
  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
  localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();
 }
@@ -2745,7 +2765,7 @@ function renderSystem(){
  if(!$('sysInfo'))return;
  const tb=trialBalance(today(),null);
  $('sysInfo').innerHTML=
-  '<div class="statline"><span>ERP Version</span><b>V13.3</b></div>'+
+  '<div class="statline"><span>ERP Version</span><b>V13.3.1</b></div>'+
   '<div class="statline"><span>Sync</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Live':'🔴 Offline')+'</b></div>'+
   '<div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div>'+
   '<div class="statline"><span>Staff</span><b>'+(db.staff||[]).length+'</b></div>'+
@@ -2765,7 +2785,7 @@ async function resetData(){
  location.reload();
 }
 
-window.addEventListener('load',()=>{attachSync();console.log('ERP V13.3 — all 7 fixes applied (purchase/material delete protection, backdated balance, VAT validation, price validation, permission checks, admin-only backup)');});
+window.addEventListener('load',()=>{attachSync();console.log('ERP V13.3.1 — sync-resurrection and voidByRef fixes applied');});
 </script>
 </body>
-        </html>
+                                           </html>
