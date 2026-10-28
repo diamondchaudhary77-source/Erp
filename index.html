@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#714B67">
-<title>Handmade Decor ERP V13.3.2 Live</title>
+<title>Handmade Decor ERP V13.3.3 Live</title>
 <style>
 *{box-sizing:border-box}
 :root{--p:#714B67;--p2:#8f6385;--bg:#f5f3f5;--card:#fff;--text:#29252b;--muted:#777;--green:#198754;--red:#c0392b;--orange:#e67e22;--blue:#2878c8;--line:#e7e2e7}
@@ -81,7 +81,7 @@ body.printing-invoice .page{display:none!important}
 <div id="loginScreen" class="login">
  <div class="loginbox">
   <h1>🧶 Handmade Decor ERP</h1>
-  <b>V13.3.2 — Tombstone Sync</b>
+  <b>V13.3.3 — Full Accounting Fix</b>
   <p class="muted"><span id="syncDot" class="sync-dot"></span><span id="syncLabel">Connecting…</span></p>
   <div class="field"><label>Username</label><input id="loginUser" value="admin" onkeydown="if(event.key==='Enter')$('loginPass').focus()"></div>
   <div class="field"><label>Password</label><input id="loginPass" type="password" value="admin" onkeydown="if(event.key==='Enter')login()"></div>
@@ -93,7 +93,7 @@ body.printing-invoice .page{display:none!important}
 <div id="app" style="display:none">
  <div class="layout">
   <aside class="side" id="side">
-   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.3.2 Live</small></div>
+   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.3.3 Live</small></div>
    <div class="nav" id="nav"></div>
   </aside>
   <main class="main">
@@ -611,64 +611,63 @@ let session=null;
 const firebaseConfig={apiKey:"AIzaSyC5HxlN4M2Y1ZyYhyk-fZs5i4wXFPA5Pao",authDomain:"handmade-decor-erp.firebaseapp.com",databaseURL:"https://handmade-decor-erp-default-rtdb.firebaseio.com",projectId:"handmade-decor-erp",storageBucket:"handmade-decor-erp.firebasestorage.app",messagingSenderId:"358722495480",appId:"1:358722495480:web:a9052a2329200331342c0d"};
 let fbRef=null,fbConnected=false,firstSnapshotSeen=false;
 let pendingLocalSave=false,pendingRemote=null;
+let cleanupAttempted=false;
 
 try{firebase.initializeApp(firebaseConfig);fbRef=firebase.database().ref("erp/main");}catch(e){console.warn("Firebase init failed:",e);}
 
 function setSyncStatus(state){fbConnected=(state==='live');const dot=fbConnected?'live':(state==='offline'?'offline':'');const label=state==='live'?'Live':(state==='offline'?'Offline':'Connecting');['syncDot','syncDotApp'].forEach(id=>{const el=$(id);if(el)el.className='sync-dot '+dot;});['syncLabel','syncLabelApp'].forEach(id=>{const el=$(id);if(el)el.textContent=label;});}
 function enableLogin(){const btn=$('loginBtn');if(btn){btn.disabled=false;btn.textContent='Login';}}
 
-/* ============ TOMBSTONE HELPERS ============ */
-function tombstone(coll,id){
- if(!db.deleted)db.deleted={};
- if(!Array.isArray(db.deleted[coll]))db.deleted[coll]=[];
- const sid=String(id);
- if(!db.deleted[coll].map(String).includes(sid))db.deleted[coll].push(sid);
+/* ============ TOMBSTONES ============ */
+function tombstone(coll,id){if(!db.deleted)db.deleted={};if(!Array.isArray(db.deleted[coll]))db.deleted[coll]=[];const sid=String(id);if(!db.deleted[coll].map(String).includes(sid))db.deleted[coll].push(sid);}
+function applyTombstones(d){if(!d||!d.deleted)return d;COLLS.forEach(coll=>{const tombs=(d.deleted[coll]||[]).map(String);if(tombs.length&&Array.isArray(d[coll])){d[coll]=d[coll].filter(r=>!tombs.includes(String(r.id)));}});return d;}
+function unionTombstones(a,b){const out={};Object.keys(a||{}).forEach(k=>{out[k]=[...(a[k]||[])];});Object.keys(b||{}).forEach(coll=>{const list=out[coll]?[...out[coll]]:[];(b[coll]||[]).forEach(id=>{const sid=String(id);if(!list.map(String).includes(sid))list.push(sid);});out[coll]=list;});return out;}
+function localHasNewerTombstones(local,remote){for(const coll of Object.keys(local||{})){const l=(local[coll]||[]).map(String);const r=((remote||{})[coll]||[]).map(String);if(l.some(id=>!r.includes(id)))return true;}return false;}
+
+/* ============ ACCOUNTING CLEANUP ============ */
+/* ✅ V13.3.3 FIX: voided journals are excluded from journalLines.
+   Posting a reversal AND voiding the original double-counts the correction
+   and makes deleted expenses appear as negative amounts. Just mark voided. */
+function voidJournal(id,reason){
+ const j=db.journals.find(x=>x.id===id);
+ if(!j||j.voided)return null;
+ if(db.settings&&db.settings.lockedThrough&&j.date<=db.settings.lockedThrough)throw new Error('Locked period.');
+ j.voided=true;
+ j.voidedBy=(session?session.user:'system');
+ j.voidReason=reason||'';
+ j.voidedAt=new Date().toISOString();
+ return j.id;
 }
-function applyTombstones(d){
- if(!d||!d.deleted)return d;
- COLLS.forEach(coll=>{
-  const tombs=(d.deleted[coll]||[]).map(String);
-  if(tombs.length&&Array.isArray(d[coll])){
-   d[coll]=d[coll].filter(r=>!tombs.includes(String(r.id)));
+
+/* ✅ V13.3.3 FIX: void any legacy 'VOID' reversal journals left by the old bug. */
+function cleanupLegacyVoidReversals(d){
+ if(!d||!Array.isArray(d.journals))return 0;
+ const voidedIds=new Set();
+ d.journals.forEach(j=>{if(j.voided)voidedIds.add(String(j.id));});
+ let changed=0;
+ d.journals.forEach(j=>{
+  if(j.refType==='VOID'&&!j.voided&&voidedIds.has(String(j.refId))){
+   j.voided=true;
+   j.voidReason='V13.3.3 auto-cleanup: redundant reversal';
+   j.voidedBy='system';
+   j.voidedAt=new Date().toISOString();
+   changed++;
   }
  });
- return d;
-}
-function unionTombstones(a,b){
- const out={};
- Object.keys(a||{}).forEach(k=>{out[k]=[...(a[k]||[])];});
- Object.keys(b||{}).forEach(coll=>{
-  const list=out[coll]?[...out[coll]]:[];
-  (b[coll]||[]).forEach(id=>{
-   const sid=String(id);
-   if(!list.map(String).includes(sid))list.push(sid);
-  });
-  out[coll]=list;
- });
- return out;
-}
-function localHasNewerTombstones(local,remote){
- for(const coll of Object.keys(local||{})){
-  const l=(local[coll]||[]).map(String);
-  const r=((remote||{})[coll]||[]).map(String);
-  if(l.some(id=>!r.includes(id)))return true;
- }
- return false;
+ return changed;
 }
 
 /* ============ SYNC ============ */
 function processRemote(remote){
  const localDeleted=db.deleted||{};
  db=migrateDB(remote);
+ const cleanedCount=cleanupLegacyVoidReversals(db);
  db.deleted=unionTombstones(localDeleted,remote.deleted||{});
  applyTombstones(db);
  try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e){}
  if(session)refresh();
- const needPush=localHasNewerTombstones(localDeleted,remote.deleted||{});
- if(needPush){
-  // Our delete isn't yet on server — push it back so everyone else sees it
-  save(true);
- }
+ const needPush=cleanedCount>0||localHasNewerTombstones(localDeleted,remote.deleted||{});
+ if(needPush)save(true);
 }
 
 function attachSync(){
@@ -677,6 +676,28 @@ function attachSync(){
   const remote=snap.val();setSyncStatus('live');
   if(!remote){if(!firstSnapshotSeen){firstSnapshotSeen=true;save(true);}enableLogin();return;}
   firstSnapshotSeen=true;
+
+  /* ✅ V13.3.3: one-time cleanup of legacy reversal journals. Runs on first
+     snapshot even if cache already matches server, so Admin's P&L self-corrects
+     after any reload without needing a new transaction. */
+  if(!cleanupAttempted && !pendingLocalSave){
+   cleanupAttempted=true;
+   try{
+    const cleanedRemote=migrateDB(JSON.parse(JSON.stringify(remote)));
+    const count=cleanupLegacyVoidReversals(cleanedRemote);
+    if(count>0){
+     cleanedRemote.deleted=unionTombstones(cleanedRemote.deleted||{},db.deleted||{});
+     applyTombstones(cleanedRemote);
+     db=cleanedRemote;
+     try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e){}
+     if(typeof audit==='function')audit('LEGACY_CLEANUP','voided '+count+' reversal journal(s)');
+     if(session)refresh();
+     save(true);
+     return;
+    }
+   }catch(e){console.warn('legacy cleanup failed',e);}
+  }
+
   if(remote.lastModified&&db.lastModified===remote.lastModified){enableLogin();return;}
   if(pendingLocalSave){pendingRemote=remote;enableLogin();return;}
   processRemote(remote);
@@ -689,7 +710,7 @@ function defaultCOA(){
  return [{code:'1000',name:'HO Cash on Hand',type:'Asset'},{code:'1001',name:'Branch 1 Cash',type:'Asset'},{code:'1002',name:'Branch 2 Cash',type:'Asset'},{code:'1003',name:'Branch 3 Cash',type:'Asset'},{code:'1004',name:'Branch 4 Cash',type:'Asset'},{code:'1005',name:'Branch 5 Cash',type:'Asset'},{code:'1010',name:'Bank',type:'Asset'},{code:'1100',name:'Accounts Receivable',type:'Asset'},{code:'1200',name:'Raw Materials Inventory',type:'Asset'},{code:'1210',name:'Work in Progress',type:'Asset'},{code:'1220',name:'Finished Goods Inventory',type:'Asset'},{code:'1300',name:'Input VAT (Recoverable)',type:'Asset'},{code:'1500',name:'Fixed Assets at Cost',type:'Asset'},{code:'1505',name:'Accumulated Depreciation',type:'Asset'},{code:'2000',name:'Accounts Payable',type:'Liability'},{code:'2100',name:'Output VAT (Payable)',type:'Liability'},{code:'2200',name:'Employee Security Deposits',type:'Liability'},{code:'2210',name:'Labour Payable',type:'Liability'},{code:'3000',name:"Owner's Capital",type:'Equity'},{code:'4000',name:'Sales Revenue',type:'Income'},{code:'5000',name:'Cost of Goods Sold',type:'Expense'},{code:'6000',name:'Rent',type:'Expense'},{code:'6010',name:'Electricity',type:'Expense'},{code:'6020',name:'Transport',type:'Expense'},{code:'6030',name:'Fixed Staff Salary',type:'Expense'},{code:'6040',name:'Water',type:'Expense'},{code:'6050',name:'Repairs & Maintenance',type:'Expense'},{code:'6090',name:'Other Expenses',type:'Expense'},{code:'6100',name:'Depreciation Expense',type:'Expense'},{code:'6210',name:'Overhead Absorbed',type:'Expense'}];
 }
 function defaultDB(){
- return {version:'13.3.2',admin:{user:'admin',pass:'admin'},branches:[{id:1,name:'Branch 1',user:'branch1',pass:'1234'},{id:2,name:'Branch 2',user:'branch2',pass:'1234'},{id:3,name:'Branch 3',user:'branch3',pass:'1234'},{id:4,name:'Branch 4',user:'branch4',pass:'1234'},{id:5,name:'Branch 5',user:'branch5',pass:'1234'}],orders:[],materials:[],issues:[],branchStock:[],boms:[],purchases:[],sales:[],expenses:[],employees:[],fg:[],audit:[],customers:[],suppliers:[],coa:defaultCOA(),journals:[],fixedAssets:[],staff:[],cashCounts:[],voucherSeq:0,deleted:{expenses:[],sales:[],purchases:[],orders:[],issues:[],materials:[],boms:[],customers:[],suppliers:[],staff:[],fixedAssets:[],employees:[],cashCounts:[]},settings:{overheadRate:0,lockedThrough:'',cashLimits:{0:0,1:0,2:0,3:0,4:0,5:0},approvalThreshold:0,company:{name:'',phone:'',email:'',address:'',gst:'',prefix:'INV'}},ledgerStartDate:today(),opening:{cash:0,bank:0,receivable:0,payable:0,capital:0,date:today(),jeId:null}};
+ return {version:'13.3.3',admin:{user:'admin',pass:'admin'},branches:[{id:1,name:'Branch 1',user:'branch1',pass:'1234'},{id:2,name:'Branch 2',user:'branch2',pass:'1234'},{id:3,name:'Branch 3',user:'branch3',pass:'1234'},{id:4,name:'Branch 4',user:'branch4',pass:'1234'},{id:5,name:'Branch 5',user:'branch5',pass:'1234'}],orders:[],materials:[],issues:[],branchStock:[],boms:[],purchases:[],sales:[],expenses:[],employees:[],fg:[],audit:[],customers:[],suppliers:[],coa:defaultCOA(),journals:[],fixedAssets:[],staff:[],cashCounts:[],voucherSeq:0,deleted:{expenses:[],sales:[],purchases:[],orders:[],issues:[],materials:[],boms:[],customers:[],suppliers:[],staff:[],fixedAssets:[],employees:[],cashCounts:[]},settings:{overheadRate:0,lockedThrough:'',cashLimits:{0:0,1:0,2:0,3:0,4:0,5:0},approvalThreshold:0,company:{name:'',phone:'',email:'',address:'',gst:'',prefix:'INV'}},ledgerStartDate:today(),opening:{cash:0,bank:0,receivable:0,payable:0,capital:0,date:today(),jeId:null}};
 }
 function loadDB(){
  try{const cached=localStorage.getItem(KEY+"_CACHE");if(cached){const x=JSON.parse(cached);if(x&&x.branches)return migrateDB(x);}}catch(e){}
@@ -729,10 +750,7 @@ function save(immediate){
   db.lastModified=new Date().toISOString();
   db.lastModifiedBy=session?session.user:'system';
   try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e){}
-  const finish=()=>{
-   pendingLocalSave=false;
-   if(pendingRemote){const r=pendingRemote;pendingRemote=null;processRemote(r);}
-  };
+  const finish=()=>{pendingLocalSave=false;if(pendingRemote){const r=pendingRemote;pendingRemote=null;processRemote(r);}};
   const t=setTimeout(()=>{if(pendingLocalSave)finish();},15000);
   fbRef.set(db).then(()=>{clearTimeout(t);finish();}).catch(err=>{console.error("Firebase save failed:",err);clearTimeout(t);finish();});
  };
@@ -763,26 +781,13 @@ function cashAccountCode(locId){if(locId==='bank')return '1010';const b=Number(l
 function cashLocOptionsHTML(){let html='<option value="bank">Bank</option><option value="0">HO Cash</option>';for(let i=1;i<=5;i++){html+='<option value="'+i+'">'+esc(branchName(i))+' Cash</option>';}return html;}
 function branchCashOnlyOptionsHTML(){let html='<option value="0">HO Cash</option>';for(let i=1;i<=5;i++){html+='<option value="'+i+'">'+esc(branchName(i))+' Cash</option>';}return html;}
 function nextVoucher(){db.voucherSeq=(Number(db.voucherSeq)||0)+1;return 'PV-'+today().replace(/-/g,'').slice(2)+'-'+String(db.voucherSeq).padStart(4,'0');}
-function checkLiquidBalance(payMethod,amount,branchId,asOfDate){
- if(payMethod!=='Cash'&&payMethod!=='Bank')return true;
- let code=payMethod==='Bank'?'1010':branchCashCode(branchId!=null?branchId:0);
- const bal=accountBalance(code,{to:asOfDate||today()});const amt=r2(amount);
- if(bal+0.01<amt){const label=payMethod==='Bank'?'Bank':cashAccountName(branchId!=null?branchId:0);alert('❌ Insufficient '+label+' balance on '+(asOfDate||today())+'.\n\nAvailable: '+money(bal)+'\nRequired: '+money(amt)+'\n\nUse Credit or transfer money first.');return false;}
- return true;
-}
+function checkLiquidBalance(payMethod,amount,branchId,asOfDate){if(payMethod!=='Cash'&&payMethod!=='Bank')return true;let code=payMethod==='Bank'?'1010':branchCashCode(branchId!=null?branchId:0);const bal=accountBalance(code,{to:asOfDate||today()});const amt=r2(amount);if(bal+0.01<amt){const label=payMethod==='Bank'?'Bank':cashAccountName(branchId!=null?branchId:0);alert('❌ Insufficient '+label+' balance on '+(asOfDate||today())+'.\n\nAvailable: '+money(bal)+'\nRequired: '+money(amt)+'\n\nUse Credit or transfer money first.');return false;}return true;}
 function checkApprovalLimit(amount){const th=Number((db.settings&&db.settings.approvalThreshold)||0);if(th>0&&Number(amount)>th&&!admin()){alert('⚠ Amount '+money(amount)+' exceeds approval threshold '+money(th)+'. Ask Admin.');return false;}return true;}
 
 function openPhoto(id){id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o||!o.photo)return alert('No photo.');$('photoModalImg').src=o.photo;const a=$('photoDownload');a.href=o.photo;a.download='Order_'+id+'.jpg';$('photoModal').classList.add('open');}
 function closePhotoModal(){$('photoModal').classList.remove('open');}
 function downloadPhoto(id){id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o||!o.photo)return alert('No photo.');const a=document.createElement('a');a.href=o.photo;a.download='Order_'+id+'.jpg';document.body.appendChild(a);a.click();a.remove();}
-function viewOrder(id){
- id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o)return alert('Order not found.');
- const noteHtml=o.notes?esc(o.notes):'<span class="muted">No notes</span>';
- const photoHtml=o.photo?'<div style="text-align:center;margin:10px 0"><img src="'+o.photo+'" style="max-width:100%;max-height:380px;border-radius:8px;border:1px solid #ddd"></div>':'<div class="empty">No photo</div>';
- const priceHtml=admin()?'<div class="statline"><span>Price / Unit</span><b>'+money(o.price||0)+'</b></div>':'';
- $('orderModalContent').innerHTML='<h2 style="margin:0 0 8px;color:#714B67">Order #'+id+'</h2>'+photoHtml+'<div class="statline"><span>Customer</span><b>'+esc(o.customer)+'</b></div><div class="statline"><span>Product</span><b>'+esc(o.product)+'</b></div><div class="statline"><span>Quantity</span><b>'+o.qty+' pcs</b></div>'+priceHtml+'<div class="statline"><span>Branch</span><b>'+esc(branchName(o.branch))+'</b></div><div class="statline"><span>Order Date</span><b>'+esc(o.date)+'</b></div><div class="statline"><span>Status</span><b>'+statusBadge(o.status)+'</b></div><div class="statline"><span>Completed</span><b>'+doneQty(o)+' / '+o.qty+' pcs</b></div><div class="statline"><span>Notes</span><b style="text-align:right;max-width:60%">'+noteHtml+'</b></div>';
- $('orderModal').classList.add('open');
-}
+function viewOrder(id){id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o)return alert('Order not found.');const noteHtml=o.notes?esc(o.notes):'<span class="muted">No notes</span>';const photoHtml=o.photo?'<div style="text-align:center;margin:10px 0"><img src="'+o.photo+'" style="max-width:100%;max-height:380px;border-radius:8px;border:1px solid #ddd"></div>':'<div class="empty">No photo</div>';const priceHtml=admin()?'<div class="statline"><span>Price / Unit</span><b>'+money(o.price||0)+'</b></div>':'';$('orderModalContent').innerHTML='<h2 style="margin:0 0 8px;color:#714B67">Order #'+id+'</h2>'+photoHtml+'<div class="statline"><span>Customer</span><b>'+esc(o.customer)+'</b></div><div class="statline"><span>Product</span><b>'+esc(o.product)+'</b></div><div class="statline"><span>Quantity</span><b>'+o.qty+' pcs</b></div>'+priceHtml+'<div class="statline"><span>Branch</span><b>'+esc(branchName(o.branch))+'</b></div><div class="statline"><span>Order Date</span><b>'+esc(o.date)+'</b></div><div class="statline"><span>Status</span><b>'+statusBadge(o.status)+'</b></div><div class="statline"><span>Completed</span><b>'+doneQty(o)+' / '+o.qty+' pcs</b></div><div class="statline"><span>Notes</span><b style="text-align:right;max-width:60%">'+noteHtml+'</b></div>';$('orderModal').classList.add('open');}
 function closeOrderModal(){$('orderModal').classList.remove('open');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePhotoModal();closeOrderModal();closeInvoiceModal();}});
 function printPage(){closePhotoModal();closeOrderModal();closeInvoiceModal();const t=$('title').textContent||'Report';const co=db.settings&&db.settings.company?db.settings.company.name:'';const who=session?(admin()?'Head Office / Admin':(session.role==='staff'?session.name+' · All branches':branchName(session.branchId))):'';$('printHead').innerHTML='<h2>'+(co?esc(co)+' — ':'')+esc(t)+'</h2><div>Printed: '+new Date().toLocaleString()+(who?' · User: '+esc(who):'')+'</div><hr>';setTimeout(()=>window.print(),300);}
@@ -797,7 +802,6 @@ function postJournal(entry){
  db.journals.push({id,date:entry.date||today(),memo:entry.memo||'',refType:entry.refType||'',refId:entry.refId||null,lines:entry.lines.map(l=>({account:l.account,debit:r2(l.debit||0),credit:r2(l.credit||0),branch:l.branch!=null?Number(l.branch):null,memo:l.memo||''})),user:entry.user||(session?session.user:'system'),createdAt:new Date().toISOString(),voided:false});
  return id;
 }
-function voidJournal(id,reason){const j=db.journals.find(x=>x.id===id);if(!j||j.voided)return null;if(db.settings&&db.settings.lockedThrough&&j.date<=db.settings.lockedThrough)throw new Error('Locked period.');const rev=postJournal({date:today(),memo:'VOID: '+j.memo,refType:'VOID',refId:j.id,lines:j.lines.map(l=>({account:l.account,debit:l.credit,credit:l.debit,branch:l.branch,memo:'Reversal'}))});j.voided=true;j.voidedBy=(session?session.user:'system');j.voidReason=reason||'';return rev;}
 function voidByRef(refType,refId,reason){let blocked=0;db.journals.filter(j=>!j.voided&&j.refType===refType&&String(j.refId)===String(refId)).forEach(j=>{try{voidJournal(j.id,reason||'');}catch(e){blocked++;}});return blocked;}
 function journalLines(filter){filter=filter||{};const arr=[];db.journals.forEach(j=>{if(j.voided)return;if(filter.from&&j.date<filter.from)return;if(filter.to&&j.date>filter.to)return;if(filter.refType&&j.refType!==filter.refType)return;j.lines.forEach(l=>{if(filter.branch!=null&&Number(l.branch)!==Number(filter.branch))return;if(filter.account&&l.account!==filter.account)return;arr.push({...l,date:j.date,jeId:j.id,memo:j.memo,refType:j.refType,refId:j.refId,user:j.user});});});return arr;}
 function accountBalance(code,filter){const lines=journalLines({...(filter||{}),account:code});const dr=lines.reduce((s,l)=>s+Number(l.debit||0),0);const cr=lines.reduce((s,l)=>s+Number(l.credit||0),0);return r2(dr-cr);}
@@ -825,7 +829,7 @@ function deleteFixedAsset(id){if(!hasPerm('fixedassets'))return alert('No permis
 function saveSettings(e){e.preventDefault();if(!hasPerm('settings'))return alert('No permission.');const rate=Number($('setOverheadRate').value||0);if(rate<0||rate>200)return alert('Rate 0-200.');const lock=$('setLockDate').value||'';db.settings.overheadRate=rate;db.settings.lockedThrough=lock;audit('SETTINGS','rate='+rate+'% lock='+(lock||'none'));save();refresh();alert('Saved.');}
 function renderSettings(){if(!$('setOverheadRate'))return;if(document.activeElement!==$('setOverheadRate'))$('setOverheadRate').value=(db.settings&&db.settings.overheadRate)||0;if(document.activeElement!==$('setLockDate'))$('setLockDate').value=(db.settings&&db.settings.lockedThrough)||'';if($('setApprovalThreshold')&&document.activeElement!==$('setApprovalThreshold'))$('setApprovalThreshold').value=(db.settings&&db.settings.approvalThreshold)||0;const lim=db.settings&&db.settings.cashLimits||{};if($('limHO')&&document.activeElement!==$('limHO'))$('limHO').value=lim[0]||0;for(let i=1;i<=5;i++){const el=$('lim'+i);if(el&&document.activeElement!==el)el.value=lim[i]||0;}const co=db.settings.company||{};['coName','coPhone','coEmail','coGst','coAddress','coPrefix'].forEach((id,i)=>{const el=$(id);if(el&&document.activeElement!==el)el.value=[co.name,co.phone,co.email,co.gst,co.address,co.prefix||'INV'][i]||'';});}
 function saveCompanyBranding(e){e.preventDefault();if(!admin())return alert('Only admin.');db.settings.company={name:$('coName').value.trim(),phone:$('coPhone').value.trim(),email:$('coEmail').value.trim(),gst:$('coGst').value.trim(),address:$('coAddress').value.trim(),prefix:$('coPrefix').value.trim()||'INV'};audit('COMPANY_BRANDING',db.settings.company.name);save();refresh();alert('Branding saved.');updateBrandHeader();}
-function updateBrandHeader(){const el=$('brandHeader');if(!el)return;const co=db.settings.company||{};const name=co.name||'Handmade Decor';el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.3.2 Live</small>';}
+function updateBrandHeader(){const el=$('brandHeader');if(!el)return;const co=db.settings.company||{};const name=co.name||'Handmade Decor';el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.3.3 Live</small>';}
 function saveCashSettings(e){e.preventDefault();if(!admin())return alert('Only admin.');const limits={0:Number($('limHO').value||0),1:Number($('lim1').value||0),2:Number($('lim2').value||0),3:Number($('lim3').value||0),4:Number($('lim4').value||0),5:Number($('lim5').value||0)};const th=Number($('setApprovalThreshold').value||0);db.settings.cashLimits=limits;db.settings.approvalThreshold=th;audit('CASH_SETTINGS','limits='+JSON.stringify(limits)+' threshold='+th);save();refresh();alert('Saved.');}
 async function changeAdminPass(e){e.preventDefault();if(!admin())return alert('Only admin.');const oldP=$('apOldPass').value,newP=$('apNewPass').value,conP=$('apConfirmPass').value;if(newP!==conP)return alert('New passwords do not match.');if(newP.length<6)return alert('Min 6 chars.');const adm=db.admin||{user:'admin',pass:'admin'};let ok=false;if(adm.passHash){const v=await verifyPassword(oldP,adm.passHash);ok=v.ok;}else if(adm.pass){ok=(adm.pass===oldP);}if(!ok)return alert('Current password incorrect.');adm.passHash=await hashPassword(newP,'hd_v10');delete adm.pass;db.admin=adm;audit('ADMIN_PASS_CHANGE','updated');save(true);e.target.reset();alert('Password updated.');}
 
@@ -931,8 +935,7 @@ function deleteSale(id){id=String(id);const s=db.sales.find(x=>String(x.id)===id
 function saveExpense(e){e.preventDefault();const br=canPickBranch()?Number($('eBranch').value):session.branchId;const eDate=$('eDate').value||today();const exp={id:uid(),date:eDate,type:$('eType').value,amount:r2($('eAmount').value),branch:br,user:session.user,note:$('eNote').value,payMethod:$('ePay').value,paidAmount:0};if(!checkLiquidBalance(exp.payMethod,exp.amount,exp.branch,eDate))return;if(!checkApprovalLimit(exp.amount))return;try{postExpenseJE(exp);}catch(err){return alert('Error: '+err.message);}db.expenses.push(exp);audit('EXP_ADD',exp.type+' '+exp.amount);save();e.target.reset();$('eDate').value=today();refresh();alert('Saved.');}
 function canDeleteExpense(x){return canPickBranch()||x.branch===session.branchId;}
 function renderExpenses(){const a=filtered(db.expenses);$('expenseTable').innerHTML=a.length?a.map(x=>{const canDel=canDeleteExpense(x);const settle=(!x.settled&&x.payMethod==='Credit')?'<button class="info" data-eid="'+x.id+'" onclick="settleExpense(this.dataset.eid,\'Cash\')">Cash</button><button class="info" data-eid="'+x.id+'" onclick="settleExpense(this.dataset.eid,\'Bank\')">Bank</button>':'';return '<tr><td>'+x.date+'</td><td>'+esc(x.type)+'</td><td>'+esc(branchName(x.branch))+'</td><td class="fin">'+money(x.amount)+'</td><td>'+esc(x.payMethod||'—')+'</td><td>'+paidBadge(x,x.amount,x.settleMethod)+'</td><td>'+esc(x.user)+'</td><td>'+esc(x.note||'')+'</td><td class="actions">'+settle+(canDel?'<button class="danger" data-eid="'+x.id+'" onclick="deleteExpense(this.dataset.eid)">Del</button>':'<span class="muted">—</span>')+'</td></tr>';}).join(''):'<tr><td colspan="9" class="empty">No expenses</td></tr>';}
-/* ✅ THE KEY FIX: tombstone added before save(true) — this is what makes the expense
-   permanently invisible to every other device, including Admin. */
+/* ✅ V13.3.3: tombstone + voided journals → branch delete → admin list empty + P&L net 0 + Cash restored. */
 function deleteExpense(id){
  id=String(id);const x=db.expenses.find(y=>String(y.id)===id);if(!x)return;
  if(!canDeleteExpense(x))return alert('Not allowed.');
@@ -986,29 +989,20 @@ function runReport(){
  else if(type==='fixedassets'){if(!admin())return alert('Only admin.');$('reportOut').innerHTML='<h4>Fixed Asset Register</h4>'+table(['Name','Category','Branch','Cost','Accum','NBV'],db.fixedAssets.map(f=>[esc(f.name),esc(f.category),esc(branchName(f.branch)),money(f.cost),money(f.accumulated||0),money(r2(f.cost-(f.accumulated||0)))]));}
 }
 
-function backup(){if(!admin())return alert('Only admin can download backups.');const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.3.2_Backup_'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();}
+function backup(){if(!admin())return alert('Only admin can download backups.');const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.3.3_Backup_'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();}
 function checkAutoBackup(){try{const askedToday=localStorage.getItem(AUTO_BACKUP_ASKED)===today();if(askedToday)return;const last=Number(localStorage.getItem(AUTO_BACKUP_KEY)||0);const days=last?(Date.now()-last)/(1000*60*60*24):999;if(admin()&&days>1){setTimeout(()=>{if(confirm('📥 Daily auto-backup reminder.\n\nLast backup was '+Math.round(days)+' day(s) ago. Download a fresh backup now?')){backup();localStorage.setItem(AUTO_BACKUP_KEY,String(Date.now()));}localStorage.setItem(AUTO_BACKUP_ASKED,today());},1500);}}catch(e){}}
 function restore(e){if(!admin())return alert('Only admin.');const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const x=JSON.parse(r.result);if(!x.branches||!Array.isArray(x.orders))throw new Error();db=migrateDB(x);db.lastModified=new Date().toISOString();db.lastModifiedBy=session?session.user:'system';if(fbRef)await fbRef.set(db).catch(err=>alert('Firebase: '+err.message));try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e2){}alert('Restored. Reloading.');location.reload();}catch(err){alert('Invalid backup.');}};r.readAsText(f);}
 function checkBackupReminder(){const btn=$('backupReminder');if(!btn)return;if(!admin()){btn.style.display='none';return;}const last=Number(localStorage.getItem(BACKUP_KEY)||0);const days=last?(Date.now()-last)/(1000*60*60*24):999;btn.style.display=days>7?'inline-block':'none';}
 function clearAudit(){if(!hasPerm('backup'))return;if(!confirm('Clear audit log?'))return;db.audit=[];save();renderAudit();renderSystem();}
 function renderAudit(){const el=$('auditLog');if(!el)return;const a=(db.audit||[]).slice(-50).reverse();el.innerHTML=a.length?'<div class="tablewrap"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th></tr></thead><tbody>'+a.map(x=>'<tr><td>'+esc(x.t.slice(0,19).replace('T',' '))+'</td><td>'+esc(x.user)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.detail)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">None</div>';}
 
-function clearTombstones(){
- if(!admin())return alert('Only admin.');
- if(!confirm('Clear all delete tombstones?\n\n⚠ If you clear them and any device still has old data cached, previously deleted records could reappear. Only do this if all devices are in sync.'))return;
- db.deleted={};
- COLLS.forEach(c=>{db.deleted[c]=[];});
- audit('TOMB_CLEAR','all cleared');
- save(true);
- refresh();
- alert('Tombstones cleared.');
-}
+function clearTombstones(){if(!admin())return alert('Only admin.');if(!confirm('Clear all delete tombstones?\n\n⚠ If any device still has old data cached, previously deleted records could reappear. Only do this if all devices are in sync.'))return;db.deleted={};COLLS.forEach(c=>{db.deleted[c]=[];});audit('TOMB_CLEAR','all cleared');save(true);refresh();alert('Tombstones cleared.');}
 
-function renderSystem(){if(!$('sysInfo'))return;const tb=trialBalance(today(),null);const tombCount=COLLS.reduce((s,c)=>s+((db.deleted&&db.deleted[c])||[]).length,0);if($('tombCount'))$('tombCount').textContent=tombCount;$('sysInfo').innerHTML='<div class="statline"><span>ERP Version</span><b>V13.3.2</b></div><div class="statline"><span>Sync</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Live':'🔴 Offline')+'</b></div><div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div><div class="statline"><span>Staff</span><b>'+(db.staff||[]).length+'</b></div><div class="statline"><span>Customers</span><b>'+(db.customers||[]).length+'</b></div><div class="statline"><span>Suppliers</span><b>'+(db.suppliers||[]).length+'</b></div><div class="statline"><span>Orders</span><b>'+db.orders.length+'</b></div><div class="statline"><span>Journal entries</span><b>'+db.journals.filter(j=>!j.voided).length+' active</b></div><div class="statline"><span>Delete tombstones</span><b>'+tombCount+'</b></div><div class="statline"><span>Trial balance</span><b class="'+(Math.abs(tb.diff)<0.05?'green':'red')+'">'+(Math.abs(tb.diff)<0.05?'✓ Balanced':'⚠ Out by '+money(tb.diff))+'</b></div><div class="statline"><span>Audit entries</span><b>'+((db.audit||[]).length)+'</b></div>';}
+function renderSystem(){if(!$('sysInfo'))return;const tb=trialBalance(today(),null);const tombCount=COLLS.reduce((s,c)=>s+((db.deleted&&db.deleted[c])||[]).length,0);if($('tombCount'))$('tombCount').textContent=tombCount;$('sysInfo').innerHTML='<div class="statline"><span>ERP Version</span><b>V13.3.3</b></div><div class="statline"><span>Sync</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Live':'🔴 Offline')+'</b></div><div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div><div class="statline"><span>Staff</span><b>'+(db.staff||[]).length+'</b></div><div class="statline"><span>Customers</span><b>'+(db.customers||[]).length+'</b></div><div class="statline"><span>Suppliers</span><b>'+(db.suppliers||[]).length+'</b></div><div class="statline"><span>Orders</span><b>'+db.orders.length+'</b></div><div class="statline"><span>Journal entries</span><b>'+db.journals.filter(j=>!j.voided).length+' active</b></div><div class="statline"><span>Delete tombstones</span><b>'+tombCount+'</b></div><div class="statline"><span>Trial balance</span><b class="'+(Math.abs(tb.diff)<0.05?'green':'red')+'">'+(Math.abs(tb.diff)<0.05?'✓ Balanced':'⚠ Out by '+money(tb.diff))+'</b></div><div class="statline"><span>Audit entries</span><b>'+((db.audit||[]).length)+'</b></div>';}
 
 async function resetData(){if(!admin())return;if(!confirm('Delete ALL ERP data?'))return;if(!confirm('FINAL WARNING — permanent.'))return;if(fbRef)await fbRef.set(null).catch(()=>{});localStorage.removeItem(KEY);localStorage.removeItem(KEY+"_CACHE");localStorage.removeItem(BACKUP_KEY);localStorage.removeItem(AUTO_BACKUP_KEY);localStorage.removeItem(AUTO_BACKUP_ASKED);location.reload();}
 
-window.addEventListener('load',()=>{attachSync();console.log('ERP V13.3.2 — tombstone sync active');});
+window.addEventListener('load',()=>{attachSync();console.log('ERP V13.3.3 — tombstone sync + void-without-reversal + legacy cleanup');});
 </script>
 </body>
-      </html>
+</html>
