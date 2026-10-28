@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#714B67">
-<title>Handmade Decor ERP V13.1 Live</title>
+<title>Handmade Decor ERP V13.3 Live</title>
 <style>
 *{box-sizing:border-box}
 :root{--p:#714B67;--p2:#8f6385;--bg:#f5f3f5;--card:#fff;--text:#29252b;--muted:#777;--green:#198754;--red:#c0392b;--orange:#e67e22;--blue:#2878c8;--line:#e7e2e7}
@@ -56,12 +56,15 @@ body.no-financials .fin{display:none!important}
 .invoice-sheet table{margin-top:12px}
 .invoice-sheet .totals{margin-top:12px;text-align:right}
 .invoice-sheet .sign{margin-top:40px;display:flex;justify-content:space-between}
+body.printing-invoice .page{display:none!important}
 @media print{
   body{background:#fff!important}
   .side,.top,.mobile,.notice,.searchbox,form,.photo-modal,.tabs{display:none!important}
   .main{margin:0!important;width:100%!important;padding:0!important}
   .page{display:none!important}
   .page.active,.invoice-sheet{display:block!important}
+  body.printing-invoice .page{display:none!important}
+  body.printing-invoice .invoice-sheet{display:block!important}
   .card{box-shadow:none;border:0;padding:0;margin-bottom:10px}
   .print-head{display:block!important;margin-bottom:8px;font-size:12px}
   .print-head h2{margin:0 0 4px;color:#714B67;font-size:17px}
@@ -83,7 +86,7 @@ body.no-financials .fin{display:none!important}
 <div id="loginScreen" class="login">
  <div class="loginbox">
   <h1>🧶 Handmade Decor ERP</h1>
-  <b>V13.1 — Math Fixes Applied</b>
+  <b>V13.3 — All Fixes Applied</b>
   <p class="muted"><span id="syncDot" class="sync-dot"></span><span id="syncLabel">Connecting…</span></p>
   <div class="field"><label>Username</label><input id="loginUser" value="admin" onkeydown="if(event.key==='Enter')$('loginPass').focus()"></div>
   <div class="field"><label>Password</label><input id="loginPass" type="password" value="admin" onkeydown="if(event.key==='Enter')login()"></div>
@@ -95,7 +98,7 @@ body.no-financials .fin{display:none!important}
 <div id="app" style="display:none">
  <div class="layout">
   <aside class="side" id="side">
-   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.1 Live</small></div>
+   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.3 Live</small></div>
    <div class="nav" id="nav"></div>
   </aside>
   <main class="main">
@@ -131,7 +134,6 @@ body.no-financials .fin{display:none!important}
 
    <section id="customers" class="page">
     <div class="card"><h3>Add / Edit Customer</h3>
-     <div class="notice">Customers added here will appear as dropdowns on Orders and Sales. You can also type a new name directly.</div>
      <form onsubmit="saveCustomer(event)">
       <div class="row">
        <div class="field"><label>Name</label><input id="cuName" required placeholder="e.g. Ram Kumar"></div>
@@ -158,7 +160,6 @@ body.no-financials .fin{display:none!important}
 
    <section id="suppliers" class="page">
     <div class="card"><h3>Add / Edit Supplier</h3>
-     <div class="notice">Suppliers added here will appear as dropdowns on Purchases.</div>
      <form onsubmit="saveSupplier(event)">
       <div class="row">
        <div class="field"><label>Name</label><input id="suName" required placeholder="e.g. Nepal Wood Co."></div>
@@ -185,7 +186,7 @@ body.no-financials .fin{display:none!important}
    <section id="cashmgt" class="page">
     <div class="card">
      <h3>💵 Cash Management</h3>
-     <div class="notice">Every branch has its own cash account. Sales and cash expenses automatically route to the correct branch's cash. Use Cash Transfers to move money between HO, branches, and bank.</div>
+     <div class="notice">Every branch has its own cash account. Sales and cash expenses automatically route to the correct branch's cash.</div>
      <div id="cashSetupHint"></div>
     </div>
     <div class="card"><h3>Cash Position</h3><div id="cashPosOut"></div></div>
@@ -224,7 +225,7 @@ body.no-financials .fin{display:none!important}
     <div class="card"><h3>Customer Orders</h3>
      <form onsubmit="saveOrder(event)">
       <div class="row">
-       <div class="field"><label>Customer</label><select id="oCustomer" required></select></div>
+       <div class="field"><label>Customer (type or select)</label><input id="oCustomer" list="oCustomerList" required placeholder="Start typing…"><datalist id="oCustomerList"></datalist></div>
        <div class="field"><label>Product</label><input id="oProduct" required></div>
        <div class="field"><label>Quantity</label><input id="oQty" type="number" min="1" required></div>
        <div class="field"><label>Sales Price / Unit</label><input id="oPrice" type="number" step="0.01"></div>
@@ -246,8 +247,7 @@ body.no-financials .fin{display:none!important}
 
    <section id="production" class="page">
     <div class="card"><h3>Production / Branch Work</h3>
-     <div class="notice">Workflow: Order Received → Sent to Branch → In Production → Assembly Complete → FG Received → Completed.</div>
-     <div class="tablewrap"><table><thead><tr><th>Order</th><th>Product</th><th>Branch</th><th>Qty</th><th>Completed (pcs)</th><th>Status</th><th>Material</th><th>Actions</th></tr></thead><tbody id="prodTable"></tbody></table></div>
+     <div class="tablewrap"><table><thead><tr><th>Order</th><th>Product</th><th>Branch</th><th>Qty</th><th>Completed</th><th>Status</th><th>Material</th><th>Actions</th></tr></thead><tbody id="prodTable"></tbody></table></div>
     </div>
    </section>
 
@@ -261,7 +261,7 @@ body.no-financials .fin{display:none!important}
        <div class="field fin"><label>Price / Unit</label><input id="mPrice" type="number" step="0.01" value="0"></div>
       </div>
       <div class="row">
-       <div class="field"><label>Reorder Point (min qty)</label><input id="mMinQty" type="number" step="0.001" min="0" value="0"></div>
+       <div class="field"><label>Reorder Point</label><input id="mMinQty" type="number" step="0.001" min="0" value="0"></div>
       </div>
       <button class="primary">Save / Add Stock</button></form>
      </div>
@@ -286,7 +286,7 @@ body.no-financials .fin{display:none!important}
 
    <section id="bom" class="page">
     <div class="card"><h3>BOM & Labour Cost</h3>
-     <div class="notice">Labour per unit is charged to FG at order completion. <b>Enter labour cost once per product</b> — the system uses the highest value across BOM lines (avoids double-counting).</div>
+     <div class="notice">Labour per unit is charged to FG at order completion. <b>Enter labour once per product</b> — the system uses the highest value across BOM lines.</div>
      <form onsubmit="saveBOM(event)"><div class="row">
       <div class="field"><label>Finished Product</label><input id="bProduct" required></div>
       <div class="field"><label>Material</label><select id="bMaterial" required></select></div>
@@ -294,20 +294,21 @@ body.no-financials .fin{display:none!important}
       <div class="field fin"><label>Labour Cost / Unit</label><input id="bLabour" type="number" step="0.01" value="0"></div>
      </div><button class="primary">Save BOM</button></form>
     </div>
-    <div class="card"><div class="tablewrap"><table><thead><tr><th>Product</th><th>Material</th><th>Qty/Unit</th><th class="fin">Material Cost/Unit</th><th class="fin">Labour/Unit</th><th class="fin">Total Unit Cost</th><th>Actions</th></tr></thead><tbody id="bomTable"></tbody></table></div></div>
+    <div class="card"><div class="tablewrap"><table><thead><tr><th>Product</th><th>Material</th><th>Qty/Unit</th><th class="fin">Mat Cost/Unit</th><th class="fin">Labour/Unit</th><th class="fin">Total Unit Cost</th><th>Actions</th></tr></thead><tbody id="bomTable"></tbody></table></div></div>
    </section>
 
    <section id="purchases" class="page">
     <div class="card"><h3>Purchase Orders / Purchases</h3>
-     <div class="notice">Cash/Bank purchases require sufficient HO Cash / Bank balance.</div>
+     <div class="notice">Cash/Bank purchases require sufficient balance in the selected account. <b>Cash payment defaults to HO Cash</b> — or pick a branch to pay from that branch's cash.</div>
      <form onsubmit="savePurchase(event)"><div class="row">
-      <div class="field"><label>Supplier</label><select id="pSupplier" required></select></div>
+      <div class="field"><label>Supplier (type or select)</label><input id="pSupplier" list="pSupplierList" required placeholder="Start typing…"><datalist id="pSupplierList"></datalist></div>
       <div class="field"><label>Material</label><select id="pMaterial" required></select></div>
       <div class="field"><label>Quantity</label><input id="pQty" type="number" step="0.001" required></div>
       <div class="field fin"><label>Price / Unit</label><input id="pPrice" type="number" step="0.01" required></div>
      </div><div class="row">
-      <div class="field fin"><label>Input VAT %</label><input id="pVat" type="number" step="0.01" value="0"></div>
-      <div class="field"><label>Payment Method</label><select id="pPay"><option value="Credit">Credit (AP)</option><option value="Cash">Cash (HO)</option><option value="Bank">Bank</option></select></div>
+      <div class="field fin"><label>Input VAT %</label><input id="pVat" type="number" step="0.01" min="0" max="100" value="0"></div>
+      <div class="field"><label>Payment Method</label><select id="pPay"><option value="Credit">Credit (AP)</option><option value="Cash">Cash</option><option value="Bank">Bank</option></select></div>
+      <div class="field"><label>Cash From (if Cash)</label><select id="pBranch"></select></div>
       <div class="field"><label>Date</label><input id="pDate" type="date"></div>
      </div><button class="primary">Save Purchase</button></form>
     </div>
@@ -316,17 +317,16 @@ body.no-financials .fin{display:none!important}
 
    <section id="sales" class="page">
     <div class="card"><h3>Sales + VAT</h3>
-     <div class="notice">Strictly stock-backed. Cash sales go to branch cash. Invoice button available after saving.</div>
      <form onsubmit="saveSale(event)"><div class="row">
-      <div class="field"><label>Customer</label><select id="sCustomer" required></select></div>
+      <div class="field"><label>Customer (type or select)</label><input id="sCustomer" list="sCustomerList" required placeholder="Start typing…"><datalist id="sCustomerList"></datalist></div>
       <div class="field"><label>Product (Finished Goods)</label>
        <select id="sProduct" required onchange="syncSaleStock()"></select>
        <div class="muted" id="sStockHint"></div>
       </div>
       <div class="field"><label>Quantity</label><input id="sQty" type="number" min="1" step="1" required></div>
-      <div class="field fin"><label>Price / Unit</label><input id="sPrice" type="number" step="0.01" required></div>
+      <div class="field fin"><label>Price / Unit</label><input id="sPrice" type="number" step="0.01" min="0.01" required></div>
      </div><div class="row">
-      <div class="field fin"><label>Output VAT %</label><input id="sVat" type="number" step="0.01" value="0"></div>
+      <div class="field fin"><label>Output VAT %</label><input id="sVat" type="number" step="0.01" min="0" max="100" value="0"></div>
       <div class="field"><label>Payment Method</label><select id="sPay"><option value="Credit">Credit (AR)</option><option value="Cash">Cash (Branch)</option><option value="Bank">Bank</option></select></div>
       <div class="field"><label>Branch</label><select id="sBranch"></select></div>
       <div class="field"><label>Date</label><input id="sDate" type="date"></div>
@@ -369,7 +369,7 @@ body.no-financials .fin{display:none!important}
       <div class="field"><label>Period (YYYY-MM)</label><input id="depPeriod" type="month"></div>
       <div class="field" style="display:flex;align-items:end"><button class="primary" onclick="runDepreciation()">Post Depreciation</button></div>
      </div>
-     <p class="muted">Already-depreciated months are skipped. Assets purchased after period end are skipped. <b>Final month catches up exactly to salvage value.</b></p>
+     <p class="muted">First month is pro-rated by days used. Final month catches up exactly to salvage.</p>
     </div>
     <div class="card"><h3>Fixed Asset Register</h3>
      <div class="tablewrap"><table><thead><tr><th>Name</th><th>Category</th><th>Branch</th><th class="fin">Cost</th><th class="fin">Monthly</th><th class="fin">Accum.</th><th class="fin">NBV</th><th>Status</th><th>Actions</th></tr></thead><tbody id="faTable"></tbody></table></div>
@@ -409,7 +409,6 @@ body.no-financials .fin{display:none!important}
 
    <section id="settings" class="page">
     <div class="card"><h3>Company Branding</h3>
-     <div class="notice">Used on invoice headers, print output and sidebar.</div>
      <form onsubmit="saveCompanyBranding(event)">
       <div class="row">
        <div class="field"><label>Company Name</label><input id="coName" placeholder="Handmade Decor Pvt. Ltd."></div>
@@ -451,7 +450,7 @@ body.no-financials .fin{display:none!important}
      <form onsubmit="changeAdminPass(event)">
       <div class="row">
        <div class="field"><label>Current Password</label><input id="apOldPass" type="password" required></div>
-       <div class="field"><label>New Password</label><input id="apNewPass" type="password" required minlength="4"></div>
+       <div class="field"><label>New Password (min 6)</label><input id="apNewPass" type="password" required minlength="6"></div>
        <div class="field"><label>Confirm New Password</label><input id="apConfirmPass" type="password" required></div>
        <div class="field" style="display:flex;align-items:end"><button class="primary">Update Admin Password</button></div>
       </div>
@@ -490,12 +489,12 @@ body.no-financials .fin{display:none!important}
 
    <section id="staff" class="page">
     <div class="card"><h3>Add / Edit Staff Account</h3>
-     <div class="notice">Staff gets all branch features for all branches. Financial data hidden from staff. Cash Transfers are admin-only.</div>
+     <div class="notice">Staff gets all branch features for all branches. Financial data hidden. Cash Transfers admin-only.</div>
      <form onsubmit="saveStaff(event)">
       <div class="row">
        <div class="field"><label>Name</label><input id="stName" required></div>
        <div class="field"><label>Username</label><input id="stUser" required></div>
-       <div class="field"><label>Password <span class="muted">(blank on edit = keep)</span></label><input id="stPass" type="text"></div>
+       <div class="field"><label>Password (min 6) <span class="muted">(blank on edit = keep)</span></label><input id="stPass" type="text"></div>
       </div>
       <div class="field">
        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -525,7 +524,7 @@ body.no-financials .fin{display:none!important}
       <div class="field"><label>Select Branch</label><select id="brId"></select></div>
       <div class="field"><label>Branch Name</label><input id="brName" required></div>
       <div class="field"><label>Login Username</label><input id="brUser" required></div>
-      <div class="field"><label>New Password <span class="muted">(blank = keep)</span></label><input id="brPass" type="text"></div>
+      <div class="field"><label>New Password (min 6) <span class="muted">(blank = keep)</span></label><input id="brPass" type="text"></div>
      </div><button class="primary">Save Branch Settings</button></form>
     </div>
     <div class="card"><div class="tablewrap"><table><thead><tr><th>ID</th><th>Branch</th><th>Username</th><th>Password</th><th>Actions</th></tr></thead><tbody id="branchTable"></tbody></table></div></div>
@@ -609,13 +608,17 @@ body.no-financials .fin{display:none!important}
 const KEY='HANDMADE_DECOR_ERP_V10';
 const BACKUP_KEY='HANDMADE_DECOR_ERP_LASTBACKUP';
 const AUTO_BACKUP_KEY='HANDMADE_DECOR_ERP_AUTO_BACKUP_LAST';
+const AUTO_BACKUP_ASKED='HANDMADE_DECOR_ERP_AUTO_BACKUP_ASKED';
 const STAFF_PERMS=[
   ['inventory','Inventory'],['issue','Material Issue'],['bom','BOM & Labour'],['purchases','Purchases'],
   ['fixedassets','Fixed Assets'],['accounting','Accounting'],['arap','Receivables & Payables'],
   ['opening','Opening Balance'],['settings','Settings'],['backup','Backup & Restore'],
   ['customers','Customers'],['suppliers','Suppliers']
 ];
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>{
+  const d=new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+};
 const $=id=>document.getElementById(id);
 const r2=n=>Math.round((Number(n)||0)*100)/100;
 function uid(){return Date.now()*1000+Math.floor(Math.random()*1000);}
@@ -678,7 +681,7 @@ function defaultCOA(){
 }
 function defaultDB(){
  return {
-  version:'13.1',
+  version:'13.3',
   admin:{user:'admin',pass:'admin'},
   branches:[
    {id:1,name:'Branch 1',user:'branch1',pass:'1234'},{id:2,name:'Branch 2',user:'branch2',pass:'1234'},
@@ -810,17 +813,23 @@ function cashLocOptionsHTML(){
  for(let i=1;i<=5;i++){html+='<option value="'+i+'">'+esc(branchName(i))+' Cash</option>';}
  return html;
 }
+function branchCashOnlyOptionsHTML(){
+ let html='<option value="0">HO Cash</option>';
+ for(let i=1;i<=5;i++){html+='<option value="'+i+'">'+esc(branchName(i))+' Cash</option>';}
+ return html;
+}
 function nextVoucher(){
  db.voucherSeq=(Number(db.voucherSeq)||0)+1;
  return 'PV-'+today().replace(/-/g,'').slice(2)+'-'+String(db.voucherSeq).padStart(4,'0');
 }
-function checkLiquidBalance(payMethod,amount,branchId){
+// ✅ FIX 3: Accept asOfDate parameter so backdated transactions validate against that day's balance
+function checkLiquidBalance(payMethod,amount,branchId,asOfDate){
  if(payMethod!=='Cash'&&payMethod!=='Bank')return true;
  let code;if(payMethod==='Bank')code='1010';else code=branchCashCode(branchId!=null?branchId:0);
- const bal=accountBalance(code,{to:today()});const amt=r2(amount);
+ const bal=accountBalance(code,{to:asOfDate||today()});const amt=r2(amount);
  if(bal+0.01<amt){
   const label=payMethod==='Bank'?'Bank':cashAccountName(branchId!=null?branchId:0);
-  alert('❌ Insufficient '+label+' balance.\n\nAvailable: '+money(bal)+'\nRequired: '+money(amt)+'\n\nUse Credit or transfer money first.');
+  alert('❌ Insufficient '+label+' balance on '+(asOfDate||today())+'.\n\nAvailable: '+money(bal)+'\nRequired: '+money(amt)+'\n\nUse Credit or transfer money first.');
   return false;
  }
  return true;
@@ -860,7 +869,7 @@ function printPage(){
  const who=session?(admin()?'Head Office / Admin':(session.role==='staff'?session.name+' · All branches':branchName(session.branchId))):'';
  $('printHead').innerHTML='<h2>'+(co?esc(co)+' — ':'')+esc(t)+'</h2>'+
   '<div>Printed: '+new Date().toLocaleString()+(who?' · User: '+esc(who):'')+'</div><hr>';
- setTimeout(()=>window.print(),80);
+ setTimeout(()=>window.print(),300);
 }
 
 function postJournal(entry){
@@ -959,7 +968,8 @@ function postPurchaseJE(p){
  const gross=r2(p.qty*p.price),vat=r2(gross*Number(p.vat||0)/100),total=r2(gross+vat);
  const lines=[{account:'1200',debit:gross,memo:p.supplier}];
  if(vat>0)lines.push({account:'1300',debit:vat,memo:'Input VAT'});
- if(p.payMethod==='Cash')lines.push({account:'1000',credit:total});
+ const pBranch=Number(p.cashFrom!=null?p.cashFrom:0);
+ if(p.payMethod==='Cash')lines.push({account:branchCashCode(pBranch),credit:total,branch:pBranch||null});
  else if(p.payMethod==='Bank')lines.push({account:'1010',credit:total});
  else lines.push({account:'2000',credit:total,memo:p.supplier});
  p.jeId=postJournal({date:p.date,memo:'Purchase: '+p.supplier,refType:'PURCHASE',refId:p.id,lines});
@@ -1004,7 +1014,6 @@ function postCompletionJE(o){
  const issues=db.issues.filter(i=>i.orderId===o.id);
  const materialCost=r2(issues.reduce((s,i)=>{const m=db.materials.find(x=>x.id===i.materialId);const unit=(i.cost!=null)?Number(i.cost):(m?m.price:0);return s+r2(i.qty*unit);},0));
  const bom=db.boms.filter(b=>b.product.toLowerCase()===o.product.toLowerCase());
- // ✅ FIX 1: Use MAX labour across BOM lines (avoids double-counting)
  const labourPerUnit=bom.length?r2(Math.max(...bom.map(b=>Number(b.labour||0)))):0;
  const labourCost=r2(labourPerUnit*o.qty);
  const rate=Number((db.settings&&db.settings.overheadRate)||0);
@@ -1017,7 +1026,7 @@ function postCompletionJE(o){
   {account:'2210',credit:labourCost,branch:o.branch,memo:'Labour: '+o.product},
   {account:'6210',credit:overheadCost,branch:o.branch,memo:'Overhead @ '+rate+'%'}
  ].filter(l=>Number(l.debit||0)>0||Number(l.credit||0)>0);
- if(totalCost>0.005){postJournal({date:today(),memo:'FG completed: '+o.product+' x'+o.qty,refType:'COMPLETE',refId:o.id,lines});}
+ if(lines.length)postJournal({date:today(),memo:'FG completed: '+o.product+' x'+o.qty,refType:'COMPLETE',refId:o.id,lines});
  o.materialCost=materialCost;o.labourCost=labourCost;o.overheadCost=overheadCost;
  o.totalCost=totalCost;o.unitCost=unitCost;
  o.labourPaid=0;o.labourSettled=(labourCost<=0.01);
@@ -1048,7 +1057,7 @@ function settlePurchase(id,method){
  if(input===null)return;const amt=r2(input);
  if(!(amt>0))return alert('Must be positive.');
  if(amt>remaining+0.01)return alert('Exceeds remaining.');
- if(!checkLiquidBalance(method,amt,0))return;
+ if(!checkLiquidBalance(method,amt,0,today()))return;
  if(!checkApprovalLimit(amt))return;
  try{postJournal({date:today(),memo:'Payment to '+p.supplier,refType:'PAYMENT',refId:p.id,lines:[
   {account:'2000',debit:amt,memo:p.supplier},{account:method==='Bank'?'1010':'1000',credit:amt}]});}catch(err){return alert('Error: '+err.message);}
@@ -1064,7 +1073,7 @@ function settleExpense(id,method){
  if(input===null)return;const amt=r2(input);
  if(!(amt>0))return alert('Must be positive.');
  if(amt>remaining+0.01)return alert('Exceeds remaining.');
- if(!checkLiquidBalance(method,amt,e.branch))return;
+ if(!checkLiquidBalance(method,amt,e.branch,today()))return;
  if(!checkApprovalLimit(amt))return;
  const cashCode=method==='Bank'?'1010':branchCashCode(e.branch);
  try{postJournal({date:today(),memo:'Payment: '+e.type,refType:'EXPPAY',refId:e.id,lines:[
@@ -1083,7 +1092,7 @@ function settleLabour(id,method){
  if(input===null)return;const amt=r2(input);
  if(!(amt>0))return alert('Must be positive.');
  if(amt>remaining+0.01)return alert('Exceeds remaining.');
- if(!checkLiquidBalance(method,amt,o.branch))return;
+ if(!checkLiquidBalance(method,amt,o.branch,today()))return;
  if(!checkApprovalLimit(amt))return;
  const cashCode=method==='Bank'?'1010':branchCashCode(o.branch);
  try{postJournal({date:today(),memo:'Labour payment: #'+id,refType:'LABOURPAY',refId:o.id,lines:[
@@ -1100,7 +1109,8 @@ function saveFixedAsset(e){
  const branchId=Number($('faBranch').value),payMethod=$('faPay').value;
  if(!name)return alert('Name required.');if(cost<=0)return alert('Cost must be positive.');
  if(lifeMonths<=0)return alert('Life must be positive.');if(salvage>cost)return alert('Salvage>cost.');
- if(!checkLiquidBalance(payMethod,cost,branchId))return;if(!checkApprovalLimit(cost))return;
+ if(!checkLiquidBalance(payMethod,cost,branchId,purchaseDate))return;
+ if(!checkApprovalLimit(cost))return;
  const fa={id:uid(),name,category,cost,purchaseDate,lifeMonths,salvage,branch:branchId,accumulated:0,depMonths:[],disposed:false};
  const cashCode=payMethod==='Cash'?branchCashCode(branchId):'1010';
  const lines=[{account:'1500',debit:cost,memo:name}];
@@ -1133,16 +1143,23 @@ function runDepreciation(){
  db.fixedAssets.forEach(fa=>{
   if(fa.disposed)return;if(fa.purchaseDate>runDate)return;
   if((fa.depMonths||[]).includes(period))return;
-  // ✅ FIX 2: Final month catches up exactly to salvage
   const monthlyExact=(fa.cost-fa.salvage)/fa.lifeMonths;
-  const monthly=r2(monthlyExact);
-  if(monthly<=0)return;
+  if(monthlyExact<=0)return;
   const maxAccum=r2(fa.cost-fa.salvage);
   const accum=r2(fa.accumulated||0);
   const remaining=r2(maxAccum-accum);
   if(remaining<=0.01)return;
-  const isFinalMonth = monthlyExact >= remaining - 0.01;
-  const amt = r2(isFinalMonth ? remaining : monthlyExact);
+  const purchaseMonth=fa.purchaseDate.slice(0,7);
+  let factor=1;
+  if(purchaseMonth===period){
+   const purchaseDay=Number(fa.purchaseDate.slice(-2));
+   const daysUsed=lastDay-purchaseDay+1;
+   factor=daysUsed/lastDay;
+  }
+  let amt=r2(monthlyExact*factor);
+  if(monthlyExact>=remaining-0.01)amt=remaining;
+  if(amt>remaining)amt=remaining;
+  if(amt<=0)return;
   try{postJournal({date:runDate,memo:'Depreciation '+period+': '+fa.name,refType:'DEP',refId:fa.id,lines:[
    {account:'6100',debit:amt,branch:fa.branch,memo:fa.name},{account:'1505',credit:amt,memo:fa.name}]});}catch(err){skipped++;return;}
   fa.accumulated=r2((fa.accumulated||0)+amt);fa.depMonths=fa.depMonths||[];fa.depMonths.push(period);fa.lastDepDate=runDate;
@@ -1218,7 +1235,7 @@ function updateBrandHeader(){
  const el=$('brandHeader');if(!el)return;
  const co=db.settings.company||{};
  const name=co.name||'Handmade Decor';
- el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.1 Live</small>';
+ el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.3 Live</small>';
 }
 function saveCashSettings(e){
  e.preventDefault();if(!admin())return alert('Only admin.');
@@ -1233,7 +1250,7 @@ async function changeAdminPass(e){
  e.preventDefault();if(!admin())return alert('Only admin.');
  const oldP=$('apOldPass').value,newP=$('apNewPass').value,conP=$('apConfirmPass').value;
  if(newP!==conP)return alert('New passwords do not match.');
- if(newP.length<4)return alert('Min 4 chars.');
+ if(newP.length<6)return alert('Min 6 chars.');
  const adm=db.admin||{user:'admin',pass:'admin'};
  let ok=false;
  if(adm.passHash){const v=await verifyPassword(oldP,adm.passHash);ok=v.ok;}
@@ -1245,13 +1262,16 @@ async function changeAdminPass(e){
 }
 
 function fillCustomerSelects(){
- const opts=db.customers&&db.customers.length
-  ?db.customers.map(c=>'<option value="'+esc(c.name)+'">'+esc(c.name)+'</option>').join('')
-  :'<option value="">— No customers yet —</option>';
- ['oCustomer','sCustomer'].forEach(id=>{
-  const el=$(id);if(!el)return;
-  el.innerHTML='<option value="">+ Type new name</option>'+opts;
+ if(!db.customers)db.customers=[];
+ const optionsHTML=db.customers.map(c=>'<option value="'+esc(c.name)+'">').join('');
+ ['oCustomerList','sCustomerList'].forEach(id=>{
+  const el=$(id);if(el)el.innerHTML=optionsHTML;
  });
+}
+function fillSupplierSelects(){
+ if(!db.suppliers)db.suppliers=[];
+ const optionsHTML=db.suppliers.map(s=>'<option value="'+esc(s.name)+'">').join('');
+ const el=$('pSupplierList');if(el)el.innerHTML=optionsHTML;
 }
 function saveCustomer(e){
  e.preventDefault();
@@ -1298,18 +1318,13 @@ function resetCustomerForm(){
 }
 function renderCustomers(){
  if(!$('cuTable'))return;
+ const canEdit=hasPerm('customers');
  const q=($('cuSearch')&&$('cuSearch').value||'').trim().toLowerCase();
  const list=(db.customers||[]).filter(c=>!q||(c.name+' '+(c.phone||'')+' '+(c.email||'')).toLowerCase().includes(q));
  $('cuTable').innerHTML=list.length?list.map(c=>{
-  return '<tr><td>'+esc(c.name)+'</td><td>'+esc(c.phone||'')+'</td><td>'+esc(c.email||'')+'</td><td>'+esc(c.gst||'')+'</td><td class="fin">'+money(c.creditLimit||0)+'</td><td class="actions"><button class="secondary" data-cid="'+c.id+'" onclick="editCustomer(this.dataset.cid)">Edit</button><button class="danger" data-cid="'+c.id+'" onclick="deleteCustomer(this.dataset.cid)">Delete</button></td></tr>';
+  const actions=canEdit?'<button class="secondary" data-cid="'+c.id+'" onclick="editCustomer(this.dataset.cid)">Edit</button><button class="danger" data-cid="'+c.id+'" onclick="deleteCustomer(this.dataset.cid)">Delete</button>':'<span class="muted">—</span>';
+  return '<tr><td>'+esc(c.name)+'</td><td>'+esc(c.phone||'')+'</td><td>'+esc(c.email||'')+'</td><td>'+esc(c.gst||'')+'</td><td class="fin">'+money(c.creditLimit||0)+'</td><td class="actions">'+actions+'</td></tr>';
  }).join(''):'<tr><td colspan="6" class="empty">No customers</td></tr>';
-}
-
-function fillSupplierSelects(){
- const opts=db.suppliers&&db.suppliers.length
-  ?db.suppliers.map(s=>'<option value="'+esc(s.name)+'">'+esc(s.name)+'</option>').join('')
-  :'<option value="">— No suppliers yet —</option>';
- const el=$('pSupplier');if(el)el.innerHTML='<option value="">+ Type new name</option>'+opts;
 }
 function saveSupplier(e){
  e.preventDefault();
@@ -1353,10 +1368,12 @@ function resetSupplierForm(){
 }
 function renderSuppliers(){
  if(!$('suTable'))return;
+ const canEdit=hasPerm('suppliers');
  const q=($('suSearch')&&$('suSearch').value||'').trim().toLowerCase();
  const list=(db.suppliers||[]).filter(s=>!q||(s.name+' '+(s.phone||'')+' '+(s.email||'')).toLowerCase().includes(q));
  $('suTable').innerHTML=list.length?list.map(s=>{
-  return '<tr><td>'+esc(s.name)+'</td><td>'+esc(s.phone||'')+'</td><td>'+esc(s.email||'')+'</td><td>'+esc(s.gst||'')+'</td><td class="actions"><button class="secondary" data-sid="'+s.id+'" onclick="editSupplier(this.dataset.sid)">Edit</button><button class="danger" data-sid="'+s.id+'" onclick="deleteSupplier(this.dataset.sid)">Delete</button></td></tr>';
+  const actions=canEdit?'<button class="secondary" data-sid="'+s.id+'" onclick="editSupplier(this.dataset.sid)">Edit</button><button class="danger" data-sid="'+s.id+'" onclick="deleteSupplier(this.dataset.sid)">Delete</button>':'<span class="muted">—</span>';
+  return '<tr><td>'+esc(s.name)+'</td><td>'+esc(s.phone||'')+'</td><td>'+esc(s.email||'')+'</td><td>'+esc(s.gst||'')+'</td><td class="actions">'+actions+'</td></tr>';
  }).join(''):'<tr><td colspan="5" class="empty">No suppliers</td></tr>';
 }
 function autoLinkCustomer(name){
@@ -1403,6 +1420,8 @@ async function saveStaff(e){
  if(user===((db.admin||{}).user))return alert('Reserved for admin.');
  if(db.branches.some(b=>b.user===user))return alert('Used by branch.');
  if(db.staff.some(s=>s.user===user&&s.id!==Number(id)))return alert('Used by staff.');
+ if(!id && pass.length<6)return alert('Password min 6 chars.');
+ if(id && pass && pass.length<6)return alert('Password min 6 chars.');
  const perms={};document.querySelectorAll('#stPerms input[type=checkbox]').forEach(c=>{perms[c.dataset.perm]=c.checked;});
  if(id){
   const s=db.staff.find(x=>x.id===Number(id));if(!s)return alert('Not found.');
@@ -1549,6 +1568,12 @@ function setBranches(id){
  el.disabled=!canPickBranch()&&arr.length===1;
  if(prev&&arr.some(b=>String(b.id)===String(prev)))el.value=prev;
  else if(arr[0])el.value=arr[0].id;
+}
+function setPurchaseBranchSelect(){
+ const el=$('pBranch');if(!el)return;
+ const prev=el.value;
+ el.innerHTML=branchCashOnlyOptionsHTML();
+ if(prev)el.value=prev;
 }
 
 function renderLiquid(){
@@ -1748,7 +1773,13 @@ function openInvoice(saleId){
  $('invoiceModal').classList.add('open');
 }
 function closeInvoiceModal(){$('invoiceModal').classList.remove('open');}
-function printInvoice(){setTimeout(()=>window.print(),100);}
+function printInvoice(){
+ document.body.classList.add('printing-invoice');
+ setTimeout(()=>{
+  window.print();
+  setTimeout(()=>document.body.classList.remove('printing-invoice'),800);
+ },300);
+}
 
 function renderLowStockAlert(){
  const el=$('lowStockAlert');if(!el)return;
@@ -1814,6 +1845,7 @@ function renderDashboard(){
 function refresh(){
  if(!session)return;
  ['oBranch','sBranch','eBranch','empBranch','iBranch','faBranch'].forEach(setBranches);
+ setPurchaseBranchSelect();
  if($('oDate')&&!$('oDate').value)$('oDate').value=today();
  if($('eDate')&&!$('eDate').value)$('eDate').value=today();
  if($('empJoin')&&!$('empJoin').value)$('empJoin').value=today();
@@ -1880,7 +1912,7 @@ function renderOrders(){
  if(q)a=a.filter(o=>(o.customer+' '+o.product+' '+branchName(o.branch)+' '+(o.notes||'')).toLowerCase().includes(q));
  $('ordersTable').innerHTML=a.length?a.map(o=>{
   const oid=String(o.id);
-  const send=(admin()||(session&&session.role==='staff'))&&o.status==='Order Received'?'<button class="info" data-oid="'+oid+'" onclick="sendOrder(this.dataset.oid)">Send</button>':'';
+  const send=(admin()||(session&&session.role==='staff')||(session&&session.role==='branch'&&Number(o.branch)===Number(session.branchId)))&&o.status==='Order Received'?'<button class="info" data-oid="'+oid+'" onclick="sendOrder(this.dataset.oid)">Send</button>':'';
   const del=(canPickBranch()||o.branch===session.branchId)?'<button class="danger" data-oid="'+oid+'" onclick="deleteOrder(this.dataset.oid)">Delete</button>':'';
   const dl=o.photo?'<button class="secondary" data-oid="'+oid+'" onclick="downloadPhoto(this.dataset.oid)" title="Download">⬇</button>':'';
   const photo=o.photo?'<img class="photo" src="'+o.photo+'" data-oid="'+oid+'" onclick="openPhoto(this.dataset.oid)">':'—';
@@ -1889,7 +1921,12 @@ function renderOrders(){
  }).join(''):'<tr><td colspan="9" class="empty">No orders</td></tr>';
 }
 function sendOrder(id){
- if(!admin()&&!(session&&session.role==='staff'))return;
+ if(!admin()&&!(session&&session.role==='staff')){
+  if(!session||session.role!=='branch')return;
+  id=String(id);
+  const o=db.orders.find(x=>String(x.id)===id);
+  if(!o||Number(o.branch)!==Number(session.branchId))return;
+ }
  id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o)return;
  if(o.status!=='Order Received')return alert('Only new orders can be sent.');
  if(!o.branch)return alert('No branch.');
@@ -1899,16 +1936,16 @@ function sendOrder(id){
 function deleteOrder(id){
  id=String(id);const o=db.orders.find(x=>String(x.id)===id);if(!o)return;
  if(!canPickBranch()&&o.branch!==session.branchId)return alert('Not allowed');
- if(o.fgReturned){
-  const f=db.fg.find(x=>x.product.toLowerCase()===o.product.toLowerCase());
-  const remaining=f?Number(f.qty):0;
-  if(remaining+0.000001<Number(o.qty))return alert('FG already sold.');
+ if(o.status==='Completed'||o.fgReturned){
+  return alert('Cannot delete a completed order.\n\nCompleted orders are permanent to keep the accounting and stock accurate.');
  }
  if(!confirm('Delete order? Related journals will be voided.'))return;
  const issueIds=db.issues.filter(i=>i.orderId===o.id).map(i=>i.id);
  for(const iid of issueIds){if(voidByRef('ISSUE',iid,'Order deleted')>0)return alert('Locked period.');}
- if(o.status==='Completed'||o.fgReturned){if(voidByRef('COMPLETE',id,'Order deleted')>0)return alert('Locked.');}
- if(Number(o.labourPaid||0)>0.01){if(voidByRef('LABOURPAY',id,'Order deleted')>0)return alert('Locked.');}
+ if(Number(o.labourPaid||0)>0.01){
+  if(!confirm('⚠ Labour has already been paid on this order. Voiding will restore the Cash balance in the books, but the worker physically has the cash. Continue?'))return;
+  if(voidByRef('LABOURPAY',id,'Order deleted')>0)return alert('Locked.');
+ }
  db.issues.filter(i=>i.orderId===id).forEach(i=>{
   const m=db.materials.find(x=>x.id===i.materialId);if(m)m.qty=r2(m.qty+i.qty);
  });
@@ -1919,10 +1956,6 @@ function deleteOrder(id){
   });
  }
  db.issues=db.issues.filter(i=>i.orderId!==id);
- if(o.fgReturned){
-  const f=db.fg.find(x=>x.product.toLowerCase()===o.product.toLowerCase());
-  if(f){f.qty=r2(f.qty-Number(o.qty));if(f.qty<=0.000001)db.fg=db.fg.filter(x=>x!==f);}
- }
  db.orders=db.orders.filter(x=>String(x.id)!==id);audit('ORDER_DEL','#'+id);save();refresh();
 }
 
@@ -2044,12 +2077,21 @@ function renderMaterials(){
   return '<tr><td>'+esc(m.name)+(low?' <span class="badge br">Low</span>':'')+'</td><td>'+m.unit+'</td><td>'+m.qty+'</td><td class="fin">'+money(m.price)+'</td><td class="fin">'+money(m.qty*m.price)+'</td><td>'+money(m.minQty||0)+'</td><td>'+(canDel?'<button class="danger" data-mid="'+m.id+'" onclick="deleteMaterial(this.dataset.mid)">Delete</button>':'—')+'</td></tr>';
  }).join(''):'<tr><td colspan="7" class="empty">No materials</td></tr>';
 }
+// ✅ FIX 2: Block material deletion if any stock is remaining
 function deleteMaterial(id){
  if(!hasPerm('inventory'))return alert('No permission.');
  id=String(id);
- if(db.issues.some(i=>String(i.materialId)===id)||db.boms.some(b=>String(b.materialId)===id))return alert('In use. Cannot delete.');
  const m=db.materials.find(x=>String(x.id)===id);
- if(confirm('Delete material?')){db.materials=db.materials.filter(x=>String(x.id)!==id);audit('MAT_DEL',m?m.name:'');save();refresh();}
+ if(!m)return;
+ if(Number(m.qty) > 0.01){
+  return alert('Cannot delete.\n\nThis material still has ' + m.qty + ' ' + m.unit + ' in stock worth ' + money(m.qty * m.price) + '.\n\nDelete is only allowed when stock is fully consumed (qty = 0). To discard remaining stock, record a material issue or a stock adjustment first.');
+ }
+ if(db.issues.some(i=>String(i.materialId)===id))return alert('Material has issue history. Cannot delete.');
+ if(db.boms.some(b=>String(b.materialId)===id))return alert('Material is used in a BOM. Cannot delete.');
+ if(confirm('Delete this material? It has no stock and no history.')){
+  db.materials=db.materials.filter(x=>String(x.id)!==id);
+  audit('MAT_DEL',m.name);save();refresh();
+ }
 }
 function renderFG(){
  if(!db.fg.length){$('fgStock').innerHTML='<div class="empty">No FG</div>';return;}
@@ -2157,14 +2199,21 @@ function savePurchase(e){
  const supplier=$('pSupplier').value.trim(),mid=$('pMaterial').value,q=Number($('pQty').value),price=r2($('pPrice').value);
  const vat=Number($('pVat').value||0);
  if(!supplier)return alert('Supplier required.');
+ // ✅ FIX 4: Validate VAT %
+ if(isNaN(vat)||vat<0||vat>100)return alert('VAT % must be between 0 and 100.');
+ if(price<=0)return alert('Price / Unit must be positive.');
  autoLinkSupplier(supplier);
  const m=db.materials.find(x=>String(x.id)===String(mid));if(!m)return alert('Add material first.');
  if(q<=0)return alert('Qty positive.');
  const payMethod=$('pPay').value;
+ const cashFrom=Number($('pBranch').value||0);
+ const pDate=$('pDate').value||today();
  const gross=r2(q*price),vatAmt=r2(gross*vat/100),total=r2(gross+vatAmt);
- if(!checkLiquidBalance(payMethod,total,0))return;
+ // ✅ FIX 3: Use the transaction date for balance check
+ if(payMethod==='Cash' && !checkLiquidBalance('Cash', total, cashFrom, pDate)) return;
+ if(payMethod==='Bank' && !checkLiquidBalance('Bank', total, 0, pDate)) return;
  if(!checkApprovalLimit(total))return;
- const p={id:uid(),date:$('pDate').value||today(),supplier,materialId:mid,qty:q,price,vat,payMethod,paidAmount:0};
+ const p={id:uid(),date:pDate,supplier,materialId:mid,qty:q,price,vat,payMethod,cashFrom,paidAmount:0};
  try{postPurchaseJE(p);}catch(err){return alert('Error: '+err.message);}
  m.qty=r2(m.qty+q);db.purchases.push(p);recomputeMaterialPrice(mid);
  audit('PURCH_ADD',supplier+' '+m.name+' '+q);save();e.target.reset();$('pDate').value=today();refresh();alert('Purchase saved.');
@@ -2178,12 +2227,16 @@ function renderPurchases(){
   return '<tr><td>'+p.date+'</td><td>'+esc(p.supplier)+'</td><td>'+(m?esc(m.name):'Deleted')+'</td><td>'+p.qty+'</td><td class="fin">'+money(p.price)+'</td><td class="fin">'+money(vat)+'</td><td class="fin">'+money(total)+'</td><td>'+paidBadge(p,total,p.settleMethod||p.payMethod)+'</td><td class="actions">'+settle+(canDel?'<button class="danger" data-pid="'+p.id+'" onclick="deletePurchase(this.dataset.pid)">Del</button>':'')+'</td></tr>';
  }).join(''):'<tr><td colspan="9" class="empty">No purchases</td></tr>';
 }
+// ✅ FIX 1: Block purchase deletion if material has been issued (prevents negative on 1200)
 function deletePurchase(id){
  if(!hasPerm('purchases'))return alert('No perm.');id=String(id);
  const p=db.purchases.find(x=>String(x.id)===id);if(!p)return;
- if(!confirm('Delete purchase?'))return;
+ if(db.issues.some(i=>String(i.materialId)===String(p.materialId))){
+  return alert('Cannot delete this purchase.\n\nThis material has already been issued to production. Deleting the purchase would corrupt the Raw Materials (1200) balance because the average cost calculation cannot be reversed once material has left inventory.\n\nIf this was a mistake, contact your accountant or create a compensating purchase entry.');
+ }
  const m=db.materials.find(x=>String(x.id)===String(p.materialId));
  if(m&&m.qty+0.000001<p.qty)return alert('Stock used. Cannot delete.');
+ if(!confirm('Delete purchase?'))return;
  if(voidByRef('PURCHASE',id,'deleted')>0)return alert('Locked.');
  if(voidByRef('PAYMENT',id,'deleted')>0)return alert('Locked.');
  if(m)m.qty=r2(m.qty-p.qty);
@@ -2200,6 +2253,9 @@ function saveSale(e){
  if(!customer)return alert('Customer required.');
  if(!(q>0))return alert('Qty positive.');
  if(!Number.isInteger(q))return alert('Whole numbers.');
+ // ✅ FIX 4 & 5: Validate VAT % and price > 0
+ if(isNaN(vat)||vat<0||vat>100)return alert('VAT % must be between 0 and 100.');
+ if(price<=0)return alert('Price / Unit must be positive.');
  autoLinkCustomer(customer);
  const fg=db.fg.find(f=>f.product.toLowerCase()===product.toLowerCase());
  const available=fg?Number(fg.qty):0;
@@ -2235,8 +2291,9 @@ function deleteSale(id){
 function saveExpense(e){
  e.preventDefault();
  const br=canPickBranch()?Number($('eBranch').value):session.branchId;
- const exp={id:uid(),date:$('eDate').value||today(),type:$('eType').value,amount:r2($('eAmount').value),branch:br,user:session.user,note:$('eNote').value,payMethod:$('ePay').value,paidAmount:0};
- if(!checkLiquidBalance(exp.payMethod,exp.amount,exp.branch))return;
+ const eDate=$('eDate').value||today();
+ const exp={id:uid(),date:eDate,type:$('eType').value,amount:r2($('eAmount').value),branch:br,user:session.user,note:$('eNote').value,payMethod:$('ePay').value,paidAmount:0};
+ if(!checkLiquidBalance(exp.payMethod,exp.amount,exp.branch,eDate))return;
  if(!checkApprovalLimit(exp.amount))return;
  try{postExpenseJE(exp);}catch(err){return alert('Error: '+err.message);}
  db.expenses.push(exp);audit('EXP_ADD',exp.type+' '+exp.amount);save();e.target.reset();$('eDate').value=today();refresh();alert('Saved.');
@@ -2272,7 +2329,9 @@ function renderAccounting(){
   if($('tabTb'))$('tabTb').classList.add('active');
   const tb=trialBalance(to||today(),branchArg);
   const rows=tb.rows.filter(r=>Math.abs(r.balance)>0.005);
-  let html='<div class="card"><h3>Trial Balance — '+(to||today())+'</h3><div class="tablewrap"><table><thead><tr><th>Code</th><th>Account</th><th>Type</th><th class="right">Debit</th><th class="right">Credit</th></tr></thead><tbody>';
+  let html='<div class="card"><h3>Trial Balance — '+(to||today())+'</h3>';
+  if(branchArg)html+='<p class="muted">Branch filter shown for P&L only; company-wide postings are not branch-tagged, so this view may not self-balance.</p>';
+  html+='<div class="tablewrap"><table><thead><tr><th>Code</th><th>Account</th><th>Type</th><th class="right">Debit</th><th class="right">Credit</th></tr></thead><tbody>';
   rows.forEach(r=>{html+='<tr><td>'+r.code+'</td><td>'+esc(r.name)+'</td><td>'+r.type+'</td><td class="right">'+(r.balance>0?money(r.balance):'')+'</td><td class="right">'+(r.balance<0?money(-r.balance):'')+'</td></tr>';});
   html+='<tr class="bs-total"><td colspan="3">Totals</td><td class="right">'+money(tb.totalDr)+'</td><td class="right">'+money(tb.totalCr)+'</td></tr></tbody></table></div>';
   if(Math.abs(tb.diff)>0.05)html+='<p class="red">⚠ Out by '+money(tb.diff)+'</p>';else html+='<p class="green">✓ Balanced</p>';
@@ -2451,6 +2510,7 @@ async function saveBranch(e){
  if(db.staff.some(s=>s.user===newUser))return alert('Used by staff.');
  const dup=db.branches.find(x=>x.user===newUser&&x.id!==b.id);
  if(dup)return alert('Used by other branch.');
+ if(newPass && newPass.length<6)return alert('Password min 6 chars.');
  b.name=$('brName').value.trim();b.user=newUser;
  if(newPass){b.passHash=await hashPassword(newPass,'hd_v10');delete b.pass;}
  audit('BRANCH_UPDATE',b.name+' user='+newUser);
@@ -2622,15 +2682,18 @@ function table(head,rows){
  return '<div class="tablewrap"><table><thead><tr>'+head.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+(rows.length?rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+head.length+'" class="empty">No data</td></tr>')+'</tbody></table></div>';
 }
 
+// ✅ FIX 7: Backup restricted to admin only
 function backup(){
- if(!hasPerm('backup'))return;
+ if(!admin())return alert('Only admin can download backups.\n\nIf you need a backup, please ask Head Office.');
  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');
- a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.1_Backup_'+today()+'.json';a.click();
+ a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.3_Backup_'+today()+'.json';a.click();
  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
  localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();
 }
 function checkAutoBackup(){
  try{
+  const askedToday=localStorage.getItem(AUTO_BACKUP_ASKED)===today();
+  if(askedToday)return;
   const last=Number(localStorage.getItem(AUTO_BACKUP_KEY)||0);
   const days=last?(Date.now()-last)/(1000*60*60*24):999;
   if(admin()&&days>1){
@@ -2638,6 +2701,7 @@ function checkAutoBackup(){
     if(confirm('📥 Daily auto-backup reminder.\n\nLast backup was '+Math.round(days)+' day(s) ago. Download a fresh backup now?')){
      backup();localStorage.setItem(AUTO_BACKUP_KEY,String(Date.now()));
     }
+    localStorage.setItem(AUTO_BACKUP_ASKED,today());
    },1500);
   }
  }catch(e){}
@@ -2660,7 +2724,7 @@ function restore(e){
 }
 function checkBackupReminder(){
  const btn=$('backupReminder');if(!btn)return;
- if(!hasPerm('backup')){btn.style.display='none';return;}
+ if(!admin()){btn.style.display='none';return;}
  const last=Number(localStorage.getItem(BACKUP_KEY)||0);
  const days=last?(Date.now()-last)/(1000*60*60*24):999;
  btn.style.display=days>7?'inline-block':'none';
@@ -2681,7 +2745,7 @@ function renderSystem(){
  if(!$('sysInfo'))return;
  const tb=trialBalance(today(),null);
  $('sysInfo').innerHTML=
-  '<div class="statline"><span>ERP Version</span><b>V13.1</b></div>'+
+  '<div class="statline"><span>ERP Version</span><b>V13.3</b></div>'+
   '<div class="statline"><span>Sync</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Live':'🔴 Offline')+'</b></div>'+
   '<div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div>'+
   '<div class="statline"><span>Staff</span><b>'+(db.staff||[]).length+'</b></div>'+
@@ -2697,11 +2761,11 @@ async function resetData(){
  if(!confirm('Delete ALL ERP data?'))return;
  if(!confirm('FINAL WARNING — permanent.'))return;
  if(fbRef)await fbRef.set(null).catch(()=>{});
- localStorage.removeItem(KEY);localStorage.removeItem(KEY+"_CACHE");localStorage.removeItem(BACKUP_KEY);localStorage.removeItem(AUTO_BACKUP_KEY);
+ localStorage.removeItem(KEY);localStorage.removeItem(KEY+"_CACHE");localStorage.removeItem(BACKUP_KEY);localStorage.removeItem(AUTO_BACKUP_KEY);localStorage.removeItem(AUTO_BACKUP_ASKED);
  location.reload();
 }
 
-window.addEventListener('load',()=>{attachSync();console.log('ERP V13.1 — Math fixes applied (labour max, depreciation exact)');});
+window.addEventListener('load',()=>{attachSync();console.log('ERP V13.3 — all 7 fixes applied (purchase/material delete protection, backdated balance, VAT validation, price validation, permission checks, admin-only backup)');});
 </script>
 </body>
-                                                                                                   </html>
+        </html>
