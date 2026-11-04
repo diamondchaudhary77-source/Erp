@@ -1150,7 +1150,7 @@ function renderSubcon(){
  fillSel('ssPay',subPayOptions(true));fillSel('srPay',subPayOptions(true));fillSel('svLoc',subPayOptions(false));
  fillSel('svVendor',subVendors().map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('')||'<option value="">No vendor yet</option>');
 
- if($('ssLines')&&!$('ssLines').contains(document.activeElement))subRenderLines();
+ if($('ssLines')){if(!$('ssLines').contains(document.activeElement))subRenderLines();else subRefreshStock();}
  if($('srOrder').value&&!$('srQty').value&&document.activeElement!==$('srQty'))subRecvPrefill();else subRecvInfo();
 
  $('kSubOpen').textContent=open.length;$('kSubPend').textContent=pend;$('kSubRec').textContent=money(tot.rec);$('kSubPay').textContent=money(tot.pay);
@@ -1218,13 +1218,14 @@ function subLoadBOM(){
  if(!subSendLines.length)alert('All BOM materials for this job order were already sent.');
  subRenderLines();
 }
+function subRefreshStock(){subSendLines.forEach((l,i)=>{const c=$('slstk'+i);if(!c)return;const m=db.materials.find(x=>String(x.id)===String(l.materialId));c.textContent=m?m.qty+' '+m.unit:'—';});}
 function subRenderLines(){
  const box=$('ssLines');if(!box)return;
  if(!subSendLines.length){box.innerHTML='<div class="empty">No materials yet — click “Load from BOM” or “+ Add material”.</div>';subCalcTotals();return;}
  const opts=sel=>'<option value="">— select —</option>'+db.materials.map(x=>'<option value="'+x.id+'"'+(String(x.id)===String(sel)?' selected':'')+'>'+esc(x.name)+' ('+esc(x.unit)+')</option>').join('');
  box.innerHTML='<div class="tablewrap"><table><thead><tr><th>Material</th><th>HO stock</th><th>Qty to send</th><th class="fin">Sell price / unit</th><th class="fin">Line value</th><th></th></tr></thead><tbody>'+subSendLines.map((l,i)=>{
   const m=db.materials.find(x=>String(x.id)===String(l.materialId));
-  return '<tr><td><select onchange="subLineMat('+i+',this.value)" style="min-width:170px">'+opts(l.materialId)+'</select></td><td>'+(m?esc(m.qty+' '+m.unit):'—')+'</td><td><input type="number" step="0.001" min="0" value="'+esc(l.qty)+'" oninput="subLineSet('+i+',\'qty\',this.value)" style="width:110px;padding:7px;border:1px solid #d9d4d9;border-radius:8px"></td><td class="fin"><input type="number" step="0.01" min="0" value="'+esc(l.price)+'" oninput="subLineSet('+i+',\'price\',this.value)" style="width:110px;padding:7px;border:1px solid #d9d4d9;border-radius:8px"></td><td class="fin" id="slv'+i+'">'+money(r2((Number(l.qty)||0)*(Number(l.price)||0)))+'</td><td><button type="button" class="danger" onclick="subRemoveLine('+i+')">✕</button></td></tr>';
+  return '<tr><td><select onchange="subLineMat('+i+',this.value)" style="min-width:170px">'+opts(l.materialId)+'</select></td><td id="slstk'+i+'">'+(m?esc(m.qty+' '+m.unit):'—')+'</td><td><input type="number" step="0.001" min="0" value="'+esc(l.qty)+'" oninput="subLineSet('+i+',\'qty\',this.value)" style="width:110px;padding:7px;border:1px solid #d9d4d9;border-radius:8px"></td><td class="fin"><input type="number" step="0.01" min="0" value="'+esc(l.price)+'" oninput="subLineSet('+i+',\'price\',this.value)" style="width:110px;padding:7px;border:1px solid #d9d4d9;border-radius:8px"></td><td class="fin" id="slv'+i+'">'+money(r2((Number(l.qty)||0)*(Number(l.price)||0)))+'</td><td><button type="button" class="danger" onclick="subRemoveLine('+i+')">✕</button></td></tr>';
  }).join('')+'</tbody></table></div>';
  subCalcTotals();
 }
@@ -1242,7 +1243,7 @@ function sendSubMaterials(e){
  const vat=Number($('ssVat').value||0);if(isNaN(vat)||vat<0||vat>100)return alert('VAT % must be between 0 and 100.');
  const date=$('ssDate').value||today(),loc=$('ssPay').value;
  const need={};lines.forEach(l=>{need[l.materialId]=subR3((need[l.materialId]||0)+Number(l.qty));});
- for(const mid of Object.keys(need)){const m=db.materials.find(x=>String(x.id)===String(mid));if(!m)return alert('Material not found.');if(Number(m.qty)+0.000001<need[mid])return alert('Insufficient HO stock for "'+m.name+'".\nAvailable: '+m.qty+' '+m.unit+'\nRequested: '+need[mid]+' '+m.unit);}
+ for(const mid of Object.keys(need)){const m=db.materials.find(x=>String(x.id)===String(mid));if(!m)return alert('Material not found.');if(Number(m.qty)+0.000001<need[mid]){subRefreshStock();return alert('Insufficient HO stock for "'+m.name+'".\nAvailable: '+m.qty+' '+m.unit+'\nRequested: '+need[mid]+' '+m.unit+'\n\n(Stock shown in the table has been refreshed. If this looks wrong, check Raw Materials and the Live sync status.)');}}
  const built=lines.map(l=>{const m=db.materials.find(x=>String(x.id)===String(l.materialId));const price=r2((l.price!==''&&l.price!=null)?l.price:m.price);return {materialId:m.id,name:m.name,unit:m.unit,qty:Number(l.qty),price,cost:Number(m.price)};});
  const sub=r2(built.reduce((s,l)=>s+r2(l.qty*l.price),0)),vatAmt=r2(sub*vat/100),total=r2(sub+vatAmt),cost=r2(built.reduce((s,l)=>s+r2(l.qty*l.cost),0));
  const li=loc==='credit'?null:subLocInfo(loc);
@@ -1851,4 +1852,4 @@ $('invoiceContent').innerHTML=html;$('invoiceModal').classList.add('open');}
 window.addEventListener('load',()=>{attachSync();console.log('ERP V13.4.3 — FG Stock with profit-safe delete (Owner Capital, not expense)');});
 </script>
 </body>
-        </html>
+  </html>
