@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#714B67">
-<title>Handmade Decor ERP V13.4.3 Live</title>
+<title>Handmade Decor ERP V13.5 Live</title>
 <style>
 *{box-sizing:border-box}
 :root{--p:#714B67;--p2:#8f6385;--bg:#f5f3f5;--card:#fff;--text:#29252b;--muted:#777;--green:#198754;--red:#c0392b;--orange:#e67e22;--blue:#2878c8;--line:#e7e2e7}
@@ -81,7 +81,7 @@ body.printing-invoice .page{display:none!important}
 <div id="loginScreen" class="login">
  <div class="loginbox">
   <h1>🧶 Handmade Decor ERP</h1>
-  <b>V13.4.3 — FG Stock + Profit-Safe Delete</b>
+  <b>V13.5 — FG Stock + Profit-Safe Delete</b>
   <p class="muted"><span id="syncDot" class="sync-dot"></span><span id="syncLabel">Connecting…</span></p>
   <div class="field"><label>Username</label><input id="loginUser" value="admin" onkeydown="if(event.key==='Enter')$('loginPass').focus()"></div>
   <div class="field"><label>Password</label><input id="loginPass" type="password" value="admin" onkeydown="if(event.key==='Enter')login()"></div>
@@ -93,7 +93,7 @@ body.printing-invoice .page{display:none!important}
 <div id="app" style="display:none">
  <div class="layout">
   <aside class="side" id="side">
-   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.4.3 Live</small></div>
+   <div class="brand" id="brandHeader">🧶 Handmade Decor<br><small>ERP V13.5 Live</small></div>
    <div class="nav" id="nav"></div>
   </aside>
   <main class="main">
@@ -531,6 +531,62 @@ body.printing-invoice .page{display:none!important}
     </div>
    </section>
 
+      <section id="dyeing" class="page">
+    <div class="notice">🎨 <b>Dyeing / Processing</b>: <b>① Send white wool to the dyer</b> (it stays your stock, shown as "Material at Processor") → <b>② Receive coloured wool</b> (each colour becomes a Raw Material; dyeing charge is added to what you owe the dyer) → <b>③ Pay the dyer</b>.</div>
+    <div class="grid">
+     <div class="card"><div class="muted">Open Dye Jobs</div><div class="kpi" id="kDyOpen">0</div></div>
+     <div class="card"><div class="muted">Wool Pending at Dyers (kg)</div><div class="kpi" id="kDyPend">0</div></div>
+     <div class="card fin"><div class="muted">Value at Dyers</div><div class="kpi" id="kDyVal">0.00</div></div>
+     <div class="card fin"><div class="muted">You Owe Dyers</div><div class="kpi red" id="kDyOwe">0.00</div></div>
+    </div>
+
+    <div class="card"><h3>1. Send White Wool to Dyer</h3>
+     <form onsubmit="saveDyeJob(event)">
+      <div class="row">
+       <div class="field"><label>Dyer (vendor)</label><input id="dyVendor" list="dyVendorList" required><datalist id="dyVendorList"></datalist></div>
+       <div class="field"><label>White wool (Raw Material)</label><select id="dyMat" required></select><div class="muted" id="dyStock"></div></div>
+       <div class="field"><label>Quantity sent</label><input id="dyQty" type="number" step="0.001" min="0.001" required></div>
+       <div class="field"><label>Date</label><input id="dyDate" type="date"></div>
+      </div>
+      <div class="row">
+       <div class="field fin"><label>Dyeing rate per kg</label><input id="dyRate" type="number" step="0.01" min="0" value="0"></div>
+       <div class="field fin"><label>Rate is charged on</label><select id="dyBasis"><option value="recv">kg received (coloured wool)</option><option value="sent">kg of white wool used</option></select></div>
+       <div class="field fin"><label>Input VAT %</label><input id="dyVat" type="number" step="0.01" min="0" max="100" value="0"></div>
+       <div class="field"><label>Notes</label><input id="dyNotes" placeholder="Colours wanted, delivery date…"></div>
+      </div>
+      <button class="primary">Send to Dyer</button>
+     </form>
+    </div>
+
+    <div class="card"><h3>2. Receive Coloured Wool</h3>
+     <form onsubmit="receiveDye(event)">
+      <div class="row">
+       <div class="field"><label>Dye job</label><select id="drJob" onchange="dyRecvInfo()" required></select></div>
+       <div class="field"><label>Colour name</label><input id="drColor" required placeholder="e.g. Red"></div>
+       <div class="field"><label>Coloured wool received</label><input id="drQty" type="number" step="0.001" min="0.001" required oninput="dyRecvSync()"></div>
+       <div class="field"><label>White wool used for this lot</label><input id="drWhite" type="number" step="0.001" min="0.001" required></div>
+      </div>
+      <div class="row">
+       <div class="field"><label>Date</label><input id="drDate" type="date"></div>
+       <div class="field fin"><label>Dyeing charge paid</label><select id="drPay"></select></div>
+       <div class="field" style="grid-column:span 2"><label>Note</label><input id="drNote" placeholder="Challan no."></div>
+      </div>
+      <div id="drInfo" class="muted" style="margin-bottom:8px"></div>
+      <button class="success">Receive into Raw Materials</button>
+     </form>
+    </div>
+
+    <div class="card fin"><h3>3. Dyer Accounts</h3>
+     <div class="tablewrap"><table><thead><tr><th>Dyer</th><th class="fin">Dyeing charges</th><th class="fin">Paid</th><th class="fin">You owe</th><th>Actions</th></tr></thead><tbody id="dyVendorTable"></tbody></table></div>
+     <h4 style="margin:14px 0 6px">Payments to dyers</h4>
+     <div class="tablewrap"><table><thead><tr><th>Date</th><th>Dyer</th><th class="fin">Amount</th><th>Method</th><th>Voucher</th><th></th></tr></thead><tbody id="dyPayTable"></tbody></table></div>
+    </div>
+
+    <div class="card"><h3>Dye Jobs</h3>
+     <div class="tablewrap"><table><thead><tr><th>Date</th><th>Job</th><th>Dyer</th><th>White wool</th><th>Sent</th><th>Used</th><th>At dyer</th><th>Coloured received</th><th>Loss %</th><th>Status</th><th>Actions</th></tr></thead><tbody id="dyTable"></tbody></table></div>
+    </div>
+   </section>
+
    <section id="expenses" class="page">
     <div class="card"><h3>Indirect Expenses</h3>
      <form onsubmit="saveExpense(event)"><div class="row">
@@ -831,8 +887,8 @@ const KEY='HANDMADE_DECOR_ERP_V10';
 const BACKUP_KEY='HANDMADE_DECOR_ERP_LASTBACKUP';
 const AUTO_BACKUP_KEY='HANDMADE_DECOR_ERP_AUTO_BACKUP_LAST';
 const AUTO_BACKUP_ASKED='HANDMADE_DECOR_ERP_AUTO_BACKUP_ASKED';
-const COLLS=['expenses','sales','purchases','orders','issues','materials','boms','customers','suppliers','staff','fixedAssets','employees','cashCounts','fg','salesReturns','stageRates','workLogs','wagePayments','workerAdvances','subcons','subPays'];
-const STAFF_PERMS=[['customers','Customers'],['suppliers','Suppliers'],['orders','Customer Orders'],['production','Production'],['inventory','Raw Materials'],['finishedgoods','Finished Goods Stock'],['issue','Material Issue'],['branchstock','Branch Stock'],['bom','BOM & Labour'],['wages','Piece-work Wages'],['purchases','Purchases'],['subcon','Subcontract / Job Work'],['sales','Sales + VAT'],['expenses','Indirect Expenses'],['fixedassets','Fixed Assets'],['accounting','Accounting'],['arap','Receivables & Payables'],['opening','Opening Balance'],['employees','Employees / Labour'],['reports','Reports'],['settings','Settings'],['backup','Backup & Restore']];
+const COLLS=['expenses','sales','purchases','orders','issues','materials','boms','customers','suppliers','staff','fixedAssets','employees','cashCounts','fg','salesReturns','stageRates','workLogs','wagePayments','workerAdvances','subcons','subPays','dyejobs','dyePays'];
+const STAFF_PERMS=[['customers','Customers'],['suppliers','Suppliers'],['orders','Customer Orders'],['production','Production'],['inventory','Raw Materials'],['finishedgoods','Finished Goods Stock'],['issue','Material Issue'],['branchstock','Branch Stock'],['bom','BOM & Labour'],['wages','Piece-work Wages'],['purchases','Purchases'],['subcon','Subcontract / Job Work'],['dyeing','Dyeing / Processing'],['sales','Sales + VAT'],['expenses','Indirect Expenses'],['fixedassets','Fixed Assets'],['accounting','Accounting'],['arap','Receivables & Payables'],['opening','Opening Balance'],['employees','Employees / Labour'],['reports','Reports'],['settings','Settings'],['backup','Backup & Restore']];
 const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);};
 const $=id=>document.getElementById(id);
 const r2=n=>Math.round((Number(n)||0)*100)/100;
@@ -856,7 +912,7 @@ function unionTombstones(a,b){const out={};Object.keys(a||{}).forEach(k=>{out[k]
 function localHasNewerTombstones(local,remote){for(const coll of Object.keys(local||{})){const l=(local[coll]||[]).map(String);const r=((remote||{})[coll]||[]).map(String);if(l.some(id=>!r.includes(id)))return true;}return false;}
 
 function voidJournal(id,reason){const j=db.journals.find(x=>x.id===id);if(!j||j.voided)return null;if(db.settings&&db.settings.lockedThrough&&j.date<=db.settings.lockedThrough)throw new Error('Locked period.');j.voided=true;j.voidedBy=(session?session.user:'system');j.voidReason=reason||'';j.voidedAt=new Date().toISOString();return j.id;}
-function cleanupLegacyVoidReversals(d){if(!d||!Array.isArray(d.journals))return 0;const voidedIds=new Set();d.journals.forEach(j=>{if(j.voided)voidedIds.add(String(j.id));});let changed=0;d.journals.forEach(j=>{if(j.refType==='VOID'&&!j.voided&&voidedIds.has(String(j.refId))){j.voided=true;j.voidReason='V13.4.3 auto-cleanup: redundant reversal';j.voidedBy='system';j.voidedAt=new Date().toISOString();changed++;}});return changed;}
+function cleanupLegacyVoidReversals(d){if(!d||!Array.isArray(d.journals))return 0;const voidedIds=new Set();d.journals.forEach(j=>{if(j.voided)voidedIds.add(String(j.id));});let changed=0;d.journals.forEach(j=>{if(j.refType==='VOID'&&!j.voided&&voidedIds.has(String(j.refId))){j.voided=true;j.voidReason='V13.5 auto-cleanup: redundant reversal';j.voidedBy='system';j.voidedAt=new Date().toISOString();changed++;}});return changed;}
 
 function processRemote(remote){
  const localDeleted=db.deleted||{};
@@ -902,10 +958,10 @@ function attachSync(){
 }
 
 function defaultCOA(){
- return [{code:'1000',name:'HO Cash on Hand',type:'Asset'},{code:'1001',name:'Branch 1 Cash',type:'Asset'},{code:'1002',name:'Branch 2 Cash',type:'Asset'},{code:'1003',name:'Branch 3 Cash',type:'Asset'},{code:'1004',name:'Branch 4 Cash',type:'Asset'},{code:'1005',name:'Branch 5 Cash',type:'Asset'},{code:'1010',name:'Bank',type:'Asset'},{code:'1100',name:'Accounts Receivable',type:'Asset'},{code:'1200',name:'Raw Materials Inventory',type:'Asset'},{code:'1210',name:'Work in Progress',type:'Asset'},{code:'1220',name:'Finished Goods Inventory',type:'Asset'},{code:'1300',name:'Input VAT (Recoverable)',type:'Asset'},{code:'1400',name:'Employee Advances',type:'Asset'},{code:'1500',name:'Fixed Assets at Cost',type:'Asset'},{code:'1505',name:'Accumulated Depreciation',type:'Asset'},{code:'2000',name:'Accounts Payable',type:'Liability'},{code:'2100',name:'Output VAT (Payable)',type:'Liability'},{code:'2200',name:'Employee Security Deposits',type:'Liability'},{code:'2210',name:'Labour Payable',type:'Liability'},{code:'3000',name:"Owner's Capital",type:'Equity'},{code:'4000',name:'Sales Revenue',type:'Income'},{code:'4010',name:'Sales Returns',type:'Income'},{code:'4020',name:'Raw Material Sales (Subcontract)',type:'Income'},{code:'5000',name:'Cost of Goods Sold',type:'Expense'},{code:'6000',name:'Rent',type:'Expense'},{code:'6010',name:'Electricity',type:'Expense'},{code:'6020',name:'Transport',type:'Expense'},{code:'6030',name:'Fixed Staff Salary',type:'Expense'},{code:'6040',name:'Water',type:'Expense'},{code:'6050',name:'Repairs & Maintenance',type:'Expense'},{code:'6090',name:'Other Expenses',type:'Expense'},{code:'6100',name:'Depreciation Expense',type:'Expense'},{code:'6210',name:'Overhead Absorbed',type:'Expense'}];
+ return [{code:'1000',name:'HO Cash on Hand',type:'Asset'},{code:'1001',name:'Branch 1 Cash',type:'Asset'},{code:'1002',name:'Branch 2 Cash',type:'Asset'},{code:'1003',name:'Branch 3 Cash',type:'Asset'},{code:'1004',name:'Branch 4 Cash',type:'Asset'},{code:'1005',name:'Branch 5 Cash',type:'Asset'},{code:'1010',name:'Bank',type:'Asset'},{code:'1100',name:'Accounts Receivable',type:'Asset'},{code:'1200',name:'Raw Materials Inventory',type:'Asset'},{code:'1210',name:'Work in Progress',type:'Asset'},{code:'1220',name:'Finished Goods Inventory',type:'Asset'},{code:'1230',name:'Material at Processor (Dyeing)',type:'Asset'},{code:'1300',name:'Input VAT (Recoverable)',type:'Asset'},{code:'1400',name:'Employee Advances',type:'Asset'},{code:'1500',name:'Fixed Assets at Cost',type:'Asset'},{code:'1505',name:'Accumulated Depreciation',type:'Asset'},{code:'2000',name:'Accounts Payable',type:'Liability'},{code:'2100',name:'Output VAT (Payable)',type:'Liability'},{code:'2200',name:'Employee Security Deposits',type:'Liability'},{code:'2210',name:'Labour Payable',type:'Liability'},{code:'3000',name:"Owner's Capital",type:'Equity'},{code:'4000',name:'Sales Revenue',type:'Income'},{code:'4010',name:'Sales Returns',type:'Income'},{code:'4020',name:'Raw Material Sales (Subcontract)',type:'Income'},{code:'5000',name:'Cost of Goods Sold',type:'Expense'},{code:'6000',name:'Rent',type:'Expense'},{code:'6010',name:'Electricity',type:'Expense'},{code:'6020',name:'Transport',type:'Expense'},{code:'6030',name:'Fixed Staff Salary',type:'Expense'},{code:'6040',name:'Water',type:'Expense'},{code:'6050',name:'Repairs & Maintenance',type:'Expense'},{code:'6090',name:'Other Expenses',type:'Expense'},{code:'6100',name:'Depreciation Expense',type:'Expense'},{code:'6210',name:'Overhead Absorbed',type:'Expense'}];
 }
 function defaultDB(){
- return {version:'13.4.3',admin:{user:'admin',pass:'admin'},branches:[{id:1,name:'Branch 1',user:'branch1',pass:'1234'},{id:2,name:'Branch 2',user:'branch2',pass:'1234'},{id:3,name:'Branch 3',user:'branch3',pass:'1234'},{id:4,name:'Branch 4',user:'branch4',pass:'1234'},{id:5,name:'Branch 5',user:'branch5',pass:'1234'}],orders:[],materials:[],issues:[],branchStock:[],boms:[],purchases:[],sales:[],salesReturns:[],stageRates:[],workLogs:[],wagePayments:[],workerAdvances:[],subcons:[],subPays:[],expenses:[],employees:[],fg:[],audit:[],customers:[],suppliers:[],coa:defaultCOA(),journals:[],fixedAssets:[],staff:[],cashCounts:[],voucherSeq:0,deleted:{expenses:[],sales:[],purchases:[],orders:[],issues:[],materials:[],boms:[],customers:[],suppliers:[],staff:[],fixedAssets:[],employees:[],cashCounts:[],fg:[]},settings:{overheadRate:0,lockedThrough:'',cashLimits:{0:0,1:0,2:0,3:0,4:0,5:0},approvalThreshold:0,company:{name:'',phone:'',email:'',address:'',gst:'',prefix:'INV'}},ledgerStartDate:today(),opening:{cash:0,bank:0,receivable:0,payable:0,capital:0,date:today(),jeId:null}};
+ return {version:'13.4.3',admin:{user:'admin',pass:'admin'},branches:[{id:1,name:'Branch 1',user:'branch1',pass:'1234'},{id:2,name:'Branch 2',user:'branch2',pass:'1234'},{id:3,name:'Branch 3',user:'branch3',pass:'1234'},{id:4,name:'Branch 4',user:'branch4',pass:'1234'},{id:5,name:'Branch 5',user:'branch5',pass:'1234'}],orders:[],materials:[],issues:[],branchStock:[],boms:[],purchases:[],sales:[],salesReturns:[],stageRates:[],workLogs:[],wagePayments:[],workerAdvances:[],subcons:[],subPays:[],dyejobs:[],dyePays:[],expenses:[],employees:[],fg:[],audit:[],customers:[],suppliers:[],coa:defaultCOA(),journals:[],fixedAssets:[],staff:[],cashCounts:[],voucherSeq:0,deleted:{expenses:[],sales:[],purchases:[],orders:[],issues:[],materials:[],boms:[],customers:[],suppliers:[],staff:[],fixedAssets:[],employees:[],cashCounts:[],fg:[]},settings:{overheadRate:0,lockedThrough:'',cashLimits:{0:0,1:0,2:0,3:0,4:0,5:0},approvalThreshold:0,company:{name:'',phone:'',email:'',address:'',gst:'',prefix:'INV'}},ledgerStartDate:today(),opening:{cash:0,bank:0,receivable:0,payable:0,capital:0,date:today(),jeId:null}};
 }
 function loadDB(){
  try{const cached=localStorage.getItem(KEY+"_CACHE");if(cached){const x=JSON.parse(cached);if(x&&x.branches)return migrateDB(x);}}catch(e){}
@@ -919,7 +975,7 @@ function migrateDB(x){
  if(!Array.isArray(x.audit))x.audit=[];
  if(!Array.isArray(x.coa)||!x.coa.length)x.coa=defaultCOA();
  else{defaultCOA().forEach(a=>{if(!x.coa.find(c=>c.code===a.code))x.coa.push(a);});}
- ['journals','fixedAssets','staff','cashCounts','customers','suppliers','salesReturns','stageRates','workLogs','wagePayments','workerAdvances','subcons','subPays'].forEach(k=>{if(!Array.isArray(x[k]))x[k]=[];});
+ ['journals','fixedAssets','staff','cashCounts','customers','suppliers','salesReturns','stageRates','workLogs','wagePayments','workerAdvances','subcons','subPays','dyejobs','dyePays'].forEach(k=>{if(!Array.isArray(x[k]))x[k]=[];});
  if(x.voucherSeq===undefined)x.voucherSeq=0;
  if(!x.settings)x.settings=defaultDB().settings;
  if(!x.settings.cashLimits)x.settings.cashLimits={0:0,1:0,2:0,3:0,4:0,5:0};
@@ -1029,7 +1085,7 @@ function deleteFixedAsset(id){if(!hasPerm('fixedassets'))return alert('No permis
 function saveSettings(e){e.preventDefault();if(!hasPerm('settings'))return alert('No permission.');const rate=Number($('setOverheadRate').value||0);if(rate<0||rate>200)return alert('Rate 0-200.');const lock=$('setLockDate').value||'';db.settings.overheadRate=rate;db.settings.lockedThrough=lock;audit('SETTINGS','rate='+rate+'% lock='+(lock||'none'));save();refresh();alert('Saved.');}
 function renderSettings(){if(!$('setOverheadRate'))return;if(document.activeElement!==$('setOverheadRate'))$('setOverheadRate').value=(db.settings&&db.settings.overheadRate)||0;if(document.activeElement!==$('setLockDate'))$('setLockDate').value=(db.settings&&db.settings.lockedThrough)||'';if($('setApprovalThreshold')&&document.activeElement!==$('setApprovalThreshold'))$('setApprovalThreshold').value=(db.settings&&db.settings.approvalThreshold)||0;const lim=db.settings&&db.settings.cashLimits||{};if($('limHO')&&document.activeElement!==$('limHO'))$('limHO').value=lim[0]||0;for(let i=1;i<=5;i++){const el=$('lim'+i);if(el&&document.activeElement!==el)el.value=lim[i]||0;}const co=db.settings.company||{};['coName','coPhone','coEmail','coGst','coAddress','coPrefix'].forEach((id,i)=>{const el=$(id);if(el&&document.activeElement!==el)el.value=[co.name,co.phone,co.email,co.gst,co.address,co.prefix||'INV'][i]||'';});}
 function saveCompanyBranding(e){e.preventDefault();if(!admin())return alert('Only admin.');db.settings.company={name:$('coName').value.trim(),phone:$('coPhone').value.trim(),email:$('coEmail').value.trim(),gst:$('coGst').value.trim(),address:$('coAddress').value.trim(),prefix:$('coPrefix').value.trim()||'INV'};audit('COMPANY_BRANDING',db.settings.company.name);save();refresh();alert('Branding saved.');updateBrandHeader();}
-function updateBrandHeader(){const el=$('brandHeader');if(!el)return;const co=db.settings.company||{};const name=co.name||'Handmade Decor';el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.4.3 Live</small>';}
+function updateBrandHeader(){const el=$('brandHeader');if(!el)return;const co=db.settings.company||{};const name=co.name||'Handmade Decor';el.innerHTML='🧶 '+esc(name)+'<br><small>ERP V13.5 Live</small>';}
 function saveCashSettings(e){e.preventDefault();if(!admin())return alert('Only admin.');const limits={0:Number($('limHO').value||0),1:Number($('lim1').value||0),2:Number($('lim2').value||0),3:Number($('lim3').value||0),4:Number($('lim4').value||0),5:Number($('lim5').value||0)};const th=Number($('setApprovalThreshold').value||0);db.settings.cashLimits=limits;db.settings.approvalThreshold=th;audit('CASH_SETTINGS','limits='+JSON.stringify(limits)+' threshold='+th);save();refresh();alert('Saved.');}
 async function changeAdminPass(e){e.preventDefault();if(!admin())return alert('Only admin.');const oldP=$('apOldPass').value,newP=$('apNewPass').value,conP=$('apConfirmPass').value;if(newP!==conP)return alert('New passwords do not match.');if(newP.length<6)return alert('Min 6 chars.');const adm=db.admin||{user:'admin',pass:'admin'};let ok=false;if(adm.passHash){const v=await verifyPassword(oldP,adm.passHash);ok=v.ok;}else if(adm.pass){ok=(adm.pass===oldP);}if(!ok)return alert('Current password incorrect.');adm.passHash=await hashPassword(newP,'hd_v10');delete adm.pass;db.admin=adm;audit('ADMIN_PASS_CHANGE','updated');save(true);e.target.reset();alert('Password updated.');}
 
@@ -1062,10 +1118,10 @@ async function login(){const u=$('loginUser').value.trim(),p=$('loginPass').valu
 function openApp(){$('loginScreen').style.display='none';$('app').style.display='block';$('who').textContent=admin()?'HEAD OFFICE / ADMIN':(session.role==='staff'?session.name+' · All branches':branchName(session.branchId));if(!admin())document.body.classList.add('no-financials');else document.body.classList.remove('no-financials');updateBrandHeader();buildNav();showPage('dashboard');checkBackupReminder();checkAutoBackup();}
 function logout(){session=null;$('app').style.display='none';$('loginScreen').style.display='flex';$('loginPass').value='';document.body.classList.remove('no-financials');}
 function toggleSide(){$('side').classList.toggle('open');}
-function buildNav(){let a=[];if(admin()){a=[['dashboard','📊 Dashboard'],['cashmgt','💵 Cash Management'],['customers','👤 Customers'],['suppliers','🏭 Suppliers'],['orders','🧾 Customer Orders'],['production','🏭 Production'],['inventory','📦 Raw Materials'],['finishedgoods','📦 Finished Goods Stock'],['issue','🚚 Material Issue'],['branchstock','🏢 Branch Stock'],['bom','🧩 BOM & Labour'],['wages','🧵 Piece-work Wages'],['purchases','🛒 Purchases'],['subcon','🤝 Subcontract / Job Work'],['sales','💰 Sales + VAT'],['expenses','🧾 Indirect Expenses'],['fixedassets','🏭 Fixed Assets'],['accounting','📒 Accounting'],['arap','💳 Receivables & Payables'],['opening','⚖️ Opening Balance'],['employees','👷 Employees'],['staff','👥 Staff Accounts'],['reports','📋 Reports'],['settings','⚙️ Settings'],['branches','🔐 Branch Settings'],['backup','💾 Backup']];}else if(session&&session.role==='staff'){a=[['dashboard','📊 Dashboard']];STAFF_PERMS.forEach(p=>{if(session.perms&&session.perms[p[0]]===true){const labels={customers:'👤 Customers',suppliers:'🏭 Suppliers',orders:'🧾 Customer Orders',production:'🏭 Production',inventory:'📦 Raw Materials',finishedgoods:'📦 Finished Goods Stock',issue:'🚚 Material Issue',branchstock:'🏢 Branch Stock',bom:'🧩 BOM & Labour',wages:'🧵 Piece-work Wages',purchases:'🛒 Purchases',subcon:'🤝 Subcontract / Job Work',sales:'💰 Sales + VAT',expenses:'🧾 Indirect Expenses',fixedassets:'🏭 Fixed Assets',accounting:'📒 Accounting',arap:'💳 Receivables & Payables',opening:'⚖️ Opening Balance',employees:'👷 Employees',reports:'📋 Reports',settings:'⚙️ Settings',backup:'💾 Backup & Restore'};a.push([p[0],labels[p[0]]||p[1]]);}});}else{a=[['dashboard','📊 Dashboard'],['orders','🧾 Customer Orders'],['production','🏭 Production'],['wages','🧵 Piece-work Wages'],['branchstock','🏢 My Branch Stock'],['sales','💰 Sales + VAT'],['expenses','🧾 Branch Expenses'],['employees','👷 Employees'],['reports','📋 Reports']];}$('nav').innerHTML=a.map(x=>'<button id="nav_'+x[0]+'" onclick="showPage(\''+x[0]+'\')">'+x[1]+'</button>').join('');}
+function buildNav(){let a=[];if(admin()){a=[['dashboard','📊 Dashboard'],['cashmgt','💵 Cash Management'],['customers','👤 Customers'],['suppliers','🏭 Suppliers'],['orders','🧾 Customer Orders'],['production','🏭 Production'],['inventory','📦 Raw Materials'],['finishedgoods','📦 Finished Goods Stock'],['issue','🚚 Material Issue'],['branchstock','🏢 Branch Stock'],['bom','🧩 BOM & Labour'],['wages','🧵 Piece-work Wages'],['purchases','🛒 Purchases'],['subcon','🤝 Subcontract / Job Work'],['dyeing','🎨 Dyeing / Processing'],['sales','💰 Sales + VAT'],['expenses','🧾 Indirect Expenses'],['fixedassets','🏭 Fixed Assets'],['accounting','📒 Accounting'],['arap','💳 Receivables & Payables'],['opening','⚖️ Opening Balance'],['employees','👷 Employees'],['staff','👥 Staff Accounts'],['reports','📋 Reports'],['settings','⚙️ Settings'],['branches','🔐 Branch Settings'],['backup','💾 Backup']];}else if(session&&session.role==='staff'){a=[['dashboard','📊 Dashboard']];STAFF_PERMS.forEach(p=>{if(session.perms&&session.perms[p[0]]===true){const labels={customers:'👤 Customers',suppliers:'🏭 Suppliers',orders:'🧾 Customer Orders',production:'🏭 Production',inventory:'📦 Raw Materials',finishedgoods:'📦 Finished Goods Stock',issue:'🚚 Material Issue',branchstock:'🏢 Branch Stock',bom:'🧩 BOM & Labour',wages:'🧵 Piece-work Wages',purchases:'🛒 Purchases',subcon:'🤝 Subcontract / Job Work',dyeing:'🎨 Dyeing / Processing',sales:'💰 Sales + VAT',expenses:'🧾 Indirect Expenses',fixedassets:'🏭 Fixed Assets',accounting:'📒 Accounting',arap:'💳 Receivables & Payables',opening:'⚖️ Opening Balance',employees:'👷 Employees',reports:'📋 Reports',settings:'⚙️ Settings',backup:'💾 Backup & Restore'};a.push([p[0],labels[p[0]]||p[1]]);}});}else{a=[['dashboard','📊 Dashboard'],['orders','🧾 Customer Orders'],['production','🏭 Production'],['wages','🧵 Piece-work Wages'],['branchstock','🏢 My Branch Stock'],['sales','💰 Sales + VAT'],['expenses','🧾 Branch Expenses'],['employees','👷 Employees'],['reports','📋 Reports']];}$('nav').innerHTML=a.map(x=>'<button id="nav_'+x[0]+'" onclick="showPage(\''+x[0]+'\')">'+x[1]+'</button>').join('');}
 const BRANCH_ALLOWED=['dashboard','orders','production','wages','branchstock','sales','expenses','employees','reports'];
 function canAccess(id){if(admin())return true;if(!session)return false;if(id==='dashboard')return true;if(id==='staff'||id==='branches'||id==='finance'||id==='cashmgt')return false;if(session.role==='staff'){return session.perms&&session.perms[id]===true;}return BRANCH_ALLOWED.includes(id);}
-function showPage(id){if(!canAccess(id))id='dashboard';document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));if($(id))$(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if($('nav_'+id))$('nav_'+id).classList.add('active');let names={dashboard:'Dashboard',cashmgt:'Cash Management',customers:'Customers',suppliers:'Suppliers',orders:'Customer Orders',production:'Production',inventory:'Raw Materials',finishedgoods:'Finished Goods Stock',issue:'Material Issue',branchstock:'Branch Stock',bom:'BOM & Labour Cost',wages:'Piece-work Wages',purchases:'Purchases',subcon:'Subcontract / Job Work',sales:'Sales + VAT',expenses:'Indirect Expenses',fixedassets:'Fixed Assets',accounting:'Accounting',arap:'Receivables & Payables',finance:'Finance / P&L',settings:'Settings',opening:'Opening Balance',employees:'Employees / Labour',staff:'Staff Accounts',reports:'Reports',branches:'Branch Settings',backup:'Backup'};$('title').textContent=names[id]||id;refresh();if(innerWidth<851)$('side').classList.remove('open');}
+function showPage(id){if(!canAccess(id))id='dashboard';document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));if($(id))$(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if($('nav_'+id))$('nav_'+id).classList.add('active');let names={dashboard:'Dashboard',cashmgt:'Cash Management',customers:'Customers',suppliers:'Suppliers',orders:'Customer Orders',production:'Production',inventory:'Raw Materials',finishedgoods:'Finished Goods Stock',issue:'Material Issue',branchstock:'Branch Stock',bom:'BOM & Labour Cost',wages:'Piece-work Wages',purchases:'Purchases',subcon:'Subcontract / Job Work',dyeing:'Dyeing / Processing',sales:'Sales + VAT',expenses:'Indirect Expenses',fixedassets:'Fixed Assets',accounting:'Accounting',arap:'Receivables & Payables',finance:'Finance / P&L',settings:'Settings',opening:'Opening Balance',employees:'Employees / Labour',staff:'Staff Accounts',reports:'Reports',branches:'Branch Settings',backup:'Backup'};$('title').textContent=names[id]||id;refresh();if(innerWidth<851)$('side').classList.remove('open');}
 function setBranches(id){let el=$(id);if(!el)return;const prev=el.value;let arr=canPickBranch()?db.branches:db.branches.filter(b=>b.id===session.branchId);el.innerHTML=arr.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');el.disabled=!canPickBranch()&&arr.length===1;if(prev&&arr.some(b=>String(b.id)===String(prev)))el.value=prev;else if(arr[0])el.value=arr[0].id;}
 function setPurchaseBranchSelect(){const el=$('pBranch');if(!el)return;const prev=el.value;el.innerHTML=branchCashOnlyOptionsHTML();if(prev)el.value=prev;}
 function renderLiquid(){const el=$('liquidMoney');if(!el)return;if(!admin()){el.style.display='none';return;}el.style.display='inline-block';let cash=0,bank=0;for(let i=0;i<=5;i++)cash=r2(cash+accountBalance(branchCashCode(i),{to:today()}));bank=accountBalance('1010',{to:today()});const total=r2(cash+bank);const positive=total>=0;el.style.background=positive?'#f0fdf4':'#fde2df';el.style.color=positive?'#176b3d':'#9e281e';el.style.border='1px solid '+(positive?'#bbf7d0':'#fecaca');el.textContent='💵 Cash: '+money(cash)+' | Bank: '+money(bank)+' | Total: '+money(total);}
@@ -1424,7 +1480,7 @@ function renderLowStockAlert(){
 
 function renderDashboard(){const orders=filtered(db.orders),prod=orders.filter(o=>o.status==='In Production').length,fg=db.fg.reduce((s,x)=>s+Number(x.qty),0);const pl=plReport(db.ledgerStartDate||'',today(),canPickBranch()?null:session.branchId);$('kOrders').textContent=orders.length;$('kProd').textContent=prod;$('kFG').textContent=fg;if(admin()){$('kProfitLabel').textContent='Net Profit';$('kProfit').textContent=money(pl.netProfit);$('kProfit').className='kpi '+(pl.netProfit>=0?'green':'red');}else{const pending=orders.filter(o=>o.status!=='Completed'&&o.status!=='Order Received').length;$('kProfitLabel').textContent='Pending Orders';$('kProfit').textContent=pending;$('kProfit').className='kpi';}const states=['Order Received','Sent to Branch','In Production','Assembly Complete','Completed'];const c={};orders.forEach(o=>c[o.status]=(c[o.status]||0)+1);$('flow').innerHTML=states.map(s=>'<div class="statline"><span>'+statusBadge(s)+'</span><b>'+((c[s]||0))+'</b></div>').join('');const branchesToShow=canPickBranch()?db.branches:db.branches.filter(b=>b.id===session.branchId);$('branchChart').innerHTML=branchesToShow.map(b=>{const a=db.orders.filter(o=>o.branch===b.id);const totalQty=a.reduce((s,o)=>s+Number(o.qty||0),0);const doneTotal=a.reduce((s,o)=>s+doneQty(o),0);const pct=totalQty>0?Math.min(100,Math.round(doneTotal/totalQty*100)):0;return '<div style="margin:9px 0"><div style="display:flex;justify-content:space-between"><span>'+esc(b.name)+'</span><b>'+doneTotal+' / '+totalQty+' pcs ('+pct+'%)</b></div><div class="bar"><span style="width:'+pct+'%"></span></div></div>';}).join('');if($('bsCard'))$('bsCard').style.display=admin()?'':'none';if($('branchDashCard'))$('branchDashCard').style.display=admin()?'none':'';if(!admin()){const myBranch=session.branchId;const mySales=db.sales.filter(s=>Number(s.branch)===Number(myBranch));const myExp=db.expenses.filter(e=>Number(e.branch)===Number(myBranch));const myStock=db.branchStock.filter(x=>Number(x.branch)===Number(myBranch));const stockQty=r2(myStock.reduce((s,x)=>s+Number(x.qty||0),0));const outstandingCount=mySales.filter(s=>!s.settled).length;$('branchDash').innerHTML='<div class="statline"><span>My branch</span><b>'+esc(branchName(myBranch))+'</b></div><div class="statline"><span>My sales this period</span><b>'+mySales.length+'</b></div><div class="statline"><span>Unpaid sales invoices</span><b>'+outstandingCount+'</b></div><div class="statline"><span>Expenses logged</span><b>'+myExp.length+'</b></div><div class="statline"><span>Material stock total qty</span><b>'+stockQty+'</b></div>';}if(admin()){const bs=balanceSheet(today(),null);$('bsSnap').innerHTML='<div class="statline"><span>Total Assets</span><b>'+money(bs.totalAssets)+'</b></div><div class="statline"><span>Total Liabilities</span><b>'+money(bs.totalLiab)+'</b></div><div class="statline"><span>Total Equity</span><b>'+money(bs.totalEquity)+'</b></div><div class="statline"><span>Cash + Bank</span><b>'+money(accountBalance('1000',{to:today()})+accountBalance('1010',{to:today()}))+'</b></div>'+(Math.abs(bs.diff)>0.05?'<p class="red">Out by '+money(bs.diff)+'</p>':'<p class="green">✓ Balanced</p>');}renderLowStockAlert();}
 
-function refresh(){if(!session)return;['oBranch','sBranch','eBranch','empBranch','iBranch','faBranch'].forEach(setBranches);setPurchaseBranchSelect();if($('oDate')&&!$('oDate').value)$('oDate').value=today();if($('eDate')&&!$('eDate').value)$('eDate').value=today();if($('empJoin')&&!$('empJoin').value)$('empJoin').value=today();if($('pDate')&&!$('pDate').value)$('pDate').value=today();if($('sDate')&&!$('sDate').value)$('sDate').value=today();fillMaterialSelects();fillOrdersSelect();fillSaleProducts();fillCustomerSelects();fillSupplierSelects();filterReportOptions();renderLiquid();renderDashboard();renderOrders();renderProduction();renderMaterials();renderFG();renderFGPage();renderIssues();renderBranchStock();renderBOM();renderWages();renderPurchases();renderSubcon();renderSales();renderReturns();renderExpenses();renderFixedAssets();renderSettings();renderAccounting();renderARAP();renderOpening();renderEmployees();renderStaff();renderBranches();renderSystem();renderAudit();renderCustomers();renderSuppliers();if(admin())refreshCashPage();}
+function refresh(){if(!session)return;['oBranch','sBranch','eBranch','empBranch','iBranch','faBranch'].forEach(setBranches);setPurchaseBranchSelect();if($('oDate')&&!$('oDate').value)$('oDate').value=today();if($('eDate')&&!$('eDate').value)$('eDate').value=today();if($('empJoin')&&!$('empJoin').value)$('empJoin').value=today();if($('pDate')&&!$('pDate').value)$('pDate').value=today();if($('sDate')&&!$('sDate').value)$('sDate').value=today();fillMaterialSelects();fillOrdersSelect();fillSaleProducts();fillCustomerSelects();fillSupplierSelects();filterReportOptions();renderLiquid();renderDashboard();renderOrders();renderProduction();renderMaterials();renderFG();renderFGPage();renderIssues();renderBranchStock();renderBOM();renderWages();renderPurchases();renderSubcon();renderDyeing();renderSales();renderReturns();renderExpenses();renderFixedAssets();renderSettings();renderAccounting();renderARAP();renderOpening();renderEmployees();renderStaff();renderBranches();renderSystem();renderAudit();renderCustomers();renderSuppliers();if(admin())refreshCashPage();}
 function filterReportOptions(){const sel=$('reportType');if(!sel)return;const adminOnly=['trialbalance','balancesheet','fixedassets','profit','araging','apaging','profitability','branchcompare','deadstock','gstreturn','subcon'];[...sel.options].forEach(o=>{let hide=adminOnly.includes(o.value)&&!admin();if(o.value==='fgstock'&&session&&session.role==='branch')hide=true;o.hidden=hide;o.disabled=hide;});if(sel.selectedOptions[0]&&sel.selectedOptions[0].disabled)sel.value='sales';}
 
 function saveFG(e){
@@ -1500,7 +1556,7 @@ function editFG(id){
  refresh();
  alert('Updated.');
 }
-/* ✅ V13.4.3 — Delete FG with PROFIT-SAFE accounting.
+/* ✅ V13.5 — Delete FG with PROFIT-SAFE accounting.
    The removal is posted against Owner's Capital (3000), NOT an expense.
    Result: 1220 → 0, but Net Profit is UNCHANGED. */
 function deleteFG(id){
@@ -1767,14 +1823,14 @@ function deleteReturn(id){id=String(id);const r=(db.salesReturns||[]).find(x=>St
 function renderReturns(){const el=$('returnsTable');if(!el)return;const a=filtered(db.salesReturns||[]).slice().sort((x,y)=>String(y.date).localeCompare(String(x.date)));el.innerHTML=a.length?a.map(r=>{const mine=(canPickBranch()||r.branch===session.branchId);const money_=r.refundPortion>0?money(r.total)+'<div class="muted">refund '+money(r.refundPortion)+' '+esc(r.refundMethod||'')+'</div>':money(r.total);return '<tr><td>'+esc(r.date)+'</td><td>'+esc(r.customer)+'</td><td>'+esc(r.product)+'</td><td>'+r.qty+'</td><td class="notes-cell">'+esc(r.reason||'')+(r.notes?'<div class="muted">'+esc(r.notes)+'</div>':'')+'</td><td>'+(r.restock?'<span class="badge bg">Restocked</span>':'<span class="badge br">Written off</span>')+'</td><td class="fin">'+money_+'</td><td>'+esc(branchName(r.branch))+'</td><td class="actions"><button class="secondary" data-rid="'+r.id+'" onclick="printCreditNote(this.dataset.rid)" title="Print credit note">🖨</button>'+(mine?'<button class="danger" data-rid="'+r.id+'" onclick="deleteReturn(this.dataset.rid)">Del</button>':'')+'</td></tr>';}).join(''):'<tr><td colspan="9" class="empty">No customer returns</td></tr>';}
 function printCreditNote(id){const r=(db.salesReturns||[]).find(x=>String(x.id)===String(id));if(!r)return;const s=db.sales.find(x=>String(x.id)===String(r.saleId));const co=db.settings.company||{};const cnNo='CN-'+String(r.id).slice(-6);const invNo=s?(co.prefix||'INV')+'-'+String(s.id).slice(-6):'—';const html='<div class="invoice-sheet"><div class="head"><div><h1>'+esc(co.name||'Handmade Decor')+'</h1>'+(co.address?'<div>'+esc(co.address)+'</div>':'')+(co.phone?'<div>Phone: '+esc(co.phone)+'</div>':'')+'</div><div style="text-align:right"><h2 style="margin:0;color:#c0392b">CREDIT NOTE</h2><div><b>'+esc(cnNo)+'</b></div><div>Date: '+esc(r.date)+'</div><div>Against invoice: '+esc(invNo)+'</div></div></div><div class="cust"><div style="font-size:11px;color:#777;text-transform:uppercase">Credited To</div><div style="font-size:16px;font-weight:bold">'+esc(r.customer)+'</div></div><table><thead><tr><th>Product</th><th>Reason</th><th class="right">Qty</th><th class="right">Unit Price</th><th class="right">Amount</th></tr></thead><tbody><tr><td>'+esc(r.product)+'</td><td>'+esc(r.reason||'')+(r.notes?' – '+esc(r.notes):'')+'</td><td class="right">'+r.qty+'</td><td class="right">'+money(r.price)+'</td><td class="right">'+money(r.sub)+'</td></tr></tbody></table><div class="totals"><div>Subtotal: <b>'+money(r.sub)+'</b></div>'+(r.vatAmt>0?'<div>VAT ('+r.vatPct+'%): <b>'+money(r.vatAmt)+'</b></div>':'')+'<div style="font-size:18px;border-top:2px solid #c0392b;padding-top:6px;margin-top:6px">TOTAL CREDIT: <b>'+money(r.total)+'</b></div>'+(r.arPortion>0?'<div>Deducted from balance due: <b>'+money(r.arPortion)+'</b></div>':'')+(r.refundPortion>0?'<div>Refunded ('+esc(r.refundMethod)+'): <b>'+money(r.refundPortion)+'</b></div>':'')+'</div><div class="sign"><div>Customer Signature</div><div>Authorised Signatory</div></div></div>';$('invoiceContent').innerHTML=html;$('invoiceModal').classList.add('open');}
 
-function backup(){if(!admin())return alert('Only admin can download backups.');const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.4.3_Backup_'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();}
+function backup(){if(!admin())return alert('Only admin can download backups.');const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Handmade_Decor_ERP_V13.5_Backup_'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.setItem(BACKUP_KEY,String(Date.now()));checkBackupReminder();}
 function checkAutoBackup(){try{const askedToday=localStorage.getItem(AUTO_BACKUP_ASKED)===today();if(askedToday)return;const last=Number(localStorage.getItem(AUTO_BACKUP_KEY)||0);const days=last?(Date.now()-last)/(1000*60*60*24):999;if(admin()&&days>1){setTimeout(()=>{if(confirm('📥 Daily auto-backup reminder.\n\nLast backup was '+Math.round(days)+' day(s) ago. Download a fresh backup now?')){backup();localStorage.setItem(AUTO_BACKUP_KEY,String(Date.now()));}localStorage.setItem(AUTO_BACKUP_ASKED,today());},1500);}}catch(e){}}
 function restore(e){if(!admin())return alert('Only admin.');const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const x=JSON.parse(r.result);if(!x.branches||!Array.isArray(x.orders))throw new Error();db=migrateDB(x);db.lastModified=new Date().toISOString();db.lastModifiedBy=session?session.user:'system';if(fbRef)await fbRef.set(db).catch(err=>alert('Firebase: '+err.message));try{localStorage.setItem(KEY+"_CACHE",JSON.stringify(db));}catch(e2){}alert('Restored. Reloading.');location.reload();}catch(err){alert('Invalid backup.');}};r.readAsText(f);}
 function checkBackupReminder(){const btn=$('backupReminder');if(!btn)return;if(!admin()){btn.style.display='none';return;}const last=Number(localStorage.getItem(BACKUP_KEY)||0);const days=last?(Date.now()-last)/(1000*60*60*24):999;btn.style.display=days>7?'inline-block':'none';}
 function clearAudit(){if(!hasPerm('backup'))return;if(!confirm('Clear audit log?'))return;db.audit=[];save();renderAudit();renderSystem();}
 function renderAudit(){const el=$('auditLog');if(!el)return;const a=(db.audit||[]).slice(-50).reverse();el.innerHTML=a.length?'<div class="tablewrap"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th></tr></thead><tbody>'+a.map(x=>'<tr><td>'+esc(x.t.slice(0,19).replace('T',' '))+'</td><td>'+esc(x.user)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.detail)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">None</div>';}
 function clearTombstones(){if(!admin())return alert('Only admin.');if(!confirm('Clear all delete tombstones?'))return;db.deleted={};COLLS.forEach(c=>{db.deleted[c]=[];});audit('TOMB_CLEAR','all cleared');save(true);refresh();alert('Tombstones cleared.');}
-function renderSystem(){if(!$('sysInfo'))return;const tb=trialBalance(today(),null);const tombCount=COLLS.reduce((s,c)=>s+((db.deleted&&db.deleted[c])||[]).length,0);if($('tombCount'))$('tombCount').textContent=tombCount;$('sysInfo').innerHTML='<div class="statline"><span>ERP Version</span><b>V13.4.3</b></div><div class="statline"><span>Sync</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Live':'🔴 Offline')+'</b></div><div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div><div class="statline"><span>Staff</span><b>'+(db.staff||[]).length+'</b></div><div class="statline"><span>Customers</span><b>'+(db.customers||[]).length+'</b></div><div class="statline"><span>Suppliers</span><b>'+(db.suppliers||[]).length+'</b></div><div class="statline"><span>Orders</span><b>'+db.orders.length+'</b></div><div class="statline"><span>FG products</span><b>'+(db.fg||[]).length+'</b></div><div class="statline"><span>FG total units</span><b>'+(db.fg||[]).reduce((s,f)=>s+Number(f.qty||0),0)+' pcs</b></div><div class="statline"><span>FG 1220 balance</span><b>'+money(accountBalance('1220',{to:today()}))+'</b></div><div class="statline"><span>Journal entries</span><b>'+db.journals.filter(j=>!j.voided).length+' active</b></div><div class="statline"><span>Delete tombstones</span><b>'+tombCount+'</b></div><div class="statline"><span>Trial balance</span><b class="'+(Math.abs(tb.diff)<0.05?'green':'red')+'">'+(Math.abs(tb.diff)<0.05?'✓ Balanced':'⚠ Out by '+money(tb.diff))+'</b></div><div class="statline"><span>Audit entries</span><b>'+((db.audit||[]).length)+'</b></div>';}
+function renderSystem(){if(!$('sysInfo'))return;const tb=trialBalance(today(),null);const tombCount=COLLS.reduce((s,c)=>s+((db.deleted&&db.deleted[c])||[]).length,0);if($('tombCount'))$('tombCount').textContent=tombCount;$('sysInfo').innerHTML='<div class="statline"><span>ERP Version</span><b>V13.5</b></div><div class="statline"><span>Sync</span><b class="'+(fbConnected?'green':'red')+'">'+(fbConnected?'🟢 Live':'🔴 Offline')+'</b></div><div class="statline"><span>Branches</span><b>'+db.branches.length+'</b></div><div class="statline"><span>Staff</span><b>'+(db.staff||[]).length+'</b></div><div class="statline"><span>Customers</span><b>'+(db.customers||[]).length+'</b></div><div class="statline"><span>Suppliers</span><b>'+(db.suppliers||[]).length+'</b></div><div class="statline"><span>Orders</span><b>'+db.orders.length+'</b></div><div class="statline"><span>FG products</span><b>'+(db.fg||[]).length+'</b></div><div class="statline"><span>FG total units</span><b>'+(db.fg||[]).reduce((s,f)=>s+Number(f.qty||0),0)+' pcs</b></div><div class="statline"><span>FG 1220 balance</span><b>'+money(accountBalance('1220',{to:today()}))+'</b></div><div class="statline"><span>Journal entries</span><b>'+db.journals.filter(j=>!j.voided).length+' active</b></div><div class="statline"><span>Delete tombstones</span><b>'+tombCount+'</b></div><div class="statline"><span>Trial balance</span><b class="'+(Math.abs(tb.diff)<0.05?'green':'red')+'">'+(Math.abs(tb.diff)<0.05?'✓ Balanced':'⚠ Out by '+money(tb.diff))+'</b></div><div class="statline"><span>Audit entries</span><b>'+((db.audit||[]).length)+'</b></div>';}
 async function resetData(){if(!admin())return;if(!confirm('Delete ALL ERP data?'))return;if(!confirm('FINAL WARNING — permanent.'))return;if(fbRef)await fbRef.set(null).catch(()=>{});localStorage.removeItem(KEY);localStorage.removeItem(KEY+"_CACHE");localStorage.removeItem(BACKUP_KEY);localStorage.removeItem(AUTO_BACKUP_KEY);localStorage.removeItem(AUTO_BACKUP_ASKED);location.reload();}
 
 
@@ -1849,7 +1905,132 @@ const html='<div class="invoice-sheet"><div class="head"><div><h1>'+esc(co.name|
 +payHtml+'<div class="sign"><div>Worker Signature</div><div>Authorised Signatory</div></div></div>';
 $('invoiceContent').innerHTML=html;$('invoiceModal').classList.add('open');}
 
-window.addEventListener('load',()=>{attachSync();console.log('ERP V13.4.3 — FG Stock with profit-safe delete (Owner Capital, not expense)');});
+/* ================= DYEING / PROCESSING =================
+   Send : Dr 1230 Material at Processor   Cr 1200 Raw Materials          (at your cost, no sale)
+   Recv : Dr 1200 Raw Materials (coloured) [+ Dr 1300 Input VAT]
+          Cr 1230 (white wool cost used)   Cr 2000 AP or Cash/Bank (dyeing charge)
+   Close: Dr 6090 Other Expenses (dyeing wastage)  Cr 1230   for wool never returned */
+function dyRef(j){return 'DY-'+String(j.id).slice(-6);}
+function dyJob(id){return (db.dyejobs||[]).find(x=>String(x.id)===String(id));}
+function dyUsed(j){return subR3((j.recvs||[]).reduce((s,r)=>s+Number(r.whiteUsed||0),0));}
+function dyGot(j){return subR3((j.recvs||[]).reduce((s,r)=>s+Number(r.qty||0),0));}
+function dyPending(j){return j.closed?0:Math.max(0,subR3(Number(j.sentQty)-dyUsed(j)));}
+function dyVendors(){const seen={},out=[];(db.dyejobs||[]).forEach(j=>{const k=subKey(j.vendor);if(k&&!seen[k]){seen[k]=1;out.push(j.vendor);}});(db.dyePays||[]).forEach(p=>{const k=subKey(p.vendor);if(k&&!seen[k]){seen[k]=1;out.push(p.vendor);}});return out.sort();}
+function dyVendorPos(v){const k=subKey(v);let charges=0,paidAtRecv=0,paid=0;(db.dyejobs||[]).filter(j=>subKey(j.vendor)===k).forEach(j=>(j.recvs||[]).forEach(r=>{charges=r2(charges+Number(r.total||0));paidAtRecv=r2(paidAtRecv+Number(r.paid||0));}));(db.dyePays||[]).filter(p=>subKey(p.vendor)===k).forEach(p=>{paid=r2(paid+Number(p.amount||0));});return {charges,paid:r2(paidAtRecv+paid),owe:r2(charges-paidAtRecv-paid)};}
+function dyBadge(j){const s=j.closed?'Closed':(dyGot(j)<=0?'With Dyer':(dyPending(j)>0?'Part Received':'Received'));const c={'With Dyer':'bo','Part Received':'bb','Received':'bg','Closed':'bg'}[s]||'';return '<span class="badge '+c+'">'+s+'</span>';}
+
+function saveDyeJob(e){
+ e.preventDefault();if(!hasPerm('dyeing'))return alert('No permission.');
+ const vendor=$('dyVendor').value.trim(),m=db.materials.find(x=>String(x.id)===$('dyMat').value),qty=Number($('dyQty').value);
+ const date=$('dyDate').value||today(),rate=r2($('dyRate').value||0),vat=Number($('dyVat').value||0),basis=$('dyBasis').value;
+ if(!vendor)return alert('Dyer required.');if(!m)return alert('Choose the white wool material.');
+ if(!(qty>0))return alert('Quantity must be above 0.');if(isNaN(vat)||vat<0||vat>100)return alert('VAT % must be 0-100.');
+ if(Number(m.qty)+0.000001<qty)return alert('Insufficient stock of "'+m.name+'".\nAvailable: '+m.qty+' '+m.unit);
+ const value=r2(qty*Number(m.price||0));const id=uid();
+ const j={id,date,vendor,matId:m.id,matName:m.name,unit:m.unit,sentQty:qty,unitCost:Number(m.price||0),rate,basis,vat,notes:$('dyNotes').value.trim(),recvs:[],closed:false,user:session.user};
+ try{if(value>0)j.jeId=postJournal({date,memo:'White wool sent to dyer '+vendor+' ('+dyRef(j)+')',refType:'DYE_SEND',refId:id,lines:[{account:'1230',debit:value,memo:m.name},{account:'1200',credit:value,memo:m.name}]});}catch(err){return alert('Error: '+err.message);}
+ m.qty=subR3(Number(m.qty)-qty);autoLinkSupplier(vendor);db.dyejobs.push(j);
+ audit('DYE_SEND',dyRef(j)+' '+vendor+' '+m.name+' '+qty+' '+m.unit);save(true);e.target.reset();$('dyDate').value=today();refresh();
+ $('drJob').value=String(id);dyRecvInfo();alert(dyRef(j)+' created. '+qty+' '+m.unit+' of '+m.name+' sent to '+vendor+'.');
+}
+function dyRecvInfo(){
+ const el=$('drInfo');if(!el)return;const j=dyJob($('drJob').value);if(!j){el.textContent='';return;}
+ el.innerHTML='Sent <b>'+j.sentQty+' '+j.unit+'</b> of '+esc(j.matName)+' · used <b>'+dyUsed(j)+'</b> · still at dyer <b>'+dyPending(j)+'</b> · coloured received <b>'+dyGot(j)+'</b>'+(admin()?' · rate <b>'+money(j.rate)+'</b>/kg on '+(j.basis==='sent'?'white wool used':'kg received')+(Number(j.vat)?' + '+j.vat+'% VAT':''):'');
+}
+function dyRecvSync(){const j=dyJob($('drJob').value);if(!j)return;if(!$('drWhite').dataset.manual)$('drWhite').value=Math.min($('drQty').value||0,dyPending(j))||$('drQty').value;}
+function receiveDye(e){
+ e.preventDefault();if(!hasPerm('dyeing'))return alert('No permission.');
+ const j=dyJob($('drJob').value);if(!j)return alert('Choose a dye job.');if(j.closed)return alert('Job is closed.');
+ const color=$('drColor').value.trim(),qty=Number($('drQty').value),white=Number($('drWhite').value),date=$('drDate').value||today(),loc=$('drPay').value;
+ if(!color)return alert('Colour name required.');if(!(qty>0)||!(white>0))return alert('Enter quantities above 0.');
+ if(white>dyPending(j)+0.0005)return alert('Only '+dyPending(j)+' '+j.unit+' of white wool is still at the dyer.');
+ const gross=r2((j.basis==='sent'?white:qty)*Number(j.rate||0)),vatAmt=r2(gross*Number(j.vat||0)/100),total=r2(gross+vatAmt);
+ const whiteCost=r2(white*Number(j.unitCost||0)),colorCost=r2(whiteCost+gross),unit=colorCost/qty;
+ const li=loc==='credit'?null:subLocInfo(loc);
+ if(li&&!checkLiquidBalance(li.method,total,li.b,date))return;if(!checkApprovalLimit(total))return;
+ const name=color.toLowerCase().indexOf(j.matName.toLowerCase())>=0?color:(j.matName+' - '+color);
+ const rid=uid();const lines=[{account:'1200',debit:colorCost,memo:name+' x'+qty}];
+ if(vatAmt>0)lines.push({account:'1300',debit:vatAmt,memo:'Input VAT'});
+ if(whiteCost>0)lines.push({account:'1230',credit:whiteCost,memo:'White wool used'});
+ if(li)lines.push({account:li.code,credit:total,branch:li.branch,memo:j.vendor});else if(total>0)lines.push({account:'2000',credit:total,memo:j.vendor});
+ const jl=lines.filter(l=>Number(l.debit||0)>0||Number(l.credit||0)>0);let jeId=null;
+ try{jeId=postJournal({date,memo:'Dyed wool received from '+j.vendor+' ('+dyRef(j)+') '+name+' x'+qty,refType:'DYE_RECV',refId:rid,lines:jl});}catch(err){return alert('Error: '+err.message);}
+ let m=db.materials.find(x=>x.name.toLowerCase()===name.toLowerCase()&&x.unit===j.unit);
+ if(!m){m={id:uid(),name,unit:j.unit,qty:0,price:0,minQty:0,openingLayers:[]};db.materials.push(m);}
+ m.openingLayers=m.openingLayers||[];m.openingLayers.push({qty,price:unit,ref:rid});m.qty=subR3(Number(m.qty)+qty);recomputeMaterialPrice(m.id);
+ j.recvs.push({id:rid,date,color:name,matId:m.id,qty,whiteUsed:white,gross,vatAmt,total,paid:li?total:0,payLoc:loc,unitCost:unit,note:$('drNote').value.trim(),jeId,user:session.user});
+ audit('DYE_RECV',dyRef(j)+' '+name+' +'+qty+' @ '+money(unit));save(true);e.target.reset();$('drDate').value=today();refresh();
+ alert('Received '+qty+' '+j.unit+' of '+name+' into Raw Materials @ '+money(unit)+'/'+j.unit+' (white wool + dyeing).'+(li?'\nCharge paid now.':'\nCharge added to what you owe '+j.vendor+'.'));
+}
+function closeDyeJob(id){
+ if(!hasPerm('dyeing'))return alert('No permission.');const j=dyJob(id);if(!j||j.closed)return;
+ const pend=dyPending(j);
+ if(pend>0.0005){const val=r2(pend*Number(j.unitCost||0));if(!confirm(pend+' '+j.unit+' of white wool never came back (worth '+money(val)+').\n\nClose the job and write it off as dyeing wastage?'))return;
+  if(val>0){try{j.lossJeId=postJournal({date:today(),memo:'Dyeing wastage '+dyRef(j),refType:'DYE_LOSS',refId:j.id,lines:[{account:'6090',debit:val,memo:'Dyeing wastage: '+j.matName},{account:'1230',credit:val,memo:j.matName}]});}catch(err){return alert('Error: '+err.message);}}
+  j.writeoffQty=pend;j.writeoffValue=val;}
+ j.closed=true;audit('DYE_CLOSE',dyRef(j));save(true);refresh();
+}
+function deleteDyeJob(id){
+ if(!hasPerm('dyeing'))return alert('No permission.');const j=dyJob(id);if(!j)return;
+ if((j.recvs||[]).length)return alert('This job has received wool. Open View and delete the receipts first.');
+ if(j.closed)return alert('Closed job. Cannot delete.');if(!confirm('Delete '+dyRef(j)+' and return the white wool to stock?'))return;
+ if(voidByRef('DYE_SEND',j.id,'job deleted')>0)return alert('Locked period.');
+ const m=db.materials.find(x=>String(x.id)===String(j.matId));if(m)m.qty=subR3(Number(m.qty)+Number(j.sentQty));
+ tombstone('dyejobs',j.id);db.dyejobs=db.dyejobs.filter(x=>x!==j);audit('DYE_DEL',dyRef(j));save(true);refresh();closeOrderModal();
+}
+function deleteDyeRecv(jid,rid){
+ if(!hasPerm('dyeing'))return alert('No permission.');const j=dyJob(jid);if(!j)return;const r=(j.recvs||[]).find(x=>String(x.id)===String(rid));if(!r)return;
+ if(j.closed)return alert('Reopening is not supported. Job is closed.');
+ const m=db.materials.find(x=>String(x.id)===String(r.matId));
+ if(!m||Number(m.qty)+0.000001<r.qty)return alert('Cannot delete: only '+(m?m.qty:0)+' '+j.unit+' of '+r.color+' is in stock (some was already used).');
+ if(!confirm('Delete this receipt? Coloured wool is removed from stock and the white wool goes back to the dyer.'))return;
+ if(voidByRef('DYE_RECV',r.id,'receipt deleted')>0)return alert('Locked period.');
+ m.qty=subR3(Number(m.qty)-r.qty);m.openingLayers=(m.openingLayers||[]).filter(l=>l.ref!==r.id);recomputeMaterialPrice(m.id);
+ j.recvs=j.recvs.filter(x=>x!==r);audit('DYE_RECV_DEL',dyRef(j)+' '+r.color+' -'+r.qty);save(true);refresh();viewDye(jid);
+}
+function viewDye(id){
+ const j=dyJob(id);if(!j)return;const canDel=hasPerm('dyeing');
+ let h='<h2 style="margin:0 0 4px;color:#714B67">Dye Job '+dyRef(j)+'</h2><div class="muted" style="margin-bottom:8px">'+esc(j.vendor)+' · '+esc(j.date)+' · '+dyBadge(j)+'</div>';
+ h+='<div class="statline"><span>White wool sent</span><b>'+j.sentQty+' '+j.unit+' ('+esc(j.matName)+')</b></div><div class="statline"><span>Used so far</span><b>'+dyUsed(j)+'</b></div><div class="statline"><span>Coloured wool received</span><b>'+dyGot(j)+'</b></div>';
+ if(j.writeoffQty)h+='<div class="statline fin"><span>Written off (never returned)</span><b class="red">'+j.writeoffQty+' '+j.unit+' = '+money(j.writeoffValue)+'</b></div>';
+ h+='<h4 style="margin:14px 0 6px;color:#714B67">Receipts</h4>';
+ h+=(j.recvs||[]).length?j.recvs.map(r=>'<div class="card" style="box-shadow:none;border:1px solid #eee;padding:10px;margin-bottom:8px"><b>'+esc(r.date)+'</b> · '+esc(r.color)+' · '+r.qty+' '+j.unit+' (white used '+r.whiteUsed+')<span class="fin"><br>Dyeing charge '+money(r.total)+' · cost '+money(r.unitCost)+'/'+j.unit+(r.paid>0?' <span class="badge bg">paid now</span>':' <span class="badge bo">on account</span>')+'</span>'+(r.note?'<div class="muted">'+esc(r.note)+'</div>':'')+(canDel&&!j.closed?'<div style="margin-top:6px"><button class="danger" onclick="deleteDyeRecv(\''+j.id+'\',\''+r.id+'\')">Delete receipt</button></div>':'')+'</div>').join(''):'<div class="empty">Nothing received yet</div>';
+ $('orderModalContent').innerHTML=h;$('orderModal').classList.add('open');
+}
+function payDyer(idx,method){
+ if(!hasPerm('arap')&&!hasPerm('dyeing'))return alert('No permission.');const v=dyVendors()[Number(idx)];if(!v)return;const p=dyVendorPos(v);
+ if(p.owe<=0.01)return alert('Nothing owed to '+v+'.');
+ const input=prompt('Pay '+v+' ('+method+')\nOwed: '+money(p.owe),String(p.owe));if(input===null)return;const amt=r2(input);
+ if(!(amt>0))return alert('Must be positive.');if(amt>p.owe+0.01)return alert('Exceeds amount owed.');
+ if(!checkLiquidBalance(method,amt,0,today()))return;if(!checkApprovalLimit(amt))return;
+ const id=uid(),vno=nextVoucher();
+ try{postJournal({date:today(),memo:'Paid dyer '+v+' '+vno,refType:'DYE_PAY',refId:id,lines:[{account:'2000',debit:amt,memo:v},{account:method==='Bank'?'1010':'1000',credit:amt}]});}catch(err){db.voucherSeq=Math.max(0,(Number(db.voucherSeq)||1)-1);return alert('Error: '+err.message);}
+ db.dyePays.push({id,date:today(),vendor:v,amount:amt,method,voucher:vno,user:session.user});audit('DYE_PAY',v+' '+money(amt));save(true);refresh();
+}
+function deleteDyePay(id){
+ if(!hasPerm('arap')&&!hasPerm('dyeing'))return alert('No permission.');const p=(db.dyePays||[]).find(x=>String(x.id)===String(id));if(!p)return;
+ if(!confirm('Delete this payment? The amount owed to the dyer goes back up.'))return;
+ if(voidByRef('DYE_PAY',p.id,'payment deleted')>0)return alert('Locked period.');
+ tombstone('dyePays',p.id);db.dyePays=db.dyePays.filter(x=>x!==p);audit('DYE_PAY_DEL',p.vendor+' '+money(p.amount));save(true);refresh();
+}
+function renderDyeing(){
+ if(!$('dyTable')||!hasPerm('dyeing'))return;
+ ['dyDate','drDate'].forEach(id=>{if($(id)&&!$(id).value)$(id).value=today();});
+ const jobs=db.dyejobs||[];const fill=(id,html)=>{const el=$(id);if(!el)return;const p=el.value;el.innerHTML=html;if(p&&[...el.options].some(o=>o.value===p))el.value=p;};
+ $('dyVendorList').innerHTML=(db.suppliers||[]).map(s=>'<option value="'+esc(s.name)+'">').join('');
+ fill('dyMat',db.materials.map(m=>'<option value="'+m.id+'">'+esc(m.name)+' ('+esc(m.unit)+')</option>').join('')||'<option value="">No material</option>');
+ const m=db.materials.find(x=>String(x.id)===$('dyMat').value);$('dyStock').textContent=m?'In stock: '+m.qty+' '+m.unit:'';
+ fill('drJob',jobs.filter(j=>!j.closed).slice().reverse().map(j=>'<option value="'+j.id+'">'+dyRef(j)+' · '+esc(j.vendor)+' · '+esc(j.matName)+' ('+dyPending(j)+' '+j.unit+' at dyer)</option>').join('')||'<option value="">No open job</option>');
+ fill('drPay','<option value="credit">On account (credit)</option>'+cashLocOptionsHTML());dyRecvInfo();
+ const open=jobs.filter(j=>!j.closed&&dyPending(j)>0);let val=0,owe=0;open.forEach(j=>{val=r2(val+dyPending(j)*Number(j.unitCost||0));});dyVendors().forEach(v=>{owe=r2(owe+Math.max(0,dyVendorPos(v).owe));});
+ $('kDyOpen').textContent=open.length;$('kDyPend').textContent=subR3(open.reduce((s,j)=>s+dyPending(j),0));$('kDyVal').textContent=money(val);$('kDyOwe').textContent=money(owe);
+ const vs=dyVendors();$('dyVendorTable').innerHTML=vs.length?vs.map((v,i)=>{const p=dyVendorPos(v);return '<tr><td>'+esc(v)+'</td><td class="fin">'+money(p.charges)+'</td><td class="fin">'+money(p.paid)+'</td><td class="fin"><b class="'+(p.owe>0.005?'red':'')+'">'+money(p.owe)+'</b></td><td class="actions"><button class="info" onclick="payDyer('+i+',\'Cash\')">Pay Cash</button><button class="info" onclick="payDyer('+i+',\'Bank\')">Pay Bank</button></td></tr>';}).join(''):'<tr><td colspan="5" class="empty">No dyers yet</td></tr>';
+ const pays=(db.dyePays||[]).slice().reverse();$('dyPayTable').innerHTML=pays.length?pays.map(p=>'<tr><td>'+esc(p.date)+'</td><td>'+esc(p.vendor)+'</td><td class="fin">'+money(p.amount)+'</td><td>'+esc(p.method)+'</td><td>'+esc(p.voucher||'')+'</td><td><button class="danger" onclick="deleteDyePay(\''+p.id+'\')">Del</button></td></tr>').join(''):'<tr><td colspan="6" class="empty">No payments yet</td></tr>';
+ $('dyTable').innerHTML=jobs.length?jobs.slice().reverse().map(j=>{const used=dyUsed(j),got=dyGot(j);const lossBase=j.closed?Number(j.sentQty):used;const loss=j.closed?Number(j.sentQty)-got:used-got;const pct=lossBase>0?Math.round(Math.max(0,loss)/lossBase*1000)/10:0;
+  return '<tr><td>'+esc(j.date)+'</td><td>'+dyRef(j)+'</td><td>'+esc(j.vendor)+'</td><td>'+esc(j.matName)+'</td><td>'+j.sentQty+' '+j.unit+'</td><td>'+used+'</td><td>'+dyPending(j)+'</td><td>'+got+'</td><td>'+(got>0?pct+'%':'—')+'</td><td>'+dyBadge(j)+'</td><td class="actions"><button class="secondary" onclick="viewDye(\''+j.id+'\')">View</button>'+(j.closed?'':'<button class="orange" onclick="closeDyeJob(\''+j.id+'\')">Close</button>')+'<button class="danger" onclick="deleteDyeJob(\''+j.id+'\')">Del</button></td></tr>';}).join(''):'<tr><td colspan="11" class="empty">No dye jobs yet</td></tr>';
+}
+
+window.addEventListener('load',()=>{attachSync();console.log('ERP V13.5 — FG Stock with profit-safe delete (Owner Capital, not expense)');});
 </script>
 </body>
   </html>
